@@ -5,6 +5,7 @@ using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
 namespace LibreKO.Game.Tests;
@@ -12,6 +13,13 @@ namespace LibreKO.Game.Tests;
 public class PartyWireTests : GameTestBase
 {
     private const byte Moradon = 21;
+    private const int RaceRounds = 400;
+    private const int RaceSweep = 64;
+    private const int RaceFirstId = 2000;
+    private const int EventFirstId = 3000;
+    private const short OutsiderId = 3100;
+    private const short OtherLeaderId = 3101;
+    private const ushort EventRoom = 1;
 
     [Fact]
     public async Task AcceptingAnInviteIsASingleByteOnItsOwnSub()
@@ -335,16 +343,170 @@ public class PartyWireTests : GameTestBase
         var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
         var inviter = CreateMember(sessionManager, 544);
         var target = CreateMember(sessionManager, 545);
+        var eventMate = CreateMember(sessionManager, 549);
         await parties.HandleAsync(inviter.Client, InviteOf(target));
         var invitersParty = inviter.PartyIndex;
-        var eventParty = sessionManager.Parties.CreateParty((short)target.CharacterId);
-        target.PartyIndex = eventParty.Index;
+        var eventParty = await TempleEventHelpers.FormNationPartyAsync(sessionManager, Substitute.For<ICombatNotificationService>(),
+            Substitute.For<IPartyLevelProgressService>(), [target, eventMate], nameof(AMemberWhoAcceptsAnInviteWithdrawsIt), EventRoom,
+            NullLogger.Instance);
 
         await parties.HandleAsync(target.Client, Permit(accept: true));
 
-        target.PartyIndex.Should().Be(eventParty.Index);
+        target.PartyIndex.Should().Be(eventParty, "an event seats the player while the invite still stands");
         sessionManager.Parties.GetParty(invitersParty).Should().BeNull("the inviter is not left leading a party of one");
     }
+
+    [Fact]
+    public async Task APlayerAnsweringTwoInvitesAtOnceJoinsOneParty()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var characterId = RaceFirstId;
+        for (var round = 0; round < RaceRounds; round++)
+        {
+            var leader = CreateMember(sessionManager, characterId++);
+            var player = CreateMember(sessionManager, characterId++);
+            var boardInviter = CreateMember(sessionManager, characterId++);
+            await parties.HandleAsync(leader.Client, InviteOf(player));
+            var invitedTo = leader.PartyIndex;
+            await parties.BoardInviteAsync(boardInviter, player.Name, PartyBbsPacketWriter.ModeNormal);
+
+            await AtOnceAsync(round,
+                () => parties.HandleAsync(player.Client, Permit(accept: true)),
+                () => parties.BoardAcceptAsync(player, boardInviter.Name, PartyBbsPacketWriter.ModeNormal));
+
+            PartiesHolding(sessionManager, player, invitedTo, boardInviter.PartyIndex).Should().Equal([player.PartyIndex],
+                "a player stands in the one party their index names");
+            NoOneLeadsAPartyOfOne(sessionManager, leader, boardInviter);
+        }
+    }
+
+    [Fact]
+    public async Task AnInviteeWhoseBoardInviteIsAnsweredMeanwhileJoinsOneParty()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var characterId = RaceFirstId;
+        for (var round = 0; round < RaceRounds; round++)
+        {
+            var leader = CreateMember(sessionManager, characterId++);
+            var playerSent = new List<Packet>();
+            var player = CreateMember(sessionManager, characterId++, playerSent);
+            var boardInvitee = CreateMember(sessionManager, characterId++);
+            await parties.HandleAsync(leader.Client, InviteOf(player));
+            var invitedTo = leader.PartyIndex;
+            await parties.BoardInviteAsync(player, boardInvitee.Name, PartyBbsPacketWriter.ModeNormal);
+
+            await AtOnceAsync(round,
+                () => parties.HandleAsync(player.Client, Permit(accept: true)),
+                () => parties.BoardAcceptAsync(boardInvitee, player.Name, PartyBbsPacketWriter.ModeNormal));
+
+            PartiesHolding(sessionManager, player, invitedTo, boardInvitee.PartyIndex).Should().Equal([player.PartyIndex],
+                "a player who accepted one party while starting another stands in one of them");
+            if (boardInvitee.IsInParty)
+                sessionManager.Parties.GetParty(boardInvitee.PartyIndex)!.LeaderId.Should().Be((short)player.CharacterId,
+                    "a board invite brings the player into a party its sender leads");
+            else
+                RejectionsIn(playerSent).Should().Contain(PartyInviteError.CannotParty, "a board accept that joins nothing is answered");
+            NoOneLeadsAPartyOfOne(sessionManager, leader, player);
+        }
+    }
+
+    private static void NoOneLeadsAPartyOfOne(SessionManager sessionManager, params UserSession[] leaders)
+    {
+        foreach (var leader in leaders.Where(leader => leader.IsInParty))
+            sessionManager.Parties.GetParty(leader.PartyIndex)!.MemberCount.Should().BeGreaterThan(1,
+                "a party formed for an invite that went elsewhere comes down");
+    }
+
+    [Fact]
+    public async Task ABoardAcceptWhosePlayerJoinedElsewhereMeanwhileIsAnsweredAndLeavesNoParty()
+    {
+        var warBoard = Substitute.For<IPartyWarBoardService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(warBoard));
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var inviterSent = new List<Packet>();
+        var inviter = CreateMember(sessionManager, 560, inviterSent);
+        var player = CreateMember(sessionManager, 561);
+        var otherLeader = CreateMember(sessionManager, 562);
+        await parties.BoardInviteAsync(inviter, player.Name, PartyBbsPacketWriter.ModeNormal);
+        var elsewhere = sessionManager.Parties.CreateParty((short)otherLeader.CharacterId);
+        otherLeader.TryEnterParty(elsewhere.Index);
+        warBoard.When(board => board.MemberJoined(Arg.Any<int>(), inviter.CharacterId)).Do(_ =>
+        {
+            player.TryEnterParty(elsewhere.Index);
+            elsewhere.TryJoin((short)player.CharacterId);
+        });
+
+        await parties.BoardAcceptAsync(player, inviter.Name, PartyBbsPacketWriter.ModeNormal);
+
+        player.PartyIndex.Should().Be(elsewhere.Index);
+        inviter.IsInParty.Should().BeFalse("the party formed for this accept had no one to take in");
+        RejectionsIn(inviterSent).Should().Contain(PartyInviteError.CannotParty);
+    }
+
+    [Fact]
+    public async Task AnEventPartySeatsOnlyPlayersStillFree()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var players = Enumerable.Range(EventFirstId, 4).Select(id => CreateMember(sessionManager, id)).ToList();
+        var (first, second, third, last) = (players[0], players[1], players[2], players[3]);
+        var lastsParty = sessionManager.Parties.CreateParty((short)last.CharacterId);
+        last.TryEnterParty(lastsParty.Index);
+        lastsParty.TryJoin(OutsiderId);
+        var elsewhere = sessionManager.Parties.CreateParty(OtherLeaderId);
+        var notices = Substitute.For<ICombatNotificationService>();
+        notices.When(sender => sender.SendToPartyAsync(lastsParty, Arg.Any<Packet>())).Do(_ =>
+        {
+            foreach (var joiner in new[] { first, third })
+            {
+                joiner.TryEnterParty(elsewhere.Index);
+                elsewhere.TryJoin((short)joiner.CharacterId);
+            }
+        });
+
+        var index = await TempleEventHelpers.FormNationPartyAsync(sessionManager, notices,
+            Substitute.For<IPartyLevelProgressService>(), players, nameof(AnEventPartySeatsOnlyPlayersStillFree), EventRoom, NullLogger.Instance);
+
+        var party = sessionManager.Parties.GetParty(index)!;
+        party.LeaderId.Should().Be((short)second.CharacterId, "the first player still free leads");
+        party.MemberIds.Where(id => id >= 0).Should().BeEquivalentTo([(short)second.CharacterId, (short)last.CharacterId],
+            "a player who joined another party while the event party formed stays in it");
+        first.PartyIndex.Should().Be(elsewhere.Index);
+        third.PartyIndex.Should().Be(elsewhere.Index);
+    }
+
+    [Fact]
+    public async Task AnEventPartyLeavesOutWhoeverFindsItFull()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var players = Enumerable.Range(EventFirstId, PartyGroup.MaxMembers + 1).Select(id => CreateMember(sessionManager, id)).ToList();
+
+        var index = await TempleEventHelpers.FormNationPartyAsync(sessionManager, Substitute.For<ICombatNotificationService>(),
+            Substitute.For<IPartyLevelProgressService>(), players, nameof(AnEventPartyLeavesOutWhoeverFindsItFull), EventRoom, NullLogger.Instance);
+
+        sessionManager.Parties.GetParty(index)!.MemberCount.Should().Be(PartyGroup.MaxMembers);
+        players[^1].IsInParty.Should().BeFalse("a player with no seat holds no party's index");
+    }
+
+    // Each round shifts one side a little later than the other, so the two requests meet at every point of each other.
+    private static async Task AtOnceAsync(int round, Func<Task> first, Func<Task> second)
+    {
+        var shift = round % RaceSweep;
+        var (firstShift, secondShift) = round / RaceSweep % 2 == 0 ? (shift, 0) : (0, shift);
+        using var start = new Barrier(2);
+        await Task.WhenAll(
+            Task.Run(async () => { start.SignalAndWait(); Thread.SpinWait(firstShift); await first(); }),
+            Task.Run(async () => { start.SignalAndWait(); Thread.SpinWait(secondShift); await second(); }));
+    }
+
+    private static List<int> PartiesHolding(SessionManager sessionManager, UserSession player, params int[] indexes) =>
+        [.. indexes.Distinct().Where(index => sessionManager.Parties.GetParty(index)?.FindMember((short)player.CharacterId) >= 0)];
 
     private static Packet Permit(bool accept)
     {
@@ -398,7 +560,7 @@ public class PartyWireTests : GameTestBase
         client.Id.Returns(Guid.NewGuid());
         client.CharacterId.Returns(characterId);
         if (sent != null)
-            client.SendPacket(Arg.Do<Packet>(sent.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+            client.SendPacket(Arg.Do<Packet>(packet => { lock (sent) sent.Add(packet); }), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         else
             client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 

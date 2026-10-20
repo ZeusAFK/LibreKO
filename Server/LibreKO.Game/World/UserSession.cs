@@ -316,8 +316,10 @@ public class UserSession
 
     public bool IsInParty => PartyIndex >= 0;
 
-    // A player starts a party only from outside every party.
-    public bool TryStartParty(int index) => Interlocked.CompareExchange(ref partyIndex, index, -1) == -1;
+    // A player enters a party only from outside every party, and leaves only the party they are in.
+    public bool TryEnterParty(int index) => Interlocked.CompareExchange(ref partyIndex, index, -1) == -1;
+
+    public bool TryLeaveParty(int index) => Interlocked.CompareExchange(ref partyIndex, -1, index) == index;
 
     private int invitedToParty = -1;
 

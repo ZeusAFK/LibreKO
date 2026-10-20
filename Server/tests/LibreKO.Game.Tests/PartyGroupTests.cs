@@ -70,12 +70,24 @@ public class PartyGroupTests
     }
 
     [Fact]
-    public void APlayerInAPartyStartsNoOther()
+    public void APlayerInAPartyEntersNoOther()
     {
         var session = new UserSession(NSubstitute.Substitute.For<LibreKO.Common.Infrastructure.Network.IClient>(), Leader, Leader);
 
-        session.TryStartParty(1).Should().BeTrue();
-        session.TryStartParty(2).Should().BeFalse();
+        session.TryEnterParty(1).Should().BeTrue();
+        session.TryEnterParty(2).Should().BeFalse();
         session.PartyIndex.Should().Be(1);
+    }
+
+    [Fact]
+    public void APlayerLeavesOnlyThePartyTheyAreIn()
+    {
+        var session = new UserSession(NSubstitute.Substitute.For<LibreKO.Common.Infrastructure.Network.IClient>(), Leader, Leader);
+        session.TryEnterParty(1);
+
+        session.TryLeaveParty(2).Should().BeFalse("a party the player already left cannot clear the one they are in now");
+        session.PartyIndex.Should().Be(1);
+        session.TryLeaveParty(1).Should().BeTrue();
+        session.IsInParty.Should().BeFalse();
     }
 }

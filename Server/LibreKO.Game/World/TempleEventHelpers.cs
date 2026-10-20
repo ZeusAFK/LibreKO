@@ -25,18 +25,10 @@ public static class TempleEventHelpers
             await LeavePreviousPartyIfAnyAsync(sessionManager, combatNotificationService, session);
         }
 
-        var leader = sessions[0];
-        var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
-        leader.PartyIndex = party.Index;
-        leader.IsPartyLeader = true;
-
-        for (var i = 1; i < sessions.Count && i < PartyGroup.MaxMembers; i++)
-        {
-            var member = sessions[i];
-            party.MemberIds[i] = (short)member.CharacterId;
-            member.PartyIndex = party.Index;
-            member.IsPartyLeader = false;
-        }
+        var party = SeatParty(sessionManager, sessions);
+        if (party == null)
+            return -1;
+        var leader = sessions.First(session => session.CharacterId == party.LeaderId);
 
         for (var i = 0; i < PartyGroup.MaxMembers; i++)
         {
@@ -70,6 +62,36 @@ public static class TempleEventHelpers
         return party.Index;
     }
 
+    // A player who joined another party meanwhile stays in it; the first one still free leads.
+    private static PartyGroup? SeatParty(SessionManager sessionManager, List<UserSession> sessions)
+    {
+        PartyGroup? party = null;
+        foreach (var session in sessions)
+        {
+            if (party == null)
+            {
+                var formed = sessionManager.Parties.CreateParty((short)session.CharacterId);
+                if (!session.TryEnterParty(formed.Index))
+                {
+                    sessionManager.Parties.DeleteParty(formed.Index);
+                    continue;
+                }
+
+                party = formed;
+                session.IsPartyLeader = true;
+            }
+            else if (session.TryEnterParty(party.Index))
+            {
+                if (party.TryJoin((short)session.CharacterId))
+                    session.IsPartyLeader = false;
+                else
+                    session.TryLeaveParty(party.Index);
+            }
+        }
+
+        return party;
+    }
+
     public static PartyPacketWriter.MemberState MemberStateOf(UserSession session) => new(
         session.CharacterId,
         session.Name,
@@ -88,9 +110,10 @@ public static class TempleEventHelpers
         if (!session.IsInParty)
             return;
 
-        var party = sessionManager.Parties.GetParty(session.PartyIndex);
-        session.PartyIndex = -1;
-        session.IsPartyLeader = false;
+        var index = session.PartyIndex;
+        var party = sessionManager.Parties.GetParty(index);
+        if (session.TryLeaveParty(index))
+            session.IsPartyLeader = false;
 
         if (party == null)
             return;
@@ -104,12 +127,8 @@ public static class TempleEventHelpers
             await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
             foreach (var memberId in members)
             {
-                var m = sessionManager.GetByCharacterId(memberId);
-                if (m != null)
-                {
-                    m.PartyIndex = -1;
+                if (sessionManager.GetByCharacterId(memberId) is { } m && m.TryLeaveParty(party.Index))
                     m.IsPartyLeader = false;
-                }
             }
         }
         else if (party.TryLeave((short)session.CharacterId))
@@ -135,12 +154,8 @@ public static class TempleEventHelpers
         await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
         foreach (var memberId in members)
         {
-            var member = sessionManager.GetByCharacterId(memberId);
-            if (member != null)
-            {
-                member.PartyIndex = -1;
+            if (sessionManager.GetByCharacterId(memberId) is { } member && member.TryLeaveParty(partyIndex))
                 member.IsPartyLeader = false;
-            }
         }
     }
 

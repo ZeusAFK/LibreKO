@@ -664,106 +664,9 @@ public sealed class JuraidMountainService(
         return true;
     }
 
-    private async Task<int> FormNationPartyAsync(JuraidMatch match, List<UserSession> sessions)
-    {
-        if (sessions.Count < 2)
-            return -1;
-
-        foreach (var session in sessions)
-        {
-            await LeavePreviousPartyIfAnyAsync(session);
-        }
-
-        var leader = sessions[0];
-        var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
-        leader.PartyIndex = party.Index;
-        leader.IsPartyLeader = true;
-
-        for (int i = 1; i < sessions.Count && i < PartyGroup.MaxMembers; i++)
-        {
-            var member = sessions[i];
-            party.MemberIds[i] = (short)member.CharacterId;
-            member.PartyIndex = party.Index;
-            member.IsPartyLeader = false;
-        }
-
-        for (int i = 0; i < PartyGroup.MaxMembers; i++)
-        {
-            if (party.MemberIds[i] < 0)
-                continue;
-
-            var memberSession = sessionManager.GetByCharacterId(party.MemberIds[i]);
-            if (memberSession == null)
-                continue;
-
-            byte statusCode = (memberSession == leader)
-                ? PartyPacketWriter.MemberPromotedToLeader
-                : PartyPacketWriter.MemberJoined;
-
-            var memberPacket = PartyPacketWriter.MemberInfo(MemberStateOf(memberSession), statusCode);
-            await combatNotificationService.SendToPartyAsync(party, memberPacket);
-            await combatNotificationService.SendPartyBuffsAsync(memberSession);
-            await partyLevelProgress.AnnounceAsync(memberSession);
-        }
-
-        var partyCount = party.MemberCount;
-        var noticePacket = ChatPacketWriter.SystemNotice(
-            (byte)leader.Nation,
-            $"[Juraid Mountain] Party formed with {partyCount} members! Leader: {leader.Name}");
-
-        await combatNotificationService.SendToPartyAsync(party, noticePacket);
-
-        logger.LogInformation("Formed Juraid Mountain auto-party {PartyIndex} for {Nation} in room {Room} with {Count} members (Leader: {Leader})",
-            party.Index, leader.Nation, match.RoomId, partyCount, leader.Name);
-
-        return party.Index;
-    }
-
-    private static PartyPacketWriter.MemberState MemberStateOf(UserSession session) => new(
-        session.CharacterId,
-        session.Name,
-        session.Level,
-        session.Class,
-        session.MaxHp,
-        session.Hp,
-        session.MaxMp,
-        session.Mp);
-
-    private async Task LeavePreviousPartyIfAnyAsync(UserSession session)
-    {
-        if (!session.IsInParty)
-            return;
-
-        var party = sessionManager.Parties.GetParty(session.PartyIndex);
-        session.PartyIndex = -1;
-        session.IsPartyLeader = false;
-
-        if (party == null)
-            return;
-
-        if (party.MemberCount <= 2 || party.LeaderId == (short)session.CharacterId)
-        {
-            var members = sessionManager.Parties.DeleteParty(party.Index);
-            if (members == null)
-                return;
-
-            await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
-            foreach (var memberId in members)
-            {
-                var m = sessionManager.GetByCharacterId(memberId);
-                if (m != null)
-                {
-                    m.PartyIndex = -1;
-                    m.IsPartyLeader = false;
-                }
-            }
-        }
-        else if (party.TryLeave((short)session.CharacterId))
-        {
-            var removePkt = PartyPacketWriter.MemberLeft(session.CharacterId);
-            await combatNotificationService.SendToPartyAsync(party, removePkt);
-        }
-    }
+    private Task<int> FormNationPartyAsync(JuraidMatch match, List<UserSession> sessions) =>
+        TempleEventHelpers.FormNationPartyAsync(
+            sessionManager, combatNotificationService, partyLevelProgress, sessions, "Juraid Mountain", match.RoomId, logger);
 
     private async Task DisbandPartyAsync(int partyIndex)
     {
@@ -780,12 +683,8 @@ public sealed class JuraidMountainService(
         await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
         foreach (var memberId in members)
         {
-            var member = sessionManager.GetByCharacterId(memberId);
-            if (member != null)
-            {
-                member.PartyIndex = -1;
+            if (sessionManager.GetByCharacterId(memberId) is { } member && member.TryLeaveParty(partyIndex))
                 member.IsPartyLeader = false;
-            }
         }
     }
 }
