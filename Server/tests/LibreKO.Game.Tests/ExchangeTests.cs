@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -120,6 +120,7 @@ public class ExchangeTests : GameTestBase
         asker.Trade.ExchangeUser = partner.CharacterId;
         asker.Trade.AskedForExchange = true;
         partner.Trade.ExchangeUser = asker.CharacterId;
+        asker.Trade.ExchangeAccepted = partner.Trade.ExchangeAccepted = true;
 
         return (asker, partner, askerClient, partnerClient);
     }

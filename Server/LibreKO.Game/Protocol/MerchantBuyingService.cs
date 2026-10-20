@@ -311,7 +311,7 @@ public class MerchantBuyingService(
         if (session.Hp <= 0)
             return BuyingMerchantResult.WhileDead;
 
-        if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing)
+        if (session.IsBusy)
             return BuyingMerchantResult.WhileMerchanting;
 
         if (!ExchangePacketConstants.IsWithinTradeRange(session, merchant))

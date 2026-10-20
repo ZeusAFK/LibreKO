@@ -70,7 +70,7 @@ public class ExchangeTransferService(
         // The offer is taken out of the bag into escrow, so nothing is left behind in the slot.
         var outcome = session.WithLock(s =>
         {
-            if (s.Trade.ExchangeOk || s.Trade.ExchangeUser != target.CharacterId)
+            if (s.Trade.ExchangeOk || !s.Trade.ExchangeAccepted || s.Trade.ExchangeUser != target.CharacterId)
                 return (Success: false, Duration: (short)0, UniqueId: 0);
 
             if (itemId == InventoryConstants.ItemGold)
@@ -173,6 +173,12 @@ public class ExchangeTransferService(
                 return;
             }
 
+            if (!sa.Trade.ExchangeAccepted || !sb.Trade.ExchangeAccepted)
+            {
+                outcome = DecideOutcome.Early;
+                return;
+            }
+
             if (!sb.Trade.ExchangeOk)
             {
                 sa.Trade.ExchangeOk = true;
@@ -225,6 +231,10 @@ public class ExchangeTransferService(
                 await exchangeLifecycleService.SettleReturnAsync(target, returnedTarget);
                 break;
 
+            case DecideOutcome.Stale:
+                await exchangeLifecycleService.CancelAsync(session);
+                break;
+
             case DecideOutcome.Done:
                 logger.LogInformation("Exchange completed between {Name} ({ItemCount} items) and {TargetName} ({TargetItemCount} items)",
                     session.Name, sessionItemCount, target.Name, targetItemCount);
@@ -238,7 +248,7 @@ public class ExchangeTransferService(
         }
     }
 
-    private enum DecideOutcome { Wait, Fail, Done, Stale }
+    private enum DecideOutcome { Wait, Fail, Done, Stale, Early }
 
     private async Task SendDoneCapturedAsync(UserSession receiver, int money, List<ExchangeItem> items)
     {

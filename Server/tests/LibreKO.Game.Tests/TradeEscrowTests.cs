@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
@@ -27,6 +27,9 @@ public class TradeEscrowTests : GameTestBase
     private const ushort PotionStack = 5;
     private const long SwordExpiry = 1_900_000_000;
     private const long OldPotionExpiry = 1_800_000_000;
+    private const int SomeoneElse = 92003;
+    private const int Purse = 1_000;
+    private const int OfferedGold = 400;
 
     [Fact]
     public async Task AnOfferedStackLeavesTheBagInsteadOfAPlaceholder()
@@ -328,7 +331,7 @@ public class TradeEscrowTests : GameTestBase
     }
 
     [Fact]
-    public async Task ADeclinedRequestGivesBackWhatWasOfferedBeforeTheAnswer()
+    public async Task NothingCanBeOfferedBeforeTheRequestIsAnswered()
     {
         using var provider = CreateProvider(_ => { }, StockItems);
         var sessionManager = provider.GetRequiredService<SessionManager>();
@@ -343,6 +346,7 @@ public class TradeEscrowTests : GameTestBase
         request.WriteInt(TakerId);
         await SendAsync(provider, askerClient, request);
         await SendAsync(provider, askerClient, AddPacket(PotionPos, Potion, PotionStack));
+        asker.Trade.ExchangeItemList.Should().BeEmpty("the partner has not opened the trade yet");
 
         var decline = new Packet(GameOpcodes.GS_EXCHANGE);
         decline.WriteByte(ExchangePacketConstants.ExchangeAgree);
@@ -352,6 +356,140 @@ public class TradeEscrowTests : GameTestBase
         CountInBag(asker, Potion).Should().Be(PotionStack);
         asker.Trade.ExchangeItemList.Should().BeEmpty();
         asker.Trade.IsTrading.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AConfirmSentBeforeTheTradeIsAcceptedCountsForNothing()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var askerClient = MakeClient();
+        var partnerClient = MakeClient();
+        var asker = MakeSession(sessionManager, askerClient, GiverId);
+        var partner = MakeSession(sessionManager, partnerClient, TakerId);
+        StockPotions(partner);
+
+        await SendAsync(provider, askerClient, RequestPacket(TakerId));
+        await SendAsync(provider, askerClient, DecidePacket());
+        await SendAsync(provider, partnerClient, AgreePacket(1));
+        await SendAsync(provider, partnerClient, AddPacket(PotionPos, Potion, PotionStack));
+        await SendAsync(provider, partnerClient, DecidePacket());
+
+        CountInBag(asker, Potion).Should().Be(0, "the asker's early confirm must not close the trade the partner just filled");
+        partner.Trade.ExchangeItemList.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task APartnerIsNotToldOfAConfirmBeforeTheyAccept()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var askerClient = MakeClient();
+        var partnerClient = MakeClient();
+        MakeSession(sessionManager, askerClient, GiverId);
+        MakeSession(sessionManager, partnerClient, TakerId);
+
+        await SendAsync(provider, askerClient, RequestPacket(TakerId));
+        await SendAsync(provider, askerClient, DecidePacket());
+
+        Sent(partnerClient).Should().NotContain(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE
+            && FirstByte(p) == ExchangePacketConstants.ExchangeOtherDecide);
+    }
+
+    [Fact]
+    public async Task AnAcceptThatFindsTheAskerGoneElsewhereClosesTheWindow()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var askerClient = MakeClient();
+        var partnerClient = MakeClient();
+        var asker = MakeSession(sessionManager, askerClient, GiverId);
+        var partner = MakeSession(sessionManager, partnerClient, TakerId);
+        await SendAsync(provider, askerClient, RequestPacket(TakerId));
+        asker.Trade.ExchangeUser = SomeoneElse;
+
+        await SendAsync(provider, partnerClient, AgreePacket(1));
+
+        partner.Trade.IsTrading.Should().BeFalse();
+        Sent(partnerClient).Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE
+            && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
+    }
+
+    [Fact]
+    public async Task AConfirmOnATradeThePartnerHasLeftClosesTheWindow()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (giver, taker, giverClient, _) = OpenTrade(provider);
+        StockPotions(giver);
+        await SendAsync(provider, giverClient, AddPacket(PotionPos, Potion, PotionStack));
+        taker.Trade.ExchangeUser = SomeoneElse;
+
+        await SendAsync(provider, giverClient, DecidePacket());
+
+        giver.Trade.IsTrading.Should().BeFalse();
+        CountInBag(giver, Potion).Should().Be(PotionStack);
+        Sent(giverClient).Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE
+            && FirstByte(p) == ExchangePacketConstants.ExchangeCancel);
+    }
+
+    [Fact]
+    public async Task AnOfferThatComesBackToTheWarehouseIsAnnounced()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (giver, _, giverClient, _) = OpenTrade(provider);
+        StockSword(giver);
+        await SendAsync(provider, giverClient, AddPacket(SwordPos, Sword, 1));
+        foreach (var slot in BagSlots(giver))
+        {
+            slot.ItemId = Potion;
+            slot.Count = 1;
+        }
+        var before = Sent(giverClient).Count;
+
+        await SendAsync(provider, giverClient, CancelPacket());
+
+        giver.Warehouse.Should().Contain(slot => slot.ItemId == Sword);
+        Sent(giverClient).Skip(before).Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_CHAT,
+            "the player is told where the item went instead of watching it vanish");
+    }
+
+    [Fact]
+    public async Task ASaveDuringATradeKeepsWhatIsOffered()
+    {
+        using var provider = CreateProvider(_ => { }, StockItems);
+        var (giver, _, giverClient, _) = OpenTrade(provider);
+        StockSword(giver);
+        giver.Money = Purse;
+        await SendAsync(provider, giverClient, AddPacket(SwordPos, Sword, 1));
+        await SendAsync(provider, giverClient, AddPacket(0, InventoryConstants.ItemGold, OfferedGold));
+
+        var saved = new Character();
+        new UserSessionCharacterMapper().ApplyToCharacter(giver, saved);
+
+        var items = new ItemSlot[InventoryConstants.InventoryTotal];
+        for (var i = 0; i < items.Length; i++)
+            items[i] = new ItemSlot();
+        UserSessionBinaryState.LoadItems(items, saved.Items);
+        items[InventoryConstants.InventoryStart + SwordPos].ItemId.Should().Be(Sword, "a crash mid-trade must not lose the offer");
+        items[InventoryConstants.InventoryStart + SwordPos].ExpiresAt.Should().Be(SwordExpiry);
+        saved.Money.Should().Be(Purse);
+        BagSlot(giver, SwordPos).IsEmpty.Should().BeTrue("the live bag still has the offer in escrow");
+    }
+
+    private static Packet RequestPacket(int partnerId)
+    {
+        var packet = new Packet(GameOpcodes.GS_EXCHANGE);
+        packet.WriteByte(ExchangePacketConstants.ExchangeRequest);
+        packet.WriteInt(partnerId);
+        return packet;
+    }
+
+    private static Packet AgreePacket(byte agreed)
+    {
+        var packet = new Packet(GameOpcodes.GS_EXCHANGE);
+        packet.WriteByte(ExchangePacketConstants.ExchangeAgree);
+        packet.WriteByte(agreed);
+        return packet;
     }
 
     private static void StockItems(IGameDataService gameData)

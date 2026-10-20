@@ -1023,5 +1023,6 @@ public class TradeTests : GameTestBase
     {
         a.Trade.ExchangeUser = b.CharacterId;
         b.Trade.ExchangeUser = a.CharacterId;
+        a.Trade.ExchangeAccepted = b.Trade.ExchangeAccepted = true;
     }
 }

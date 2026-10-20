@@ -144,7 +144,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         character.StatPoints = session.StatPoints;
         character.Money = session.SavedMoney;
         character.Experience = session.Experience;
-        character.Items = session.SerializeItems();
+        character.Items = session.SavedItems;
         character.SkillData = session.SkillData;
         character.SkillPointData = (byte[])session.SkillPoints.Clone();
         character.Bind = session.Quest.BindPoint;
@@ -205,7 +205,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
 
     public void ApplyToWarehouse(UserSession session, Warehouse warehouse)
     {
-        warehouse.Items = session.SerializeWarehouse();
+        warehouse.Items = session.SavedWarehouse;
         warehouse.Money = session.SavedWarehouseMoney;
     }
 

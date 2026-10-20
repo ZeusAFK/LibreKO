@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 namespace LibreKO.Game.World;
 
@@ -11,6 +11,7 @@ public sealed class ExchangeReturn
     public int GoldToPurse { get; set; }
     public int GoldToWarehouse { get; set; }
     public long GoldLost { get; set; }
+    public int ItemsToWarehouse { get; set; }
     public List<ExchangeItem> Unplaced { get; } = [];
 
     public void LogLosses(ILogger logger, string owner)

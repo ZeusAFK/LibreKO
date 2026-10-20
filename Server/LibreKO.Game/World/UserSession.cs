@@ -667,11 +667,12 @@ public class UserSession
             }
         }
         Trade.ExchangeItemList.Clear();
+        Trade.ExchangeOk = false;
+        Trade.ExchangeAccepted = start;
 
         if (!start)
         {
             Trade.ExchangeUser = -1;
-            Trade.ExchangeOk = false;
             Trade.AskedForExchange = false;
         }
 
@@ -700,6 +701,8 @@ public class UserSession
             return false;
 
         ItemPlacement.Put(Warehouse[slot], item);
+        if (returned != null)
+            returned.ItemsToWarehouse++;
         return true;
     }
 
@@ -714,9 +717,49 @@ public class UserSession
     // The purse and warehouse gold as they are saved: gold a buying stall holds is still the
     // owner's, split the way closing the stall would split it. Read under the lock so a stall
     // opening or closing meanwhile is counted once.
-    public int SavedMoney => WithLock(s => s.Money + s.SplitHeldGold(s.Trade.BuyMerchantGold).ToPurse);
+    public int SavedMoney => WithLock(s => s.Money + s.SplitHeldGold(s.HeldGold).ToPurse);
 
-    public int SavedWarehouseMoney => WithLock(s => s.WarehouseMoney + s.SplitHeldGold(s.Trade.BuyMerchantGold).ToWarehouse);
+    public int SavedWarehouseMoney => WithLock(s => s.WarehouseMoney + s.SplitHeldGold(s.HeldGold).ToWarehouse);
+
+    public byte[] SavedItems => WithLock(s => UserSessionBinaryState.SerializeItems(s.AsIfOffersCameBack().Bag));
+
+    public byte[] SavedWarehouse => WithLock(s => UserSessionBinaryState.SerializeWarehouse(s.AsIfOffersCameBack().Store));
+
+    private long HeldGold => Trade.BuyMerchantGold
+        + Trade.ExchangeItemList.Where(item => item.ItemId == InventoryConstants.ItemGold).Sum(item => (long)item.Count);
+
+    private (ItemSlot[] Bag, ItemSlot[] Store) AsIfOffersCameBack()
+    {
+        var bag = Copies(Inventory);
+        var store = Copies(Warehouse);
+        foreach (var item in Trade.ExchangeItemList.Where(item => item.ItemId != InventoryConstants.ItemGold))
+        {
+            var slot = ItemPlacement.FindForReturn(bag, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item, item.SrcPos);
+            if (slot >= 0)
+            {
+                ItemPlacement.Put(bag[slot], item);
+                continue;
+            }
+
+            slot = ItemPlacement.FindForReturn(store, 0, WarehouseMax, item);
+            if (slot >= 0)
+                ItemPlacement.Put(store[slot], item);
+        }
+
+        return (bag, store);
+    }
+
+    private static ItemSlot[] Copies(ItemSlot[] slots)
+    {
+        var copies = new ItemSlot[slots.Length];
+        for (var i = 0; i < slots.Length; i++)
+        {
+            copies[i] = new ItemSlot();
+            InventoryJournal.CopyInto(slots[i], copies[i]);
+        }
+
+        return copies;
+    }
 
     // Gold held aside (an offer in a trade, a buying stall's purse) goes back into the purse up to
     // the coin cap and the rest into the warehouse, so a purse that grew meanwhile loses none of

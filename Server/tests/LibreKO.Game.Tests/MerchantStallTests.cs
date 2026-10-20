@@ -101,6 +101,23 @@ public class MerchantStallTests : GameTestBase
     public enum BusyAs { Trading, Merchanting, Mining, Dead }
 
     [Fact]
+    public async Task ASellerWhoIsGatheringCannotSellIntoABuyingStall()
+    {
+        using var market = new Market();
+        var owner = market.Player(96061, gold: Price);
+        await market.OpenBuyingStallAsync(owner, (Ware, 1, Price));
+        var seller = market.Player(96062, gold: 0);
+        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        Stock(Bag(seller, BagPos), Ware, 1);
+        seller.IsMining = true;
+
+        await market.SellAsync(seller, BagPos, 1);
+
+        CountIn(seller, Ware).Should().Be(1);
+        seller.Money.Should().Be(0);
+    }
+
+    [Fact]
     public async Task ABuyerInAnotherRoomBuysNothing()
     {
         using var market = new Market();

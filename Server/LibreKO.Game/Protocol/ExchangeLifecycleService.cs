@@ -82,8 +82,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
                 && !ZoneRules.Allows(session.ZoneId, ZoneFlags.TradeOtherNation)))
         {
             returnedSession = session.WithLock(s => s.InitExchange(false));
-            if (target.Trade.ExchangeUser == session.CharacterId)
-                returnedTarget = target.WithLock(t => t.InitExchange(false));
+            returnedTarget = target.WithLock(t => t.Trade.ExchangeUser == session.CharacterId ? t.InitExchange(false) : null);
             agreed = 0;
         }
         else
@@ -98,7 +97,12 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
                 returnedTarget = t.InitExchange(true);
             });
             if (!paired)
+            {
+                var stale = session.WithLock(s => s.Trade.IsTrading ? s.InitExchange(false) : null);
+                await SendCancelAsync(session);
+                await SettleReturnAsync(session, stale);
                 return;
+            }
         }
 
         await target.Client.SendPacket(ExchangePacketWriter.Result(
@@ -159,6 +163,10 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
                 (s.Inventory[index].ItemId, s.Inventory[index].Count, s.Inventory[index].Durability));
             await userNotificationService.SendStackChangeAsync(session, (byte)index, itemId, count, durability);
         }
+
+        if (returned.ItemsToWarehouse > 0)
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{returned.ItemsToWarehouse} offered item(s) did not fit in your bag and went to your warehouse."));
 
         if (returned.GoldToWarehouse > 0)
         {

@@ -1,4 +1,4 @@
-using LibreKO.Game.Protocol;
+﻿using LibreKO.Game.Protocol;
 
 namespace LibreKO.Game.World;
 
@@ -10,6 +10,7 @@ public class TradeState
     public int ExchangeUser { get; set; } = -1;
     public bool ExchangeOk { get; set; }
     public bool AskedForExchange { get; set; }
+    public bool ExchangeAccepted { get; set; }
     public List<ExchangeItem> ExchangeItemList { get; } = [];
     public bool IsTrading => ExchangeUser != -1;
 
