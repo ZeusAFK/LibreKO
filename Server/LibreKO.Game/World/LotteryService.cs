@@ -86,14 +86,12 @@ public class LotteryService : ILotteryService
     {
         ActiveLottery? current;
         Dictionary<int, int>? refundSnapshot = null;
+        // Whoever takes the lottery off the board settles it, once.
         lock (stateLock)
         {
             current = active;
             if (current == null) return;
-            if (cancelWithoutWinners)
-            {
-                active = null;
-            }
+            active = null;
         }
 
         if (cancelWithoutWinners)
@@ -247,7 +245,8 @@ public class LotteryService : ILotteryService
             var rem = active.RemainingSeconds;
             if (rem <= 0)
             {
-                await FinishAsync(active);
+                if (TakeOffTheBoard(active))
+                    await FinishAsync(active);
                 return;
             }
 
@@ -288,13 +287,19 @@ public class LotteryService : ILotteryService
         }
     }
 
-    private async Task FinishAsync(ActiveLottery active)
+    private bool TakeOffTheBoard(ActiveLottery expected)
     {
         lock (stateLock)
         {
-            if (this.active == active) this.active = null;
+            if (active != expected)
+                return false;
+            active = null;
+            return true;
         }
+    }
 
+    private async Task FinishAsync(ActiveLottery active)
+    {
         List<(int CharacterId, string CharacterName)> ticketSnapshot;
         lock (active.Lock)
         {

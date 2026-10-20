@@ -20,6 +20,8 @@ public class LotteryTests : GameTestBase
     private const int BobId = 20;
     private const int GoldBarId = 379068000;
     private const int SilverBarId = 379067000;
+    private const int Closers = 16;
+    private const int Rounds = 40;
 
     private static readonly LotteryEventData SampleLottery = new()
     {
@@ -190,6 +192,31 @@ public class LotteryTests : GameTestBase
         secondMail.Should().NotBeNull();
         secondMail!.Attachments.Should().HaveCount(1);
         secondMail.Attachments[0].ItemId.Should().Be(SilverBarId);
+    }
+
+    [Fact]
+    public async Task ADrawAndACancelMeetingSettleTheLotteryOnce()
+    {
+        using var provider = Provider();
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        alice.Money = 500_000;
+        var lottery = provider.GetRequiredService<ILotteryService>();
+        for (var round = 0; round < Rounds; round++)
+        {
+            alice.Money = 500_000;
+            await lottery.StartAsync(1);
+            await lottery.BuyTicketAsync(alice);
+            using var start = new Barrier(Closers);
+            await Task.WhenAll(Enumerable.Range(0, Closers).Select(closer => Task.Run(() =>
+            {
+                start.SignalAndWait();
+                return lottery.CloseAsync(cancelWithoutWinners: closer % 2 == 0);
+            })));
+        }
+
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync())
+            .Should().Be(Rounds, "each lottery pays its prize or its refund, not both and not twice");
     }
 
     [Fact]
