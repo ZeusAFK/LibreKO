@@ -110,6 +110,59 @@ public class JobChangeTests : GameTestBase
         }
     }
 
+    public enum Tie { Trading, Stunned, Fighting }
+
+    [Theory]
+    [InlineData(Tie.Trading)]
+    [InlineData(Tie.Stunned)]
+    [InlineData(Tie.Fighting)]
+    public async Task APlayerTiedUpWhileTheChangeWaitsKeepsTheJobAndTheToken(Tie tie)
+    {
+        UserSession? player = null;
+        var meanwhile = new DuringWarehouseRead
+        {
+            Meanwhile = () =>
+            {
+                switch (tie)
+                {
+                    case Tie.Trading:
+                        player!.Trade.ExchangeUser = PlayerId + 1;
+                        break;
+                    case Tie.Stunned:
+                        player!.SetBuff(StunRow, new ActiveBuff
+                        {
+                            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+                        });
+                        break;
+                    case Tie.Fighting:
+                        player!.MarkCombat();
+                        break;
+                }
+            },
+        };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(meanwhile)));
+        player = Player(provider);
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().Be(Warrior);
+        Token(player).ItemId.Should().Be(InventoryConstants.ItemJobChange);
+    }
+
+    [Fact]
+    public async Task ATokenThatLeavesTheBagMidChangeChangesNothing()
+    {
+        UserSession? player = null;
+        var sale = new DuringWarehouseRead { Meanwhile = () => Token(player!).Clear() };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(sale)));
+        player = Player(provider);
+
+        await provider.GetRequiredService<IJobChangeService>().HandlePromoteNoviceAsync(player, Master, Rogue);
+
+        player.Class.Should().Be(Warrior, "the token went elsewhere, so it paid for no job");
+        (await StoredAsync(provider)).Class.Should().Be(Warrior);
+    }
+
     [Fact]
     public async Task AHeldPlayerCannotChangeJob()
     {

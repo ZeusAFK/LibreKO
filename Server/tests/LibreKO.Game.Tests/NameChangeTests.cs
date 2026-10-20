@@ -119,6 +119,21 @@ public class NameChangeTests : GameTestBase
     }
 
     [Fact]
+    public async Task AScrollThatLeavesTheBagMidClanRenameRenamesNothing()
+    {
+        UserSession? chief = null;
+        var sale = new DuringQuery { Root = typeof(KnightsEntity), Meanwhile = () => Scroll(chief!).Clear() };
+        using var provider = Provider(configure: services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(sale)));
+        (chief, _) = Chief(provider);
+
+        await Rename(provider, chief, ClanRename, NewClan);
+
+        provider.GetRequiredService<SessionManager>().Knights.GetClan(ClanId)!.Name.Should().Be(OldClan,
+            "the scroll went to a buyer, so it paid for no rename");
+        (await StoredClanAsync(provider)).Name.Should().Be(OldClan);
+    }
+
+    [Fact]
     public async Task ARenameWhoseSaveFailsKeepsTheNameAndTheScroll()
     {
         var faults = new SaveFaults();
@@ -363,11 +378,12 @@ public class NameChangeTests : GameTestBase
     private sealed class DuringQuery : IQueryExpressionInterceptor
     {
         public Action Meanwhile { get; init; } = () => { };
+        public Type Root { get; init; } = typeof(Character);
 
         public Expression QueryCompilationStarting(Expression queryExpression, QueryExpressionEventData eventData)
         {
             if (queryExpression is MethodCallExpression { Arguments: [EntityQueryRootExpression root, ..] }
-                && root.EntityType.ClrType == typeof(Character) && queryExpression.Type == typeof(bool))
+                && root.EntityType.ClrType == Root && queryExpression.Type == typeof(bool))
                 Meanwhile();
             return queryExpression;
         }
