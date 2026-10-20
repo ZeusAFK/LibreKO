@@ -214,8 +214,7 @@ public class NationTransferService(
 
     private async Task<(byte Refusal, IReadOnlyList<Character> Characters)> CheckAsync(UserSession session)
     {
-        if (session.Hp <= 0 || session.Trade.IsTrading || session.Trade.IsMerchanting
-            || session.Trade.IsMerchantPreparing || session.IsGathering || session.NationTransferCommitted)
+        if (session.IsBusy || session.NationTransferCommitted || session.ZoneId == (byte)ZoneId.Prison)
             return (NationTransferPacketWriter.Failed, []);
         if (!magicItemUsageService.CanUseItem(session, NationTransferItem))
             return (NationTransferPacketWriter.NoItem, []);

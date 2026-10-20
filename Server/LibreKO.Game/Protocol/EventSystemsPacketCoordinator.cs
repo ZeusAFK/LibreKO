@@ -267,18 +267,20 @@ public class EventSystemsPacketCoordinator(
         await sessionManager.BroadcastToAll(EventPacketWriter.TempleSignUps(contest, karus, elMorad));
     }
 
+    // Leaving an event takes a player out only when they are free and out of a fight.
     private async Task HandleTempleEventDisbandAsync(UserSession session)
     {
         var leftSignUp = eventSchedulerService.LeaveTempleEvent(session.CharacterId);
 
-        if (session.InstanceReturn is { } returnPoint)
+        var mayLeave = !session.IsBusy && !session.IsHeld && !session.IsInCombat;
+        if (mayLeave && session.InstanceReturn is { } returnPoint)
         {
             logger.LogInformation("Player {Name} left instance room {Room}. Warping to return point ({Zone}, {X}, {Z})",
                 session.Name, session.Room, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
             instanceRooms.Leave(session);
             await zoneTransitionService.ChangeZoneAsync(session, returnPoint.ZoneId, returnPoint.X, returnPoint.Z);
         }
-        else if (CharacterReconnectZoneRepair.IsEventZone(session.ZoneId))
+        else if (mayLeave && CharacterReconnectZoneRepair.IsEventZone(session.ZoneId))
         {
             logger.LogInformation("Player {Name} left event from zone {Zone}. Warping to Moradon",
                 session.Name, session.ZoneId);

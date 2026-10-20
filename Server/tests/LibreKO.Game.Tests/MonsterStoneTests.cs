@@ -33,6 +33,7 @@ public class MonsterStoneTests
     private const int NestScrap = 810098000;
     private const int DropSlots = 7;
     private static readonly int[] Gates = [7032, 7033, 7034];
+    private const int StunRow = 110560;
 
     [Theory]
     [InlineData(20, new short[] { 1 })]
@@ -210,6 +211,28 @@ public class MonsterStoneTests
 
         rig.Replies(session).Should().ContainSingle().Which.Result.Should().Be(expected);
         await rig.Items.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
+        await rig.Entry.DidNotReceiveWithAnyArgs().EnterAloneAsync(default!, default, default, default, default, default);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task AStoneIsNotAWayOutOfAFight(bool fighting, bool stunned)
+    {
+        var rig = new Rig();
+        var session = rig.Player(level: 60, zone: Moradon, hp: 1000, room: 0);
+        rig.Items.CanUseItem(session, MonsterStoneRules.UniversalStone).Returns(true);
+        if (fighting)
+            session.MarkCombat();
+        if (stunned)
+            session.SetBuff(StunRow, new ActiveBuff
+            {
+                MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+            });
+
+        await rig.Service.UseAsync(session, MonsterStoneRules.UniversalStone);
+
+        rig.Replies(session).Should().ContainSingle().Which.Result.Should().Be(MonsterStoneResult.Failed);
         await rig.Entry.DidNotReceiveWithAnyArgs().EnterAloneAsync(default!, default, default, default, default, default);
     }
 

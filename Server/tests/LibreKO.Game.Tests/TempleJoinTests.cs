@@ -61,6 +61,16 @@ public class TempleJoinTests
     }
 
     [Fact]
+    public async Task APrisonerCannotSignUp()
+    {
+        await scheduler.CallTempleEventAsync(TempleEvent.ForgottenTemple, JoinWindow, minLevel: 60, maxLevel: 70);
+        var prisoner = Player(4, 65);
+        prisoner.ZoneId = (byte)ZoneId.Prison;
+
+        scheduler.TryJoinTempleEvent(prisoner).Should().Be(TempleJoinResult.NotOpen, "a sign-up would carry the prisoner out at the start");
+    }
+
+    [Fact]
     public async Task LevelsOutsideTheBandAreRefusedEachWithItsOwnCode()
     {
         await scheduler.CallTempleEventAsync(TempleEvent.ForgottenTemple, JoinWindow, minLevel: 60, maxLevel: 70);

@@ -154,7 +154,7 @@ public sealed class InstanceEntryService(
         {
             if (member.CharacterId == session.CharacterId || member.KnightsId != session.KnightsId)
                 continue;
-            if (member.Room != 0 || member.IsWarping || ZoneRules.IsTempleEvent(member.ZoneId))
+            if (member.Room != 0 || !member.MayBeMovedByOthers || ZoneRules.IsTempleEvent(member.ZoneId))
                 continue;
             yield return member;
         }
@@ -176,7 +176,7 @@ public sealed class InstanceEntryService(
                 continue;
 
             var member = sessionManager.GetByCharacterId(memberId);
-            if (member != null && member.ZoneId == session.ZoneId && !member.IsWarping)
+            if (member != null && member.ZoneId == session.ZoneId && member.MayBeMovedByOthers)
                 yield return member;
         }
     }

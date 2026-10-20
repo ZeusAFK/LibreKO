@@ -298,7 +298,7 @@ public sealed class ScriptEffectApplier(
             ? party.MemberIds.Where(id => id >= 0)
                 .Select(id => sessionManager.GetByCharacterId(id))
                 .OfType<UserSession>()
-                .Where(member => member == session || !ZoneRules.IsTempleEvent(member.ZoneId))
+                .Where(member => member == session || (!ZoneRules.IsTempleEvent(member.ZoneId) && member.MayBeMovedByOthers))
                 .ToList()
             : [session];
 
@@ -350,7 +350,8 @@ public sealed class ScriptEffectApplier(
         var (x, z) = ResolveWarpTarget(session, warp);
         var transitions = serviceProvider.GetRequiredService<IZoneTransitionService>();
         var members = serviceProvider.GetRequiredService<SessionManager>().GetAll()
-            .Where(member => member.KnightsId == session.KnightsId && !ZoneRules.IsTempleEvent(member.ZoneId))
+            .Where(member => member.KnightsId == session.KnightsId && !ZoneRules.IsTempleEvent(member.ZoneId)
+                && (member == session || member.MayBeMovedByOthers))
             .ToList();
 
         foreach (var member in members)
