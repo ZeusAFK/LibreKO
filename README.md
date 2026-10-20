@@ -87,8 +87,9 @@ under Project > Export in the Godot editor; the game itself runs from the editor
 Godot exports only the files it recognizes as resources, so set the preset's Resources > Filters to
 export non-resource files to `settings.default.cfg,version.txt,shaders/*.comp,assets/terrain/*/collision.bin`.
 Without the last pattern the exported game has no object collision: characters sink into stairs and
-bridges and walk through walls. The client tests check every preset in `Client/export_presets.cfg`
-for these files.
+bridges and walk through walls. An export split into several packs may ship these files from
+different presets; the client tests check that each of them is in some preset's filter in
+`Client/export_presets.cfg`.
 
 The first import of the assets takes a while. The client connects to `127.0.0.1:15100` by default;
 copy `Client/settings.default.cfg` to `Client/settings.cfg` (created on first run) to change the

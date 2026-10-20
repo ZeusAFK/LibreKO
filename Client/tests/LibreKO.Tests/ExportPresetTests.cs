@@ -23,7 +23,7 @@ public class ExportPresetTests
 
     [Theory]
     [MemberData(nameof(FilesGodotDoesNotImport))]
-    public void EveryExportPresetShipsTheFilesGodotDoesNotImport(string resPath)
+    public void SomeExportPresetShipsEachFileGodotDoesNotImport(string resPath)
     {
         if (!File.Exists(Path.Combine(ClientFiles.Dir(), ExportPresets)))
             return;
@@ -32,9 +32,8 @@ public class ExportPresetTests
             .Select(line => line[IncludeFilterKey.Length..].Trim('"'))
             .ToList();
         Assert.NotEmpty(filters);
-        foreach (string filter in filters)
-            Assert.Contains(filter.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries),
-                pattern => Matches(pattern, resPath) || Matches(pattern, resPath[ResPrefix.Length..]));
+        Assert.Contains(filters, filter => filter.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Any(pattern => Matches(pattern, resPath) || Matches(pattern, resPath[ResPrefix.Length..])));
     }
 
     [Theory]

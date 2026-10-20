@@ -508,7 +508,7 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
         var after = new Vector2(to.X, to.Z);
         foreach (var e in Ents.Values)
         {
-            if (e.Dead || !UnitBlocking.CanBlock(e.Attackable, e.IsMonster, e.NpcType) || !GodotObject.IsInstanceValid(e.Body)) continue;
+            if (e.Dead || !CanBlock(e) || !GodotObject.IsInstanceValid(e.Body)) continue;
             var at = new Vector2(e.Body.Position.X, e.Body.Position.Z);
             if (at.DistanceSquaredTo(after) > UnitBlocking.Reach * UnitBlocking.Reach) continue;
             float height = e.IsNpc ? SkillFxRig.EntityLocalBox(e).Size.Y * e.Body.Scale.Y : UnitBlocking.PlayerHeight;
@@ -516,6 +516,11 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
         }
         return false;
     }
+
+    private bool CanBlock(EntityView e) =>
+        e.IsNpc
+            ? UnitBlocking.NpcCanBlock(e.NpcId, e.Attackable, self.Nation, e.Nation, context.Zone)
+            : UnitBlocking.PlayerCanBlock(e.Attackable, context.Zone);
 
     private const float MoveFacingEpsSq = 0.04f;
     private const float MoveFacingWarpSq = 900f;
