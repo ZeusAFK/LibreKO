@@ -313,7 +313,7 @@ public class BountyPacketCoordinator(
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var found = await db.Characters.AsNoTracking()
-            .Where(c => c.Name == name)
+            .Where(c => c.Name == name && c.DeletionTime == null)
             .Select(c => new { c.Id, c.Name })
             .FirstOrDefaultAsync();
         return found == null ? null : (found.Id, found.Name);

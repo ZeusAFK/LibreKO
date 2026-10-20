@@ -142,6 +142,25 @@ public class BountyTests : GameTestBase
     }
 
     [Fact]
+    public async Task ABountyOnADeletedCharacterIsRefused()
+    {
+        using var provider = CreateProvider(_ => { });
+        var poster = CreatePlayer(provider, 1238, AccountNation.Karus);
+        var target = CreatePlayer(provider, 1239, AccountNation.ElMorad);
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            (await db.Characters.SingleAsync(c => c.Id == target.Session.CharacterId)).DeletionTime = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+        }
+
+        await PostAsync(provider, poster, target.Session.Name, Reward);
+
+        poster.Session.Money.Should().Be(StartingGold, "a deleted character can never be hunted");
+        LastResult(poster, PostSub).Should().Be(BountyPacketWriter.Failed);
+    }
+
+    [Fact]
     public async Task OnlyThePosterWithdrawsABountyAndGetsTheGoldBack()
     {
         using var provider = CreateProvider(_ => { });
