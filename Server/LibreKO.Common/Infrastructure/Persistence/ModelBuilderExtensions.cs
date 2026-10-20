@@ -95,6 +95,7 @@ internal static class ModelBuilderExtensions
         Configure<ForgottenTempleWaveData>(modelBuilder, "ForgottenTempleWaves");
         Configure<BotMerchantData>(modelBuilder, "BotMerchants");
         Configure<UserBotData>(modelBuilder, "UserBots");
+        Configure<SlaveMerchantData>(modelBuilder, "SlaveMerchants");
 
         Configure<Patch>(modelBuilder, "Patches");
         Configure<SeedState>(modelBuilder, "SeedStates");

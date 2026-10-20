@@ -3236,6 +3236,105 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("SiegeWarfare", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.SlaveMerchantData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BotName")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<short>("Class")
+                        .HasColumnType("smallint");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<short>("Direction")
+                        .HasColumnType("smallint");
+
+                    b.Property<long>("EarnedNoah")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("EquipmentJson")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<byte>("Face")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<byte>("Hair")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("varchar(4000)");
+
+                    b.Property<byte>("Level")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("MerchantType")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Nation")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<int>("OwnerAccountId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OwnerCharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OwnerName")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<byte>("Race")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<string>("StallTitle")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("varchar(128)");
+
+                    b.Property<float>("X")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Y")
+                        .HasColumnType("float");
+
+                    b.Property<float>("Z")
+                        .HasColumnType("float");
+
+                    b.Property<byte>("ZoneId")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("OwnerCharacterId");
+
+                    b.ToTable("SlaveMerchants", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.SpecialAuctionLotData", b =>
                 {
                     b.Property<int>("Row")

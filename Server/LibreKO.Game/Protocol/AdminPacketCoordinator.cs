@@ -46,6 +46,7 @@ public class AdminPacketCoordinator(
     INpcSummonService npcSummonService,
     ILotteryService lotteryService,
     IMerchantBotService merchantBotService,
+    ISlaveMerchantService slaveMerchantService,
     IJuraidMountainService juraidMountainService,
     IUnderTheCastleService underTheCastleService,
     IForgottenTempleService forgottenTempleService,
@@ -127,8 +128,13 @@ public class AdminPacketCoordinator(
             : "Krowaz's Dominion is closed. Usage: +krowaz open|close");
     }
 
-    public bool IsOpenToEveryone(string command) =>
-        CommandWord(command) == "setlevel" && settings.Value.PublicDemo.GrantSetLevelToEveryone;
+    public bool IsOpenToEveryone(string command)
+    {
+        var word = CommandWord(command);
+        if (word is "slave" or "slavestatus" or "slaveclaim" or "slaveclose")
+            return true;
+        return word == "setlevel" && settings.Value.PublicDemo.GrantSetLevelToEveryone;
+    }
 
     private static string CommandWord(string command)
     {
@@ -575,6 +581,48 @@ public class AdminPacketCoordinator(
             case "clearmerchantbots":
             case "clearbotmerchants":
                 await merchantBotService.ClearAllBotsAsync(session);
+                break;
+
+            case "slave":
+                if (arg.Equals("claim", StringComparison.OrdinalIgnoreCase))
+                {
+                    await slaveMerchantService.ClaimEarningsAsync(session);
+                }
+                else if (arg.Equals("close", StringComparison.OrdinalIgnoreCase))
+                {
+                    await slaveMerchantService.CloseSlaveAsync(session);
+                }
+                else if (arg.Equals("status", StringComparison.OrdinalIgnoreCase))
+                {
+                    var status = await slaveMerchantService.GetStatusAsync(session);
+                    await SendNoticeAsync(session, status);
+                }
+                else
+                {
+                    var activeBot = slaveMerchantService.GetActiveSlaveByOwner(session.CharacterId);
+                    if (activeBot != null)
+                    {
+                        await slaveMerchantService.SendSlaveStatusAsync(session);
+                    }
+                    else
+                    {
+                        session.IsSlaveMerchantMode = true;
+                        await SendNoticeAsync(session,
+                            "[Slave Merchant] Mode enabled! Open a Selling Merchant stall and click Confirm to deploy your slave bot for 1 hour. (Type +slaveclose to close, +slaveclaim to claim).");
+                    }
+                }
+                break;
+
+            case "slavestatus":
+                await slaveMerchantService.SendSlaveStatusAsync(session);
+                break;
+
+            case "slaveclaim":
+                await slaveMerchantService.ClaimEarningsAsync(session);
+                break;
+
+            case "slaveclose":
+                await slaveMerchantService.CloseSlaveAsync(session);
                 break;
 
             case "clear":
@@ -1053,7 +1101,7 @@ public class AdminPacketCoordinator(
             await lifecycle.SpawnAsync(npc);
         }
 
-        await SendNoticeAsync(session, $"Spawned {count} × {npcData.Name} (id {npcId}) at your position.");
+        await SendNoticeAsync(session, $"Spawned {count} Ã— {npcData.Name} (id {npcId}) at your position.");
         logger.LogInformation("GM {Gm} summoned {Count} of NPC {NpcId} in zone {Zone}", session.Name, count, npcId, session.ZoneId);
     }
 
@@ -1244,8 +1292,8 @@ public class AdminPacketCoordinator(
 
     private async Task HandleGotoAsync(UserSession session, string arg)
     {
-        // +goto <name> — warp the GM to the named player.
-        // +goto <zone> <x> <z> — warp the GM to coords in a zone.
+        // +goto <name> â€” warp the GM to the named player.
+        // +goto <zone> <x> <z> â€” warp the GM to coords in a zone.
         if (string.IsNullOrWhiteSpace(arg))
         {
             await SendNoticeAsync(session, "Usage: +goto <name> | +goto <zone> <x> <z>");
@@ -1447,7 +1495,7 @@ public class AdminPacketCoordinator(
                     .OrderBy(z => z)
                     .ToArray();
                 var zonePart = zones.Length > 0 ? $"zones [{string.Join(",", zones)}]" : "not spawned";
-                await SendNoticeAsync(session, $"    Required #{nid} \"{name}\" → {zonePart}");
+                await SendNoticeAsync(session, $"    Required #{nid} \"{name}\" â†’ {zonePart}");
 
                 var sameName = gameDataService.MonsterTable.Values
                     .Concat(gameDataService.NpcTable.Values)
@@ -1464,7 +1512,7 @@ public class AdminPacketCoordinator(
                         .ToArray();
                     if (otherZones.Length == 0)
                         continue;
-                    await SendNoticeAsync(session, $"    Also accepted #{other.Id} \"{other.Name}\" → zones [{string.Join(",", otherZones)}]");
+                    await SendNoticeAsync(session, $"    Also accepted #{other.Id} \"{other.Name}\" â†’ zones [{string.Join(",", otherZones)}]");
                 }
             }
         }
@@ -1674,7 +1722,7 @@ public class AdminPacketCoordinator(
 
     private async Task HandleItemSearchAsync(UserSession session, string arg)
     {
-        // +item <name> — search items by name, show top 10 results
+        // +item <name> â€” search items by name, show top 10 results
         if (string.IsNullOrWhiteSpace(arg))
         {
             await SendNoticeAsync(session, ItemUsage);

@@ -53,6 +53,11 @@ internal sealed class ItemRoutingFeature : IFeature, IItemActions
             world.InventoryWindow.Activate(absSlot);
             return;
         }
+        if (SlaveMerchantFeature.IsSlaveMerchantItem(self.Inventory[absSlot].ItemId))
+        {
+            world.SlaveMerchantWindow.Open();
+            return;
+        }
         if (self.Inventory[absSlot].ItemId == ExpSeal.EmptyJar)
         {
             world.ExpSealWindow.Open(absSlot);

@@ -20,6 +20,7 @@ public interface IMerchantLifecycleService
 public class MerchantLifecycleService(
     SessionManager sessionManager,
     IMerchantBotService merchantBotService,
+    ISlaveMerchantService slaveMerchantService,
     ILogger<MerchantLifecycleService> logger) : IMerchantLifecycleService
 {
     private const short OpenAccepted = 1;
@@ -102,6 +103,21 @@ public class MerchantLifecycleService(
         logger.LogDebug(
             "Merchant insert accepted for {Name}: advert \"{Advert}\", {Staged} staged, character {CharacterId}",
             session.Name, advertMessage, staged, session.CharacterId);
+
+        if (session.IsSlaveMerchantMode)
+        {
+            var slaveBot = await slaveMerchantService.CreateSlaveMerchantAsync(session, advertMessage);
+            if (slaveBot != null)
+            {
+                session.IsSlaveMerchantMode = false;
+                await session.Client.SendPacket(MerchantPacketWriter.StallClosed(session.CharacterId));
+                await CloseAsync(session, null);
+                await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                    (byte)session.Nation,
+                    $"[Slave Merchant] Bot '{slaveBot.Name}' berhasil dibuka! Anda bebas bergerak atau keluar game."));
+                return;
+            }
+        }
 
         if (session.IsGM)
         {

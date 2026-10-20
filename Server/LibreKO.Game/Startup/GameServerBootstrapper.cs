@@ -26,6 +26,7 @@ public class GameServerBootstrapper(
     IHostEnvironment hostEnvironment,
     IOptions<GameServerSettings> settings,
     INpcSpawnRowService spawnRows,
+    ISlaveMerchantService slaveMerchantService,
     ILogger<GameServerBootstrapper> logger) : IGameServerBootstrapper
 {
     private const short ObjectBind = 0;
@@ -56,6 +57,7 @@ public class GameServerBootstrapper(
             SpawnObjectEventNpcs(gameDataService);
             await LoadClansAndAlliancesAsync(cancellationToken);
             await accountLockService.ClearOwnClaimsAsync();
+            await slaveMerchantService.LoadActiveSlaveMerchantsAsync();
 
             LogPublicDemoGrants();
             await WarnAboutStoreSeedAsync(cancellationToken);
