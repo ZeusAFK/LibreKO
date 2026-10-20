@@ -329,6 +329,7 @@ internal sealed class GenieFeature : IFeature, ILateTickFeature, IClosableWindow
         SkillPicker.IdPressed += id =>
         {
             SetCell(editingSlot, (int)id);
+            RefreshSlots();
             SetupEdited();
         };
         LoadAdvanced();
