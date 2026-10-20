@@ -374,6 +374,26 @@ public class MagicWarpTests : GameTestBase
         friend.X.Should().BeApproximately(130, 0.5f, "the target does not move");
     }
 
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task DescentStaysPutUnderNoRecallOrForAnotherRoom(bool noRecall, bool otherRoom)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, DescentId, SkillMoral.Party, MagicWarpType.MoveToTarget, DescentRadius));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var startX = caster.X;
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 130, z: 140);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        caster.CanTeleport = !noRecall;
+        if (otherRoom)
+            friend.Room = OtherRoom;
+
+        await Cast(provider, client, DescentId, caster, friend.CharacterId);
+
+        caster.X.Should().BeApproximately(startX, 0.5f);
+    }
+
     [Fact]
     public async Task DescentRefusesAPlayerOutsideTheParty()
     {

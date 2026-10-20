@@ -111,7 +111,6 @@ public class MagicExecutionService(
 
     private bool MayReach(UserSession caster, MagicData magic, int skillId, int targetId)
     {
-        // A self row lands on its caster only.
         if ((SkillMoral)magic.Moral == SkillMoral.Self)
             return targetId == caster.CharacterId;
 

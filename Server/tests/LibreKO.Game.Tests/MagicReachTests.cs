@@ -58,6 +58,7 @@ public class MagicReachTests : GameTestBase
     private const short FireBlastRange = 20;
     private const short HealAmount = 200;
     private const int HealthPotion = 490010;
+    private const byte HealCastTenths = 15;
     private const int StunRow = 110560;
     private const int HealthPotionItem = 389010000;
     private const byte Moradon = (byte)ZoneId.Moradon;
@@ -242,6 +243,11 @@ public class MagicReachTests : GameTestBase
         var priest = Player(provider, 803, AccountNation.Karus, Moradon, Here);
         var friend = Player(provider, 804, AccountNation.Karus, Moradon, Here + 5, hp: PlayerHp / 2);
         priest.IsSitting = true;
+        if (stage == MagicProcessOpcode.Casting)
+            provider.GetRequiredService<IGameDataService>().GetMagic(Heal).Returns(new MagicData
+            {
+                Id = Heal, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.FriendWithMe, Range = 20, CastTime = HealCastTenths,
+            });
 
         await Cast(provider, priest, Heal, friend.CharacterId, stage);
 
@@ -308,6 +314,21 @@ public class MagicReachTests : GameTestBase
         await Cast(provider, caster, skillId, friend.CharacterId);
 
         bag.Count.Should().Be(scrollsLeft);
+    }
+
+    [Fact]
+    public async Task AStunnedPlayerCannotUseAScrollThatMovesSomeone()
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 814, AccountNation.Karus, Moradon, Here);
+        var friend = Player(provider, 815, AccountNation.Karus, Moradon, Here + 30);
+        HoldReagent(provider, caster, ScrollItem, count: TwoScrolls);
+        Stun(caster);
+
+        await Cast(provider, caster, SummonScroll, friend.CharacterId);
+
+        friend.X.Should().Be(Here + 30);
+        caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(TwoScrolls);
     }
 
     [Fact]
@@ -461,15 +482,46 @@ public class MagicReachTests : GameTestBase
     }
 
     [Fact]
+    public async Task AStunnedPlayerCannotUseAHostileReagentSkill()
+    {
+        using var provider = Provider();
+        var warrior = Player(provider, 816, AccountNation.Karus, Moradon, Here);
+        HoldReagent(provider, warrior, BindingStone, count: TwoScrolls);
+        Stun(warrior);
+        var worm = Worm(provider, Here + 10);
+
+        await Cast(provider, warrior, StoneBinding, worm.UniqueId);
+
+        warrior.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(TwoScrolls, "a stunned player's attack does not leave their hands");
+    }
+
+    [Fact]
+    public async Task AStunnedPlayersBrokenCastIsStillLetGo()
+    {
+        using var provider = Provider();
+        var priest = Player(provider, 817, AccountNation.Karus, Moradon, Here);
+        var friend = Player(provider, 818, AccountNation.Karus, Moradon, Here + 5, hp: PlayerHp / 2);
+        provider.GetRequiredService<IGameDataService>().GetMagic(Heal).Returns(new MagicData
+        {
+            Id = Heal, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.FriendWithMe, Range = 20, CastTime = HealCastTenths,
+        });
+        await Cast(provider, priest, Heal, friend.CharacterId, MagicProcessOpcode.Casting);
+        var castingBeforeTheStun = priest.CastingSkillId;
+        Stun(priest);
+
+        await Cast(provider, priest, Heal, friend.CharacterId, MagicProcessOpcode.Fail);
+
+        castingBeforeTheStun.Should().Be(Heal);
+        priest.CastingSkillId.Should().Be(0, "the client drops a cast a stun breaks, and the server drops it too");
+    }
+
+    [Fact]
     public async Task AStunnedPlayerCannotCastButMayStillDrinkAPotion()
     {
         using var provider = Provider();
         var caster = Player(provider, 812, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
         HoldReagent(provider, caster, HealthPotionItem);
-        caster.SetBuff(StunRow, new ActiveBuff
-        {
-            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
-        });
+        Stun(caster);
         var worm = Worm(provider, Here + 10);
 
         await Cast(provider, caster, FireBlast, worm.UniqueId);
@@ -693,6 +745,12 @@ public class MagicReachTests : GameTestBase
         sessions.Regions.AddToRegion(player);
         return player;
     }
+
+    private static void Stun(UserSession player) =>
+        player.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+        });
 
     private static NpcInstance Worm(ServiceProvider provider, float x) =>
         provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance

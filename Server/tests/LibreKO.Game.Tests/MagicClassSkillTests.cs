@@ -17,6 +17,8 @@ public class MagicClassSkillTests : GameTestBase
     private const int EventBlast = 491200;
     private const short Mage = 110;
     private const short Warrior = 105;
+    private const short Cost = 300;
+    private const short CapCost = 10001;
 
     [Fact]
     public async Task AMageCastsTheirOwnClassesSkill()
@@ -93,11 +95,11 @@ public class MagicClassSkillTests : GameTestBase
     }
 
     [Theory]
-    [InlineData(400, true)]
-    [InlineData(200, false)]
-    public async Task ASkillThatCostsHpNeedsThatMuchHp(short hp, bool cast)
+    [InlineData(400, Cost, true)]
+    [InlineData(200, Cost, false)]
+    [InlineData(200, CapCost, true)]
+    public async Task ASkillThatCostsHpNeedsThatMuchHp(short hp, short hpCost, bool cast)
     {
-        const short hpCost = 300;
         using var provider = Provider(hpCost: hpCost);
         var (caster, client) = Caster(provider, Mage);
         caster.Hp = hp;

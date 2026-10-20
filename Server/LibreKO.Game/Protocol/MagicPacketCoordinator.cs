@@ -64,9 +64,14 @@ public class MagicPacketCoordinator(
             return;
         }
 
-        if ((!session.CanUseSkills || (session.IsBlinking && !RespawnBlinkService.AllowsSkill(magic))
-                || (session.IsHeld && !MayUseWhileHeld(magic)))
+        if ((!session.CanUseSkills || (session.IsBlinking && !RespawnBlinkService.AllowsSkill(magic)))
             && !IsTerminator((MagicProcessOpcode)magicOpcode))
+        {
+            await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
+            return;
+        }
+
+        if (session.IsHeld && RequiresLearnedSkill((MagicProcessOpcode)magicOpcode) && !MayUseWhileHeld(magic))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
             return;
@@ -103,7 +108,7 @@ public class MagicPacketCoordinator(
         }
 
         if (RequiresLearnedSkill((MagicProcessOpcode)magicOpcode) && !session.IsGM
-            && !MagicSkillRequirement.IsCastableBy(magic, session.Class, session.TransformId))
+            && !MagicSkillRequirement.IsCastableBy(magic, session.Class, session.TransformId, session.Nation))
         {
             logger.LogWarning("Refusing skill {SkillId} from {Name}: not a skill of class {Class}",
                 skillId, session.Name, session.Class);
@@ -324,9 +329,14 @@ public class MagicPacketCoordinator(
         && !BattleZoneManager.IsBattleZone(session.ZoneId)
         && !BattleZoneManager.IsPvpZone(session.ZoneId);
 
-    // A frozen or stunned player can only use an item that does not move them.
+    // A frozen or stunned player can only use a friendly item that does not move, hide or change them, or a quiet bar row.
     private static bool MayUseWhileHeld(MagicData magic) =>
-        magic.UseItem != 0 && magic.PrimaryType != MagicSkillType.Warp;
+        MagicSkillRequirement.IsQuietBarRow(magic.Id)
+        || (magic.UseItem != 0
+            && (SkillMoral)magic.Moral is SkillMoral.Self or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe
+                or SkillMoral.Party or SkillMoral.PartyAll or SkillMoral.AreaFriend or SkillMoral.Clan or SkillMoral.ClanAll
+                or SkillMoral.CorpseFriend
+            && magic.PrimaryType is not (MagicSkillType.Warp or MagicSkillType.Transform or MagicSkillType.Stealth));
 
     // A dead player revives only with a self row: a Life Crystal under the castle, a resurrection scroll elsewhere.
     private bool RevivesTheCaster(UserSession session, MagicData magic, int skillId) =>
@@ -549,7 +559,6 @@ public class MagicPacketCoordinator(
 
     private async Task<bool> TryPaySkillCostAsync(UserSession session, MagicData magic, int skillId)
     {
-        // An HP cost below the cap needs that much HP.
         if (magic.Hp is > 0 and < HpCostCap && session.Hp < magic.Hp)
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.NoEffect);

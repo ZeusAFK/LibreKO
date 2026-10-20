@@ -251,9 +251,15 @@ public class WorldMovementService(
     public async Task HandleHomeAsync(IClient client)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || session.Hp < session.MaxHp / 2 || session.ZoneId == ChaosRules.Zone
-            || !session.CanTeleport || session.IsHeld)
+        if (session == null || session.Hp <= 0 || session.Hp < session.MaxHp / 2 || session.ZoneId == ChaosRules.Zone)
             return;
+
+        if (!session.CanTeleport || session.IsHeld)
+        {
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice(
+                (byte)session.Nation, "You cannot use Town recall now."));
+            return;
+        }
 
         if (session.CarriesManes)
         {

@@ -148,9 +148,11 @@ public class MagicMovementEffectService(
     {
         var target = sessionManager.GetByCharacterId(targetId);
         if (target == null
+            || !caster.CanTeleport
             || target.CharacterId == caster.CharacterId
             || target.Hp <= 0
-            || target.ZoneId != caster.ZoneId)
+            || target.ZoneId != caster.ZoneId
+            || target.Room != caster.Room)
             return false;
 
         if ((SkillMoral)magic.Moral < SkillMoral.Enemy && PvpRules.IsEnemy(caster, target))

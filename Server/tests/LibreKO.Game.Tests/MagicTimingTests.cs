@@ -15,6 +15,9 @@ public class MagicTimingTests
     private const int Crash = 101005;
     private const int Archery = 102003;
     private const int Inferno = 110545;
+    private const int CastTenths = 5;
+    private const int ThreeReleases = 3;
+    private const int RiceCakeItem = 389001000;
 
     private sealed class StubClock(DateTimeOffset start) : TimeProvider
     {
@@ -161,16 +164,27 @@ public class MagicTimingTests
     {
         var (timing, clock) = Subject();
         var session = Session();
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
+        var inferno = Magic(Inferno, castTenths: CastTenths, recastTenths: 31);
 
-        timing.OnCastAccepted(session, slash);
-        timing.OnReleaseAccepted(session, slash);
+        timing.OnCastAccepted(session, inferno);
+        timing.OnReleaseAccepted(session, inferno);
 
         clock.Advance(TimeSpan.FromSeconds(2.5));
-        timing.CheckCasting(session, slash).Should().Be(MagicTimingVerdict.OnCooldown);
+        timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.OnCooldown);
 
         clock.Advance(TimeSpan.FromSeconds(0.8));
-        timing.CheckCasting(session, slash).Should().Be(MagicTimingVerdict.Allowed);
+        timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void ACastingStageIsRefusedForARowWithoutACastTime()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+
+        timing.CheckCasting(session, Magic(Slash, castTenths: 0, recastTenths: 31)).Should().Be(MagicTimingVerdict.NotCast);
+        timing.CheckCasting(session, Magic(RiceCake, castTenths: 0, recastTenths: 0, useItem: RiceCakeItem))
+            .Should().Be(MagicTimingVerdict.NotCast, "the client sends a casting stage only for a row with a cast time");
     }
 
     [Fact]
@@ -232,14 +246,15 @@ public class MagicTimingTests
     }
 
     [Fact]
-    public void ASecondInstantSkillInsideTheBurstFloorIsRefused()
+    public void ASecondCastInsideTheBurstFloorIsRefused()
     {
         var (timing, clock) = Subject();
         var session = Session();
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
-        var crash = Magic(Crash, castTenths: 0, recastTenths: 31);
+        var slash = Magic(Slash, castTenths: CastTenths, recastTenths: 31);
+        var crash = Magic(Crash, castTenths: CastTenths, recastTenths: 31);
 
         timing.OnCastAccepted(session, slash);
+        timing.OnReleaseAccepted(session, slash);
 
         timing.CheckCasting(session, crash).Should().Be(MagicTimingVerdict.TooSoonAfterLastSkill);
 
@@ -425,7 +440,7 @@ public class MagicTimingTests
         var session = Session();
         var slash = Magic(Slash, castTenths: 0, recastTenths: 0);
 
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < ThreeReleases; i++)
             timing.OnReleaseRefused(session, slash);
 
         timing.CheckRelease(session, slash).Should().Be(MagicTimingVerdict.Allowed);
@@ -436,11 +451,11 @@ public class MagicTimingTests
     {
         var (timing, _) = Subject();
         var session = Session();
-        var potion = Magic(500023, castTenths: 0, recastTenths: 0, useItem: 379090000);
+        var potion = Magic(RiceCake, castTenths: 0, recastTenths: 0, useItem: RiceCakeItem);
         var arrow = Magic(Archery, castTenths: 0, recastTenths: 0);
         arrow.Type1 = (byte)MagicSkillType.Ranged;
 
-        for (var i = 0; i < 3; i++)
+        for (var i = 0; i < ThreeReleases; i++)
         {
             timing.OnReleaseAccepted(session, potion);
             timing.OnReleaseAccepted(session, arrow);
@@ -455,8 +470,8 @@ public class MagicTimingTests
     {
         var (timing, _) = Subject();
         var session = Session();
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
-        var potion = Magic(500023, castTenths: 0, recastTenths: 0, useItem: 379090000);
+        var slash = Magic(Slash, castTenths: CastTenths, recastTenths: 31);
+        var potion = Magic(RiceCake, castTenths: CastTenths, recastTenths: 0, useItem: RiceCakeItem);
 
         timing.OnCastAccepted(session, slash);
 
@@ -469,7 +484,7 @@ public class MagicTimingTests
         var (timing, clock) = Subject();
         var session = Session();
         var potion = Magic(390001, castTenths: 5, recastTenths: 20, useItem: 389001000);
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
+        var slash = Magic(Slash, castTenths: CastTenths, recastTenths: 31);
 
         timing.CheckCasting(session, potion).Should().Be(MagicTimingVerdict.Allowed);
         timing.OnCastAccepted(session, potion);

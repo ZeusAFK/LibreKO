@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
@@ -15,6 +16,7 @@ public class MagicSkillRequirementTests : GameTestBase
 {
     private const int Freeze = 110603;
     private const int Blizzard = 110645;
+    private const int BlizzardCastTenths = 15;
     private const int Slash = 101003;
     private const int LogosHorns = 106019;
     private const int SweepingPotion = 490201;
@@ -38,13 +40,16 @@ public class MagicSkillRequirementTests : GameTestBase
     private const int Warrior = 105;
     private const int RamLook = 30040;
     private const int EventItem = 978006000;
+    private const AccountNation Karus = AccountNation.Karus;
+    private const AccountNation ElMorad = AccountNation.ElMorad;
     private const int KurianMaster = 115;
 
     private const int IceTree = 6;
     private const int LightningTree = 7;
     private const int MasterTree = 8;
 
-    private static MagicData Magic(int id, int tree, int skillLevel, byte type1 = 3, int recastTenths = 0, int msp = 0) =>
+    private static MagicData Magic(
+        int id, int tree, int skillLevel, byte type1 = 3, int recastTenths = 0, int msp = 0, int castTenths = 0) =>
         new()
         {
             Id = id,
@@ -52,7 +57,8 @@ public class MagicSkillRequirementTests : GameTestBase
             SkillLevel = (short)skillLevel,
             Type1 = type1,
             ReCastTime = (short)recastTenths,
-            Msp = (short)msp
+            Msp = (short)msp,
+            CastTime = (byte)castTenths
         };
 
     private static byte[] Mastery(int fire = 0, int ice = 0, int lightning = 0, int master = 0)
@@ -163,9 +169,11 @@ public class MagicSkillRequirementTests : GameTestBase
     [InlineData(AttackScroll, 0)]
     [InlineData(MonsterStone, 0)]
     [InlineData(DrawbridgeDestruction, 0)]
+    [InlineData(OfficialList, 0)]
+    [InlineData(GuardTowerArrow, 0)]
     public void ARowOfNoClassWithoutAnItemIsNotForPlayers(int skillId, int tree)
     {
-        MagicSkillRequirement.IsCastableBy(Magic(skillId, tree, skillLevel: 0), Warrior, transformId: 0).Should().BeFalse();
+        MagicSkillRequirement.IsCastableBy(Magic(skillId, tree, skillLevel: 0), Warrior, transformId: 0, Karus).Should().BeFalse();
     }
 
     [Theory]
@@ -173,29 +181,37 @@ public class MagicSkillRequirementTests : GameTestBase
     [InlineData(HealthCoins)]
     [InlineData(CommanderForward)]
     [InlineData(Shouting)]
-    [InlineData(OfficialList)]
-    [InlineData(GuardTowerArrow)]
     public void TheRowsTheClientCastsWithoutAnItemStayOpen(int skillId)
     {
-        MagicSkillRequirement.IsCastableBy(Magic(skillId, tree: 0, skillLevel: 0), Warrior, transformId: 0).Should().BeTrue();
+        MagicSkillRequirement.IsCastableBy(Magic(skillId, tree: 0, skillLevel: 0), Warrior, transformId: 0, Karus).Should().BeTrue();
     }
 
     [Fact]
-    public void ARamStrikeNeedsTheRamForm()
+    public void AShoutBelongsToItsOwnNation()
+    {
+        MagicSkillRequirement.IsCastableBy(Magic(ElmoradAssault, tree: 0, skillLevel: 0), Warrior, transformId: 0, Karus)
+            .Should().BeFalse();
+        MagicSkillRequirement.IsCastableBy(Magic(ElmoradAssault, tree: 0, skillLevel: 0), Warrior, transformId: 0, ElMorad)
+            .Should().BeTrue();
+    }
+
+    [Fact]
+    public void ARamStrikeNeedsTheRamFormOfItsOwnNation()
     {
         var strike = Magic(DrawbridgeDestruction, tree: 0, skillLevel: 0);
 
-        MagicSkillRequirement.IsCastableBy(strike, Warrior, RamLook).Should().BeTrue();
-        MagicSkillRequirement.IsCastableBy(strike, Warrior, transformId: 0).Should().BeFalse();
+        MagicSkillRequirement.IsCastableBy(strike, Warrior, RamLook, Karus).Should().BeTrue();
+        MagicSkillRequirement.IsCastableBy(strike, Warrior, transformId: 0, Karus).Should().BeFalse();
+        MagicSkillRequirement.IsCastableBy(strike, Warrior, RamLook, ElMorad).Should().BeFalse();
     }
 
     [Fact]
     public void AnEventRowAndAnItemRowAreLeftToTheirOwnRules()
     {
-        MagicSkillRequirement.IsCastableBy(Magic(ChaosSpiritSword, ChaosRules.ChaosSkillTree, 0), Warrior, 0).Should().BeTrue();
+        MagicSkillRequirement.IsCastableBy(Magic(ChaosSpiritSword, ChaosRules.ChaosSkillTree, 0), Warrior, 0, Karus).Should().BeTrue();
         var scroll = Magic(Adamant, tree: 0, skillLevel: 0);
         scroll.UseItem = EventItem;
-        MagicSkillRequirement.IsCastableBy(scroll, Warrior, 0).Should().BeTrue();
+        MagicSkillRequirement.IsCastableBy(scroll, Warrior, 0, Karus).Should().BeTrue();
     }
 
     [Fact]
@@ -235,7 +251,7 @@ public class MagicSkillRequirementTests : GameTestBase
         using var provider = CreateProvider(
             _ => { },
             gameData => gameData.GetMagic(Blizzard)
-                .Returns(Magic(Blizzard, tree: 1106, skillLevel: 45, recastTenths: 153)));
+                .Returns(Magic(Blizzard, tree: 1106, skillLevel: 45, recastTenths: 153, castTenths: BlizzardCastTenths)));
 
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());

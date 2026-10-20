@@ -19,6 +19,7 @@ public static class MagicSkillRequirement
     private const int TreesPerClass = 10;
     private const int SkillIdsPerClass = 1000;
     private const int RamLook = 30040;
+    private const int ClassPrefixesPerNation = 100;
 
     public const int NoNationRole = 0;
     public const int NationRoleFirstBand = 1;
@@ -29,8 +30,6 @@ public static class MagicSkillRequirement
     private static readonly HashSet<int> CoinHeals = [490076, 490084];
     private static readonly HashSet<int> CommanderOrders = [492065, 492066, 492067, 492068, 492072, 492073];
     private static readonly HashSet<int> CommanderShouts = [130013, 130014, 230013, 230014];
-    private static readonly HashSet<int> SiegeForms = [450018];
-    private static readonly HashSet<int> OfficialList = [500126];
     private static readonly HashSet<int> RamStrikes = [120011, 220011];
 
     public static int MasteryTreeOf(int skillTree)
@@ -79,8 +78,8 @@ public static class MagicSkillRequirement
 
     public static bool IsClassSkill(int skillId) => IsPlayerClass(ClassOf(skillId));
 
-    // A row outside the class trees needs its item, an event tree, or a place on the client's own skill bars.
-    public static bool IsCastableBy(MagicData magic, int classId, int transformId)
+    // A row outside the class trees needs its item, an event tree, or a place on the client's own bars.
+    public static bool IsCastableBy(MagicData magic, int classId, int transformId, AccountNation nation)
     {
         var prefix = ClassOf(magic.Id);
         if (IsPlayerClass(prefix))
@@ -90,11 +89,18 @@ public static class MagicSkillRequirement
             return true;
 
         if (RamStrikes.Contains(magic.Id))
-            return transformId == RamLook;
+            return transformId == RamLook && IsOfNation(prefix, nation);
 
-        return CorpseGestures.Contains(magic.Id) || CoinHeals.Contains(magic.Id) || CommanderOrders.Contains(magic.Id)
-            || CommanderShouts.Contains(magic.Id) || SiegeForms.Contains(magic.Id) || OfficialList.Contains(magic.Id);
+        if (CommanderShouts.Contains(magic.Id))
+            return IsOfNation(prefix, nation);
+
+        return CorpseGestures.Contains(magic.Id) || CoinHeals.Contains(magic.Id) || CommanderOrders.Contains(magic.Id);
     }
+
+    public static bool IsQuietBarRow(int skillId) =>
+        CoinHeals.Contains(skillId) || CommanderOrders.Contains(skillId) || CommanderShouts.Contains(skillId);
+
+    private static bool IsOfNation(short prefix, AccountNation nation) => prefix / ClassPrefixesPerNation == (int)nation;
 
     private static bool IsClassTree(int skillTree) => IsPlayerClass((short)(skillTree / TreesPerClass));
 

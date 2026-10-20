@@ -339,8 +339,8 @@ public class UserSession
     public bool CanUseSkills { get; set; } = true;
     public long BlinkUntilTicks { get; set; }
     public bool IsBlinking => BlinkUntilTicks != 0;
-    public bool IsHeld => activeBuffs.Values.Any(buff => buff.BuffType is BuffType.Freeze or BuffType.Stun && !buff.IsExpired);
-    public bool CarriesManes => activeBuffs.Values.Any(buff => buff.BuffType == BuffType.FragmentOfManes && !buff.IsExpired);
+    public bool IsHeld => activeBuffs.Any(entry => entry.Value.BuffType is BuffType.Freeze or BuffType.Stun && !entry.Value.IsExpired);
+    public bool CarriesManes => activeBuffs.Any(entry => entry.Value.BuffType == BuffType.FragmentOfManes && !entry.Value.IsExpired);
     public bool BlinkOnArrival { get; set; }
     public ResurrectionOffer? PendingResurrection { get; set; }
     public int ControlSignature { get; set; }

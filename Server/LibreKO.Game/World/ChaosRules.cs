@@ -92,7 +92,6 @@ public static class ChaosRules
     public const short FirstTournamentSkillTree = 3610;
     public const short TournamentSkillTreeEnd = 3650;
 
-    // Event trees work only inside their own event zone.
     public static bool SkillAllowedIn(byte zoneId, short skillTree) =>
         zoneId == Zone
             ? skillTree == ChaosSkillTree

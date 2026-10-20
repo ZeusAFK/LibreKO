@@ -299,6 +299,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task AMobPickedFromTheListTransformsWithOnlyTheDisguiseScroll(bool inPvpZone)
     {
         const int RavenHarpy = 472250;
+        const ushort DisguiseScrolls = 10;
 
         var magic = Load<MagicData>("Magic.json", m => m.Id);
         var items = Load<ItemData>("Items.json", i => i.Num);
@@ -327,7 +328,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
             caster.Inventory[i] = new ItemSlot();
         caster.Inventory[InventoryConstants.InventoryStart] = new ItemSlot
         {
-            ItemId = 381001000, Count = 10, Durability = 1
+            ItemId = 381001000, Count = DisguiseScrolls, Durability = 1
         };
 
         var sent = new List<Packet>();
@@ -351,7 +352,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         if (inPvpZone)
         {
             caster.TransformId.Should().Be(0, "the list never opens in a PvP zone, so a form named straight away is refused too");
-            caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(10);
+            caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(DisguiseScrolls);
             return;
         }
 

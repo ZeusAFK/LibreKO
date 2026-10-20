@@ -51,6 +51,9 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
 
     public MagicTimingVerdict CheckCasting(UserSession session, MagicData magic)
     {
+        if (magic.CastTime <= 0)
+            return MagicTimingVerdict.NotCast;
+
         var now = time.GetUtcNow().UtcTicks;
 
         if (RemainingCooldownMs(session, magic.Id, now) > 0)

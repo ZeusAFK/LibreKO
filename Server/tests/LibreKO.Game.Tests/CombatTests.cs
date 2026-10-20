@@ -403,6 +403,7 @@ public class CombatTests : GameTestBase
 
         var deathService = provider.GetRequiredService<INpcAiDeathService>();
         await deathService.HandlePlayerKilledByNpcAsync(target, npc);
+        await deathService.HandlePlayerKilledByNpcAsync(target, npc);
 
         var deadPacket = targetPackets.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_DEAD);
         deadPacket.ResetOffset();
@@ -1312,16 +1313,7 @@ public class CombatTests : GameTestBase
         for (var i = 0; i < 7; i++)
             packet.WriteInt(0);
 
-        var castingPacket = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
-        castingPacket.WriteByte((byte)MagicProcessOpcode.Casting);
-        castingPacket.WriteInt(defenseId);
-        castingPacket.WriteInt(session.CharacterId);
-        castingPacket.WriteInt(session.CharacterId);
-        for (var i = 0; i < 7; i++)
-            castingPacket.WriteInt(0);
-
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
-        await coordinator.HandleAsync(client, castingPacket);
         await coordinator.HandleAsync(client, packet);
 
         session.ActiveBuffs.Should().ContainKey(scrollId);

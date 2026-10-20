@@ -79,7 +79,7 @@ public class GenieTownTests : GameTestBase
     {
         using var provider = CreateProvider(_ => { }, StartInTown);
         var sessions = provider.GetRequiredService<SessionManager>();
-        var (player, _) = Join(sessions, characterId: 900, x: 100);
+        var (player, sent) = Join(sessions, characterId: 900, x: 100);
         player.CanTeleport = !noRecall;
         if (stunned)
             player.SetBuff(StunRow, new ActiveBuff
@@ -90,6 +90,7 @@ public class GenieTownTests : GameTestBase
         await provider.GetRequiredService<IWorldMovementService>().HandleHomeAsync(player.Client);
 
         player.X.Should().BeApproximately(100, 0.5f);
+        sent.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_CHAT, "the client waits for an answer to its recall");
     }
 
     private static void StartInTown(IGameDataService gameData) =>
