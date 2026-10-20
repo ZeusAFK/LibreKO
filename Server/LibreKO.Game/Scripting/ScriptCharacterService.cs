@@ -145,7 +145,7 @@ public class ScriptCharacterService(
         var token = JobChangeRules.FindChangeToken(session, changeType);
         if (token == 0)
         {
-            context.FailAction("You need a job change token to do that.");
+            context.FailAction(NoJobChangeToken);
             return false;
         }
 
@@ -163,16 +163,29 @@ public class ScriptCharacterService(
             return false;
         }
 
-        if (!ConsumeToken(token))
+        // The token and the new job change in one step, and not while the player is tied up or fighting.
+        var refusal = session.WithLock(s =>
         {
-            context.FailAction("You need a job change token to do that.");
+            if (s.IsBusy || s.IsHeld || s.IsInCombat)
+                return JobChangeWhileBusy;
+            if (!ConsumeToken(token))
+                return NoJobChangeToken;
+
+            s.Race = resolved.Value.NewRace;
+            ApplyPromotion(resolved.Value.NewClass);
+            return null;
+        });
+        if (refusal != null)
+        {
+            context.FailAction(refusal);
             return false;
         }
 
-        session.Race = resolved.Value.NewRace;
-        ApplyPromotion(resolved.Value.NewClass);
         return true;
     }
+
+    private const string JobChangeWhileBusy = "You cannot change your job while trading, keeping a stall, held or fighting.";
+    private const string NoJobChangeToken = "You need a job change token to do that.";
 
     private bool ConsumeToken(int itemId)
     {

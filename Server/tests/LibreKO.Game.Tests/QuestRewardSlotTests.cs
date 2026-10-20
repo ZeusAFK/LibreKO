@@ -13,6 +13,7 @@ namespace LibreKO.Game.Tests;
 
 public class QuestRewardSlotTests
 {
+    private const int StunRow = 110560;
     private const int Filler = 700_000_000;
     private const int Reward = 123;
     private const int BackHalfSlot = 20;
@@ -102,6 +103,41 @@ public class QuestRewardSlotTests
         context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
 
         CountChangePositions().Should().Equal((byte)BackHalfSlot);
+    }
+
+    public enum Tie { Trading, Stunned, Fighting }
+
+    [Theory]
+    [InlineData(Tie.Trading)]
+    [InlineData(Tie.Stunned)]
+    [InlineData(Tie.Fighting)]
+    public void APlayerTiedUpKeepsTheTokenAndTheJobAQuestWouldChange(Tie tie)
+    {
+        session.Class = 101;
+        session.Race = 1;
+        session.Nation = AccountNation.Karus;
+        switch (tie)
+        {
+            case Tie.Trading:
+                session.Trade.ExchangeUser = session.CharacterId + 1;
+                break;
+            case Tie.Stunned:
+                session.SetBuff(StunRow, new ActiveBuff
+                {
+                    MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+                });
+                break;
+            case Tie.Fighting:
+                session.MarkCombat();
+                break;
+        }
+        Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
+
+        context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeFalse();
+
+        session.Class.Should().Be(101);
+        Bag(BackHalfSlot).ItemId.Should().Be(JobChangeRules.MasterChangeScroll,
+            "a token offered in a trade is not also spent on a job");
     }
 
     [Fact]
