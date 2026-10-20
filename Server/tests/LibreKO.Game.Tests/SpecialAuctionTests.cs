@@ -223,6 +223,19 @@ public class SpecialAuctionTests : GameTestBase
     }
 
     [Fact]
+    public async Task ACheckThatExpiresIsNotBid()
+    {
+        var (provider, _) = Provider();
+        using var _p = provider;
+        var player = Join(provider, 100, "Bidder", 10_000_000, checks: 1);
+        player.Session.Inventory[InventoryConstants.SlotMax].ExpiresAt = DateTimeOffset.UtcNow.AddDays(1).ToUnixTimeSeconds();
+
+        (await PlaceBid(provider, player, 0, Earrings, 2 * Million, 0)).ReadShort()
+            .Should().Be(SpecialAuctionPacketWriter.WrongChecks, "its refund would be a check that never expires");
+        player.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(Check);
+    }
+
+    [Fact]
     public async Task AnEmptiedCheckSlotIsNotACheck()
     {
         var (provider, _) = Provider();

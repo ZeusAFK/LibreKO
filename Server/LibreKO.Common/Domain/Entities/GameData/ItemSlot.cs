@@ -21,6 +21,8 @@ public class ItemSlot
 
     public bool IsLinked => UniqueId != 0;
 
+    public bool IsPlain => Flag == 0 && ExpiresAt == 0 && UniqueId == 0;
+
     public bool IsSealedCharacter => ItemId == InventoryConstants.CypherRing && UniqueId != 0;
 
     public bool IsPetLink => IsLinked && !IsSealedCharacter;

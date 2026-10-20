@@ -154,6 +154,7 @@ public class BeautyShopPacketCoordinator(
             slot.UniqueId = restyle.UniqueId;
         }
         else if (slot.ItemId == restyle.ItemId && slot.UniqueId == restyle.UniqueId
+                 && slot.Flag == restyle.Flag && slot.ExpiresAt == restyle.ExpiresAt
                  && slot.Count + CouponsPerChange <= InventoryConstants.MaxStackCount)
             slot.Count += CouponsPerChange;
         else

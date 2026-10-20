@@ -104,6 +104,7 @@ public sealed class CharacterSealService(
     {
         var scroll = BagSlot(session, bagPos);
         if (scroll == null || scroll.ItemId != scrollId || gameData.GetItem(scrollId)?.Kind != ScrollKind
+            || scroll.Expires || scroll.State == ItemFlag.Rented
             || string.Equals(name, session.Name, StringComparison.OrdinalIgnoreCase))
             return CharacterSealPacketWriter.SealFailed(GenericFailure);
         if (ItemUpgradeService.VaultPasswordRefusal(session, code) is { } refusal)

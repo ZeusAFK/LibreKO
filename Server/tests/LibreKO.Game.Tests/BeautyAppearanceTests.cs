@@ -45,6 +45,7 @@ public class BeautyAppearanceTests : GameTestBase
     private const ushort LastCoupon = 1;
     private const short CouponDurability = 1;
     private const int CouponSerial = 4242;
+    private const long TimedCoupon = 4_102_444_800;
     private const int WarehousedItem = 389010000;
     private const int OtherNpc = NpcData.MakeupArtist + 1;
     private const float OutOfRange = 12;
@@ -437,6 +438,25 @@ public class BeautyAppearanceTests : GameTestBase
         coupon.Count.Should().Be(coupons);
         coupon.Durability.Should().Be(CouponDurability);
         coupon.UniqueId.Should().Be(CouponSerial);
+    }
+
+    [Fact]
+    public async Task AFailedSaveDoesNotPourTheCouponIntoAStackThatIsNotTheSame()
+    {
+        var persister = Substitute.For<ICharacterStatePersister>();
+        using var provider = Provider(services => services.AddSingleton(persister));
+        var (session, client, _) = await Player(provider);
+        var coupon = session.Inventory[CouponSlot];
+        coupon.Count = Coupons;
+        persister.SaveAsync(session, Arg.Any<CancellationToken>()).Returns(_ =>
+        {
+            coupon.ExpiresAt = TimedCoupon;
+            return Task.FromResult(false);
+        });
+
+        await Send(provider, client, Request());
+
+        coupon.Count.Should().Be(Coupons - 1, "the coupon is not added to a timed stack it did not come from");
     }
 
     public static TheoryData<Action<UserSession>> BusyActivities => new()

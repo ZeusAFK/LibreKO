@@ -91,7 +91,7 @@ public class ItemUpgradeService(
     private static readonly Dictionary<ItemSealType, SealRule> SealRules = new()
     {
         [ItemSealType.Seal] = new SealRule(
-            flag => flag != ItemFlag.Sealed, ItemFlag.Sealed, SealPrice, NeedsCode: true),
+            flag => flag is not (ItemFlag.Sealed or ItemFlag.Rented), ItemFlag.Sealed, SealPrice, NeedsCode: true),
         [ItemSealType.Unseal] = new SealRule(
             flag => flag == ItemFlag.Sealed, ItemFlag.Unsealed, NeedsCode: true),
         [ItemSealType.Bind] = new SealRule(
@@ -686,7 +686,9 @@ public class ItemUpgradeService(
         if (stones > 0)
             await SpendSealStonesAsync(session, stones);
 
-        slot.Flag = (byte)rule.AppliedFlag;
+        slot.Flag = (byte)(sealType == ItemSealType.Unseal && gameDataService.GetItem(itemId)?.Bound > 0
+            ? ItemFlag.Bound
+            : rule.AppliedFlag);
         return ItemSealResult.Succeeded;
     }
 

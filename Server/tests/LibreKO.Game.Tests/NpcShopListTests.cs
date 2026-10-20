@@ -1,6 +1,7 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
@@ -28,6 +29,9 @@ public class NpcShopListTests : GameTestBase
     private const int StartingGold = 100_000;
     private const byte Zone = 21;
     private const byte OtherZone = Zone + 1;
+    private const long RentalEnds = 4_102_444_800;
+    private const ushort Held = 3;
+    private const int SealedCharacter = 4242;
 
     [Fact]
     public async Task AListedItemBoughtFromItsOwnCellIsSold()
@@ -172,12 +176,69 @@ public class NpcShopListTests : GameTestBase
         session.Repurchases.Should().HaveCount(boughtBack ? 0 : 1);
     }
 
+    [Fact]
+    public async Task APotionBoughtOntoARentedStackIsRefused()
+    {
+        using var provider = Provider();
+        var (session, client) = Shopper(provider);
+        var npc = Npc(provider, PotionShop);
+        Stock(Bag(session), Potion, Held);
+        Bag(session).ExpiresAt = RentalEnds;
+        Bag(session).Flag = (byte)ItemFlag.Rented;
+
+        await TradeAsync(provider, client, npc, Buy, PotionShop, Potion, line: 0, index: 0);
+
+        Bag(session).Count.Should().Be(Held, "a bought potion would become rented with the stack");
+        session.Money.Should().Be(StartingGold);
+    }
+
+    [Fact]
+    public async Task ABoughtBackItemKeepsItsFlagAndDoesNotJoinAPlainStack()
+    {
+        using var provider = Provider();
+        var (session, client) = Shopper(provider);
+        var npc = Npc(provider, PotionShop);
+        Stock(Bag(session), Potion, Held);
+        var sold = new ItemSlot { ItemId = Potion, Count = 2, Durability = 100, Flag = (byte)ItemFlag.NotBound };
+        RepurchaseRules.Record(session.Repurchases, sold, 2, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+        var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
+        packet.WriteByte((byte)ItemTradeResult.Repurchase);
+        packet.WriteByte(ItemTradePacketWriter.RepurchaseBuy);
+        packet.WriteByte(0);
+        packet.WriteInt(Potion);
+        packet.WriteInt(npc.UniqueId);
+        packet.ResetOffset();
+        await provider.GetRequiredService<IItemTradeService>().HandleTradeAsync(client, packet);
+
+        Bag(session).Count.Should().Be(Held);
+        session.Inventory.Single(slot => slot.ItemId == Potion && slot.Flag == (byte)ItemFlag.NotBound).Count.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task ASealedCharacterIsNotSoldToAMerchant()
+    {
+        using var provider = Provider();
+        var (session, client) = Shopper(provider);
+        var merchant = Npc(provider, NoShop);
+        Stock(Bag(session), InventoryConstants.CypherRing, 1);
+        Bag(session).UniqueId = SealedCharacter;
+
+        await TradeAsync(provider, client, merchant, Sell, NoShop, InventoryConstants.CypherRing, line: 0, index: 0);
+
+        Bag(session).UniqueId.Should().Be(SealedCharacter, "a sold ring could never unseal its character again");
+        session.Money.Should().Be(StartingGold);
+    }
+
     private static ServiceProvider Provider() => CreateProvider(_ => { }, Stock);
 
     private static void Stock(IGameDataService gameData)
     {
         foreach (var (itemId, countable, price) in new[]
-                 { (Sword, 0, 400), (Spear, 0, SpearPrice), (Unique, 0, 100), (RentalSword, 0, 0), (Potion, 1, 50) })
+                 {
+                     (Sword, 0, 400), (Spear, 0, SpearPrice), (Unique, 0, 100), (RentalSword, 0, 0), (Potion, 1, 50),
+                     (InventoryConstants.CypherRing, 0, 100),
+                 })
             gameData.GetItem(itemId).Returns(new ItemData
             {
                 Num = itemId, Countable = (byte)countable, BuyPrice = price, SellPrice = PotionSalePrice, Weight = 1,

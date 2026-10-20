@@ -123,7 +123,9 @@ public class ScriptItemService(
         if (itemData == null)
             return false;
 
-        var slotIndex = session.FindSlotForItem(itemId, gameData, (ushort)Math.Min(count, ushort.MaxValue));
+        var slotIndex = rentalHours > 0
+            ? FirstEmptyBagSlot()
+            : session.FindSlotForItem(itemId, gameData, (ushort)Math.Min(count, ushort.MaxValue));
         if (slotIndex < 0)
         {
             context.FailAction(InventoryFullReason);
@@ -493,8 +495,19 @@ public class ScriptItemService(
         {
             var slot = session.Inventory[i];
             if (slot.IsEmpty) return i;
-            if (stackable && slot.ItemId == rewardItemId && slot.Count < MaxItemCount) return i;
+            if (stackable && slot.ItemId == rewardItemId && slot.IsPlain && slot.Count < MaxItemCount) return i;
         }
+        return -1;
+    }
+
+    private int FirstEmptyBagSlot()
+    {
+        for (var i = InventoryConstants.InventoryStart; i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; i++)
+        {
+            if (session.Inventory[i].IsEmpty)
+                return i;
+        }
+
         return -1;
     }
 
@@ -776,12 +789,11 @@ public class ScriptItemService(
     private bool CanInsertRewards(IEnumerable<(int itemId, int count)> rewards)
     {
         var snapshot = session.Inventory
-            .Select(slot => new ItemSlot
+            .Select(slot =>
             {
-                ItemId = slot.ItemId,
-                Count = slot.Count,
-                Durability = slot.Durability,
-                Flag = slot.Flag
+                var copy = new ItemSlot();
+                InventoryJournal.CopyInto(slot, copy);
+                return copy;
             })
             .ToArray();
 
@@ -814,7 +826,7 @@ public class ScriptItemService(
                  index++)
             {
                 var slot = inventory[index];
-                if (slot.ItemId != itemId)
+                if (slot.ItemId != itemId || !slot.IsPlain)
                     continue;
 
                 var newCount = slot.Count + count;

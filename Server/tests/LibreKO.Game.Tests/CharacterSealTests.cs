@@ -106,6 +106,24 @@ public class CharacterSealTests : GameTestBase
     }
 
     [Fact]
+    public async Task ARentedScrollSealsNoCharacter()
+    {
+        using var provider = Provider();
+        var session = Session(provider, 10, AccountA, "Zeus");
+        var scroll = session.Inventory[InventoryConstants.InventoryStart + BagPos];
+        scroll.ItemId = Scroll;
+        scroll.Count = 1;
+        scroll.ExpireInHours(24, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+        await provider.GetRequiredService<ICharacterSealService>().HandleAsync(session, SealRequest("Velkan", Pin));
+
+        scroll.ItemId.Should().Be(Scroll, "a rented ring would expire and leave its character sealed for good");
+        using var scope = provider.CreateScope();
+        var listed = await scope.ServiceProvider.GetRequiredService<ICharacterRepository>().GetCharactersByAccount(AccountA);
+        listed.Select(c => c.Name).Should().Contain("Velkan");
+    }
+
+    [Fact]
     public async Task ASealedCharacterCannotBeSelectedByTheAccountThatSealedIt()
     {
         using var provider = Provider();

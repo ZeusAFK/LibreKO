@@ -32,6 +32,8 @@ public class SlaveMerchantTests : GameTestBase
     private const int LinkedSerial = 77;
     private const int AltId = 2003;
     private const int InstanceRoom = 4;
+    private const long RentalEnds = 4_102_444_800;
+    private const ushort Kept = 3;
 
     [Fact]
     public async Task ACertificateAddsItsHoursAndIsUsedUp()
@@ -206,6 +208,26 @@ public class SlaveMerchantTests : GameTestBase
         collected.ReadByte().Should().Be(0);
         (await StoredMoney(provider, OwnerId)).Should().Be(owner.Money);
         (await StoredItems(provider, OwnerId)).Should().Equal(owner.SerializeItems());
+    }
+
+    [Fact]
+    public async Task ATimedItemCollectedFromASlaveDoesNotJoinAPermanentStack()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 5);
+        Stage(owner, Scroll, StackSlot, count: 5, stock: 5);
+        owner.Inventory[StackSlot].ExpiresAt = RentalEnds;
+        await Insert(provider, owner, toSlave: true);
+        owner.Inventory[StackSlot].ItemId = Scroll;
+        owner.Inventory[StackSlot].Count = Kept;
+        owner.Inventory[StackSlot].Durability = 1;
+
+        await Service(provider).CollectAsync(owner);
+
+        owner.Inventory[StackSlot].Count.Should().Be(Kept);
+        owner.Inventory[StackSlot].ExpiresAt.Should().Be(0);
+        owner.Inventory.Single(slot => slot.ItemId == Scroll && slot.ExpiresAt == RentalEnds).Count.Should().Be(5);
     }
 
     [Fact]

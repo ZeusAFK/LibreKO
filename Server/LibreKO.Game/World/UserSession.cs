@@ -631,7 +631,8 @@ public class UserSession
         {
             for (int i = InventoryConstants.SlotMax; i < InventoryConstants.SlotMax + InventoryConstants.HaveMax; i++)
             {
-                if (Inventory[i].ItemId == itemId && Inventory[i].Count + count <= 9999)
+                if (Inventory[i].ItemId == itemId && Inventory[i].IsPlain
+                    && Inventory[i].Count + count <= InventoryConstants.MaxStackCount)
                     return i;
             }
         }

@@ -359,25 +359,20 @@ public class SlaveMerchantService(
 
     private bool GiveBack(UserSession owner, StoredItem item, InventoryJournal journal)
     {
-        var destination = owner.FindSlotForItem(item.ItemId, gameDataService, item.Count);
+        if (gameDataService.GetItem(item.ItemId) is not { } itemData)
+            return false;
+
+        var returned = new ExchangeItem
+        {
+            ItemId = item.ItemId, Count = item.Count, Durability = item.Durability, Flag = item.Flag,
+            ExpiresAt = item.ExpiresAt, UniqueId = item.UniqueId, Countable = itemData.Countable != 0,
+        };
+        var destination = ItemPlacement.FindForDelivery(
+            owner.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, returned);
         if (destination < 0)
             return false;
 
-        var slot = journal.Slot(destination);
-        if (slot.IsEmpty)
-        {
-            slot.ItemId = item.ItemId;
-            slot.Count = item.Count;
-            slot.Durability = item.Durability;
-            slot.Flag = item.Flag;
-            slot.ExpiresAt = item.ExpiresAt;
-            slot.UniqueId = item.UniqueId;
-        }
-        else
-        {
-            slot.Count += item.Count;
-        }
-
+        ItemPlacement.Put(journal.Slot(destination), returned);
         return true;
     }
 

@@ -142,7 +142,8 @@ public class SpecialAuctionService(
         if (!checksValid || checkSlots.Distinct().Count() != checkSlots.Count
             || checkSlots.Any(s => session.Inventory[s].ItemId != MythrilCheck
                 || session.Inventory[s].Count == 0
-                || !session.Inventory[s].IsTradable))
+                || !session.Inventory[s].IsTradable
+                || session.Inventory[s].Expires))
             return SpecialAuctionPacketWriter.WrongChecks;
 
         if (coins % CoinUnit != 0 || coins > MaxCoins || coins > session.Money)

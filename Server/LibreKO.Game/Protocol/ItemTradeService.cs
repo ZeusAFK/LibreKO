@@ -250,21 +250,18 @@ public class ItemTradeService(
             var price = RepurchaseRules.Price(itemData.BuyPrice, entry.Count);
             if (s.Money < price)
                 return (Error: RepurchaseNoCoins, Slot: 0, Count: (ushort)0, Durability: (short)0, Flag: (byte)0, Price: 0, IsNew: false);
-            var slotIndex = s.FindSlotForItem(itemId, gameDataService, entry.Count);
+            var bought = new ExchangeItem
+            {
+                ItemId = itemId, Count = entry.Count, Durability = entry.Durability, Flag = entry.Flag,
+                Countable = itemData.Countable != 0,
+            };
+            var slotIndex = ItemPlacement.FindForDelivery(s.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, bought);
             if (slotIndex < 0)
                 return (Error: RepurchaseNoRoom, Slot: 0, Count: (ushort)0, Durability: (short)0, Flag: (byte)0, Price: 0, IsNew: false);
 
             var slot = s.Inventory[slotIndex];
             var isNew = slot.IsEmpty;
-            if (isNew)
-            {
-                slot.ItemId = itemId;
-                slot.Durability = entry.Durability;
-                slot.Flag = entry.Flag;
-                slot.Count = entry.Count;
-            }
-            else
-                slot.Count = (ushort)Math.Min(InventoryConstants.MaxStackCount, slot.Count + entry.Count);
+            ItemPlacement.Put(slot, bought);
             s.Money -= price;
             s.Repurchases.RemoveAt(row);
             s.RecalculateStatsWithBuffs(gameDataService);
@@ -350,7 +347,7 @@ public class ItemTradeService(
                 {
                     if (!slot.IsEmpty)
                     {
-                        if (slot.ItemId != entry.ItemId || itemData.Countable == 0)
+                        if (slot.ItemId != entry.ItemId || itemData.Countable == 0 || !slot.IsPlain)
                             return Refuse(ItemTradeRefusal.CannotTrade);
 
                         if (slot.Count + entry.Count > InventoryConstants.MaxStackCount)
@@ -364,7 +361,7 @@ public class ItemTradeService(
                 {
                     // Lines selling from the same stack add up against what it holds.
                     var sold = soldFrom.GetValueOrDefault(entry.Position) + entry.Count;
-                    if (slot.ItemId != entry.ItemId || slot.Count < sold || !slot.IsTradable)
+                    if (slot.ItemId != entry.ItemId || slot.Count < sold || !slot.IsTradable || slot.IsLinked)
                         return Refuse(ItemTradeRefusal.CannotTrade);
 
                     soldFrom[entry.Position] = sold;

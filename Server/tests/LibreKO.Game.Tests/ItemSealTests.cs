@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -182,6 +182,38 @@ public class ItemSealTests : GameTestBase
 
         Read(sent).Result.Should().Be(ItemSealResult.Failed);
         session.Inventory[InventoryConstants.InventoryStart].State.Should().Be(ItemFlag.Unsealed);
+    }
+
+    [Fact]
+    public async Task ABoundItemSealedAndUnsealedComesBackBound()
+    {
+        var (provider, session, sent) = Open(bound: 10);
+        using var _ = provider;
+        session.Money = 5_000_000;
+        session.VipPassword = GoodCode;
+        session.Inventory[InventoryConstants.InventoryStart].Flag = (byte)ItemFlag.Bound;
+
+        await Seal(provider, session, ItemSealType.Seal, KrowazBoots, 0, GoodCode);
+        await Seal(provider, session, ItemSealType.Unseal, KrowazBoots, 0, GoodCode);
+
+        Read(sent).Result.Should().Be(ItemSealResult.Succeeded);
+        session.Inventory[InventoryConstants.InventoryStart].State.Should().Be(ItemFlag.Bound,
+            "sealing and unsealing must not unbind without the seal stones");
+    }
+
+    [Fact]
+    public async Task ARentedItemCannotBeSealed()
+    {
+        var (provider, session, sent) = Open(bound: 0);
+        using var _ = provider;
+        session.Money = 5_000_000;
+        session.VipPassword = GoodCode;
+        session.Inventory[InventoryConstants.InventoryStart].Flag = (byte)ItemFlag.Rented;
+
+        await Seal(provider, session, ItemSealType.Seal, KrowazBoots, 0, GoodCode);
+
+        Read(sent).Result.Should().Be(ItemSealResult.Failed);
+        session.Inventory[InventoryConstants.InventoryStart].State.Should().Be(ItemFlag.Rented);
     }
 
     [Fact]
