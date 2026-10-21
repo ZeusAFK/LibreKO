@@ -62,6 +62,13 @@ public class PetTests : GameTestBase
     private const int ImageChangeHigh = 700_018_000;
     private const int OtherCertificate = 810_193_000;
     private const string NewPetName = "Brownie";
+    private const int OwnerHpBuff = 301_027;
+    private const byte OwnerHpBuffLevel = 30;
+    private const short OwnerHpBuffMana = 120;
+    private const int OwnerHpBuffMaxHp = 120;
+    private const short OwnerHpBuffSeconds = 600;
+    private const byte NeutralPercent = 100;
+    private const int FamiliarSkillDataSlots = 5;
 
     private static readonly PetLevelData LevelOne = new()
     {
@@ -642,6 +649,30 @@ public class PetTests : GameTestBase
     }
 
     [Fact]
+    public async Task AFamiliarBuffFromTheClientLandsOnTheOwnerAndIsPaidFor()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, sent) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        await provider.GetRequiredService<IPetService>().SummonAsync(owner);
+        var state = owner.Pet!;
+        state.Record.Level = OwnerHpBuffLevel;
+        var npc = state.Npc!;
+        npc.MaxMp = npc.Mp = OwnerHpBuffMana;
+        var satisfaction = state.Record.Satisfaction;
+        sent.Clear();
+
+        await provider.GetRequiredService<IPetPacketCoordinator>()
+            .HandleAsync(owner.Client, SkillRequest(MagicProcessOpcode.Effecting, OwnerHpBuff, npc.UniqueId, owner.CharacterId));
+
+        owner.ActiveBuffs.Should().ContainKey(OwnerHpBuff);
+        npc.Mp.Should().Be(0);
+        state.Record.Satisfaction.Should().Be((short)(satisfaction - PetSkills.SatisfactionPerSkill));
+        sent.Should().Contain(p => MagicStage(p) == MagicProcessOpcode.Effecting);
+    }
+
+    [Fact]
     public async Task AMonsterTheFamiliarHitsTurnsOnTheFamiliar()
     {
         using var provider = Provider();
@@ -861,7 +892,21 @@ public class PetTests : GameTestBase
     }
 
     private static PetSkillRequest Request(MagicProcessOpcode stage, int skillId, int casterId, int targetId) =>
-        new((byte)stage, skillId, casterId, targetId, new int[5]);
+        new((byte)stage, skillId, casterId, targetId, new int[MagicProcessPacketWriter.PayloadSlotCount]);
+
+    private static Packet SkillRequest(MagicProcessOpcode stage, int skillId, int casterId, int targetId)
+    {
+        var packet = new Packet(GameOpcodes.GS_PET);
+        packet.WriteByte((byte)PetSubOpcode.UseSkill);
+        packet.WriteByte((byte)stage);
+        packet.WriteInt(skillId);
+        packet.WriteInt(casterId);
+        packet.WriteInt(targetId);
+        for (var i = 0; i < FamiliarSkillDataSlots; i++)
+            packet.WriteInt(0);
+        packet.ResetOffset();
+        return packet;
+    }
 
     private static MagicProcessOpcode? MagicStage(Packet packet)
     {
@@ -1116,6 +1161,21 @@ public class PetTests : GameTestBase
         gameData.MagicType1Table.Returns(new Dictionary<int, MagicType1Data>
         {
             [Slap] = new() { Id = Slap, HitRate = 100, Hit = 120, HitType = 1 },
+        });
+        gameData.GetMagic(OwnerHpBuff).Returns(new MagicData
+        {
+            Id = OwnerHpBuff, Type1 = (byte)MagicSkillType.Buff, Moral = PetSkills.OwnerMoral, SkillLevel = OwnerHpBuffLevel,
+            Skill = PetSkills.SharedPageFirst, Msp = OwnerHpBuffMana, ReCastTime = OwnerHpBuffSeconds,
+        });
+        gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
+        {
+            [OwnerHpBuff] = new()
+            {
+                Id = OwnerHpBuff, BuffType = (byte)BuffType.PassionOfSoul, Duration = OwnerHpBuffSeconds,
+                MaxHP = OwnerHpBuffMaxHp, MaxHPPct = NeutralPercent, MaxMPPct = NeutralPercent, AcPct = NeutralPercent,
+                Attack = NeutralPercent, MagicAttack = NeutralPercent, AttackSpeed = NeutralPercent, Speed = NeutralPercent,
+                HitRate = NeutralPercent, AvoidRate = NeutralPercent, ExpPct = NeutralPercent,
+            },
         });
         gameData.PetLevelTable.Returns(new Dictionary<byte, PetLevelData> { [1] = LevelOne, [2] = LevelTwo });
         gameData.GetItem(AutomaticLooting).Returns(new ItemData { Num = AutomaticLooting, Kind = PetBag.AutomaticLootingKind, Slot = PetBag.ItemSlotCode });

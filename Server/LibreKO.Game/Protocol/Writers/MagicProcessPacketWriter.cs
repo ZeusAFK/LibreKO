@@ -52,7 +52,7 @@ public static class MagicFailCode
 
 public static class MagicProcessPacketWriter
 {
-    private const int PayloadSlotCount = 7;
+    public const int PayloadSlotCount = 7;
 
     public static Packet Create(
         MagicProcessOpcode opcode,

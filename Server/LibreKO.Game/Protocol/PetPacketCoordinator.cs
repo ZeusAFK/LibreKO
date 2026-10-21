@@ -1,4 +1,5 @@
 ﻿using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
 
@@ -48,8 +49,8 @@ public class PetPacketCoordinator(
         var skillId = packet.ReadInt();
         var casterId = packet.ReadInt();
         var targetId = packet.ReadInt();
-        var data = new int[SkillDataSlots];
-        for (var i = 0; i < data.Length; i++)
+        var data = new int[MagicProcessPacketWriter.PayloadSlotCount];
+        for (var i = 0; i < SkillDataSlots; i++)
             data[i] = packet.ReadInt();
         return new PetSkillRequest(stage, skillId, casterId, targetId, data);
     }
