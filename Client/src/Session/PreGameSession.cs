@@ -6,6 +6,10 @@ public sealed class PreGameSession
 
     internal void RaiseLoginResult(bool arg1, int arg2) => LoginResultEvent?.Invoke(arg1, arg2);
 
+    public event Action? LoginThrottledEvent;
+
+    internal void RaiseLoginThrottled() => LoginThrottledEvent?.Invoke();
+
     public event Action<int>? NationResultEvent;
 
     internal void RaiseNationResult(int value) => NationResultEvent?.Invoke(value);

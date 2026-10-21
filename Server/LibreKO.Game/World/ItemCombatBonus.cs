@@ -54,13 +54,14 @@ public static class ItemCombatBonus
 
     private static IEnumerable<ItemData> EquippedItems(UserSession user, IGameDataService gameData)
     {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         for (var slot = 0; slot < InventoryConstants.MagicBagStart; slot++)
         {
             if (slot >= InventoryConstants.SlotMax && slot < InventoryConstants.CospreStart)
                 continue;
 
             var stored = user.Inventory[slot];
-            if (stored.IsEmpty || gameData.GetItem(stored.ItemId) is not { } item)
+            if (stored.IsEmpty || stored.HasExpired(now) || gameData.GetItem(stored.ItemId) is not { } item)
                 continue;
 
             if (slot >= InventoryConstants.CospreStart && item.Category != ItemKind.Cospre)

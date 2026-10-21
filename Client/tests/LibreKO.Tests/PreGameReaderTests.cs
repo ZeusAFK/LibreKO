@@ -9,6 +9,7 @@ namespace LibreKO.Tests;
 public class PreGameReaderTests
 {
     private const ushort ServerVersion = 2619;
+    private const byte LoginRejected = byte.MaxValue;
 
     private sealed class RecordingSink : IPacketSink
     {
@@ -136,6 +137,39 @@ public class PreGameReaderTests
         dispatcher.Dispatch(p);
 
         Assert.Equal((SelectingCharacterNameChangeResult.Success, 2, "Zeus"), renamed);
+    }
+
+    [Fact]
+    public void AThrottledGameLoginIsToldApartFromAFailedOne()
+    {
+        var session = new GameSession();
+        var login = new LoginState();
+        var dispatcher = new PacketDispatcher();
+        new PreGameReader(session, new GameRequests(new RecordingSink(), session, login).PreGame, login, new ReconnectSupervisor(new Host()), new Host())
+            .Register(dispatcher);
+        var throttled = 0;
+        var failed = 0;
+        session.PreGame.LoginThrottledEvent += () => throttled++;
+        session.PreGame.LoginResultEvent += (ok, _) => failed += ok ? 0 : 1;
+
+        dispatcher.Dispatch(Denied(GameLoginDenial.TooManyAttempts));
+        dispatcher.Dispatch(Denied(null));
+
+        Assert.Equal((1, 1), (throttled, failed));
+    }
+
+    private static Packet Denied(GameLoginDenial? denial)
+    {
+        var p = new Packet(GameOpcodes.GS_LOGIN);
+        p.WriteByte(LoginRejected);
+        if (denial is { } reason)
+        {
+            p.WriteUInt(LibreKOProtocol.AccountLockMagic);
+            p.WriteByte(LibreKOProtocol.ExtensionVersion);
+            p.WriteByte((byte)reason);
+        }
+        p.ResetOffset();
+        return p;
     }
 
     [Fact]

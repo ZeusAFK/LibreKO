@@ -61,7 +61,7 @@ public class LoginThrottleTests
     public void ManyMissesFromOneAddressSlowItDownButLockNoOneOut()
     {
         var throttle = new LoginThrottle();
-        for (var name = 0; name < LoginThrottle.AddressFailuresBeforeSlowing; name++)
+        for (var name = 0; name < LoginThrottle.BusyAddressFailures; name++)
             throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
         throttle.SlowdownFor(Address, "fresh").Should().Be(TimeSpan.Zero);
 
@@ -76,10 +76,51 @@ public class LoginThrottleTests
     {
         var throttle = new LoginThrottle();
 
-        for (var name = 0; name < Flood; name++)
+        for (var name = 0; name < LoginThrottle.MaxFailuresPerAddress; name++)
             throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
 
         throttle.SlowdownFor(Address, "anyone").Should().Be(LoginThrottle.MaxSlowdown);
+    }
+
+    [Fact]
+    public void ASlowedAddressIsRefusedPastItsCeilingAndStoresNothingMore()
+    {
+        var throttle = new LoginThrottle();
+        for (var name = 0; name < LoginThrottle.MaxFailuresPerAddress; name++)
+            throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
+        throttle.TryAttempt(Address, "one more").Should().BeFalse("slowing alone would let many connections at once keep guessing");
+        var tracked = throttle.Tracked;
+
+        for (var name = 0; name < Flood; name++)
+            throttle.TryAttempt(Address, $"flood{name}").Should().BeFalse();
+
+        throttle.Tracked.Should().Be(tracked, "a refused attempt must not cost the server memory");
+        throttle.TryAttempt(OtherAddress, "anyone").Should().BeTrue();
+    }
+
+    [Fact]
+    public void ABusyAddressIsRefusedWhenTheHostChoosesSo()
+    {
+        var throttle = new LoginThrottle(settings: new LoginThrottleSettings { BusyAddress = BusyAddressMode.Refuse });
+        for (var name = 0; name < LoginThrottle.BusyAddressFailures; name++)
+            throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
+
+        throttle.TryAttempt(Address, "fresh").Should().BeFalse("the host chose to refuse a busy address rather than slow it");
+        throttle.TryAttempt(OtherAddress, "fresh").Should().BeTrue();
+    }
+
+    [Fact]
+    public void AnAttemptThatPassedTheAddressCheckAsTheCeilingFilledIsRefused()
+    {
+        var clock = new Clock();
+        var throttle = new LoginThrottle(clock, new LoginThrottleSettings { BusyAddress = BusyAddressMode.Refuse });
+        for (var name = 1; name < LoginThrottle.BusyAddressFailures; name++)
+            throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
+        var meanwhile = false;
+        clock.OnNextRead = () => clock.OnNextRead = () => meanwhile = throttle.TryAttempt(Address, "meanwhile");
+
+        throttle.TryAttempt(Address, "last").Should().BeFalse("the attempt sent meanwhile took the last place");
+        meanwhile.Should().BeTrue();
     }
 
     [Fact]
@@ -140,7 +181,7 @@ public class LoginThrottleTests
     public void AnUnknownAddressSharesNoBucket()
     {
         var throttle = new LoginThrottle();
-        for (var miss = 0; miss < LoginThrottle.AddressFailuresBeforeSlowing; miss++)
+        for (var miss = 0; miss < LoginThrottle.BusyAddressFailures; miss++)
             throttle.TryAttempt(string.Empty, "someone");
 
         throttle.TryAttempt(string.Empty, "anyone").Should().BeTrue();

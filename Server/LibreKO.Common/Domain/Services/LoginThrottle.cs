@@ -1,15 +1,15 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
-using System.Net.Sockets;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Common.Domain.Services;
 
-public sealed class LoginThrottle(TimeProvider? clock = null)
+public sealed class LoginThrottle(TimeProvider? clock = null, LoginThrottleSettings? settings = null)
 {
     public const int MaxFailuresPerName = 5;
-    public const int AddressFailuresBeforeSlowing = 20;
+    public const int BusyAddressFailures = 20;
+    public const int MaxFailuresPerAddress = 100;
     public const int FailuresBeforeSlowing = 25;
     private const int WindowMinutes = 15;
     private const int SlowdownStepMilliseconds = 500;
@@ -18,7 +18,6 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     private const int KeptAfterEviction = MaxTracked / 10 * 9;
     private const int PruneIntervalSeconds = 60;
     private static readonly TimeSpan PruneInterval = TimeSpan.FromSeconds(PruneIntervalSeconds);
-    private const int Ipv6NetworkBytes = 8;
     public static readonly TimeSpan Window = TimeSpan.FromMinutes(WindowMinutes);
     public static readonly TimeSpan SlowdownStep = TimeSpan.FromMilliseconds(SlowdownStepMilliseconds);
     public static readonly TimeSpan MaxSlowdown = TimeSpan.FromSeconds(MaxSlowdownSeconds);
@@ -45,7 +44,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
 
     public int Tracked => Volatile.Read(ref byAddressAndName.Size) + Volatile.Read(ref byAddress.Size) + Volatile.Read(ref byName.Size);
 
-    // An attempt counts before its password is checked; a name over its limit from one address waits out the window and adds nothing while it waits.
+    // An attempt counts before its password is checked; a name or an address over its limit waits out the window and adds nothing while it waits.
     public bool TryAttempt(string address, string login)
     {
         if (login.Length > Account.MaxLoginLength)
@@ -55,12 +54,13 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         if (address.Length > 0)
         {
             var key = Key(address, name);
-            if (Over(byAddressAndName, key, MaxFailuresPerName))
+            var addressLimit = settings?.BusyAddress == BusyAddressMode.Refuse ? BusyAddressFailures : MaxFailuresPerAddress;
+            if (Over(byAddressAndName, key, MaxFailuresPerName) || Over(byAddress, address, addressLimit))
                 return false;
 
             var forName = Count(byAddressAndName, key);
-            Count(byAddress, address);
-            if (forName > MaxFailuresPerName)
+            var forAddress = Count(byAddress, address);
+            if (forName > MaxFailuresPerName || forAddress > addressLimit)
                 return false;
         }
 
@@ -68,11 +68,11 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         return true;
     }
 
-    // A name guessed from many addresses, or an address that guesses many names, is answered more slowly but never locked out.
+    // A name guessed from many addresses, or an address that guesses many names, is answered more slowly.
     public TimeSpan SlowdownFor(string address, string login)
     {
         var forName = Slowdown(byName, Normal(login), FailuresBeforeSlowing);
-        var forAddress = address.Length == 0 ? TimeSpan.Zero : Slowdown(byAddress, address, AddressFailuresBeforeSlowing);
+        var forAddress = address.Length == 0 ? TimeSpan.Zero : Slowdown(byAddress, address, BusyAddressFailures);
         return forName > forAddress ? forName : forAddress;
     }
 
@@ -123,18 +123,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
     public static string AddressOf(IClient client) =>
         (client.Socket?.RemoteEndPoint as IPEndPoint)?.Address is { } address ? Bucket(address) : string.Empty;
 
-    // One IPv6 network counts as one address.
-    public static string Bucket(IPAddress address)
-    {
-        if (address.IsIPv4MappedToIPv6)
-            return address.MapToIPv4().ToString();
-        if (address.AddressFamily != AddressFamily.InterNetworkV6)
-            return address.ToString();
-
-        var bytes = address.GetAddressBytes();
-        Array.Clear(bytes, Ipv6NetworkBytes, bytes.Length - Ipv6NetworkBytes);
-        return new IPAddress(bytes).ToString();
-    }
+    public static string Bucket(IPAddress address) => AddressBucket.Of(address).ToString();
 
     private static string Key(string address, string login) => $"{address}\n{login}";
 

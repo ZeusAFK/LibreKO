@@ -6,8 +6,11 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Persistence;
+using LibreKO.Login.Configuration;
 using LibreKO.Login.Enums;
 using LibreKO.Login.Protocol.Writers;
+using Microsoft.Extensions.DependencyInjection;
+using System.Net;
 
 namespace LibreKO.Login.Tests;
 
@@ -88,6 +91,37 @@ public class LoginTests : ServerTest
 
         (await LoginResultAsync(stream, "user", "password")).Should().Be(LoginResult.TooManyAttempts,
             "a name that keeps missing from one address waits out the window, and the player is told so rather than that the password is wrong");
+    }
+
+    [Fact]
+    public async Task LS_LOGIN_ARefusedAttemptDoesNotLiftTheLock()
+    {
+        await StartServerAsync();
+        var (_, stream) = await ConnectAsync();
+
+        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
+            (await LoginResultAsync(stream, "user", "wrong_password")).Should().Be(LoginResult.InvalidPassword);
+
+        for (var retry = 0; retry < LoginThrottle.MaxFailuresPerName; retry++)
+            (await LoginResultAsync(stream, "user", "password")).Should().Be(LoginResult.TooManyAttempts,
+                "a refused attempt is not a sign-in that clears the misses before it");
+    }
+
+    [Fact]
+    public async Task LS_LOGIN_ARefusedAccountCreationCountsAsAMiss()
+    {
+        await StartServerAsync();
+        using var scope = host.Services.CreateScope();
+        var login = scope.ServiceProvider.GetRequiredService<ILoginService>();
+        var from = IPAddress.Parse("203.0.113.7");
+        for (var made = 0; made < new AccountSettings().AutoCreatePerNetworkPerHour; made++)
+            await login.LoginAsync($"newcomer{made}", "password", from: from);
+
+        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
+            await login.LoginAsync("latecomer", "password", from: from);
+
+        host.Services.GetRequiredService<LoginThrottle>().TryAttempt(LoginThrottle.Bucket(from), "latecomer").Should().BeFalse(
+            "a refused account creation is not a sign-in that clears the misses before it");
     }
 
     [Fact]

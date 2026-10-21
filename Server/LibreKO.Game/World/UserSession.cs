@@ -559,24 +559,26 @@ public class UserSession
 
     public void RecalculateStats(CoefficientData coefficient, IGameDataService gameData)
     {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         Stats = AbilityCalculator.Calculate(
             Level, Strength, Stamina, Dexterity, Intelligence,
             Class, coefficient, Inventory, gameData, SkillPoints, TitleBonuses(gameData),
             new RebirthBonus(RebStr, RebSta, RebDex, RebIntel, RebMagic),
             UserSessionMagicState.BuffStatBonus(this),
-            UserSessionMagicState.WeaponDamageBonus(this));
+            UserSessionMagicState.WeaponDamageBonus(this),
+            now);
         UserSessionMagicState.ApplyBuffBonuses(this);
-        ApplyFamiliarScrolls(coefficient, gameData);
-        HealStrikesEnemies = HealStrike.Armed(Inventory, gameData.GetItemOps);
+        ApplyFamiliarScrolls(coefficient, gameData, now);
+        HealStrikesEnemies = HealStrike.Armed(Inventory, gameData.GetItemOps, now);
         if (ZoneId == ChaosRules.Zone)
             Stats.MaxHp = ChaosRules.MaxHp;
         MaxHp = Stats.MaxHp;
         MaxMp = Stats.MaxMp;
     }
 
-    private void ApplyFamiliarScrolls(CoefficientData coefficient, IGameDataService gameData)
+    private void ApplyFamiliarScrolls(CoefficientData coefficient, IGameDataService gameData, long now)
     {
-        if (Pet is not { IsSummoned: true } familiar)
+        if (Pet is not { IsSummoned: true } familiar || Inventory[InventoryConstants.Pet].HasExpired(now))
             return;
 
         foreach (var scroll in PetBag.OwnerScrolls(familiar.Items, gameData.GetItem))

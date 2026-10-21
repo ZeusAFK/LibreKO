@@ -698,6 +698,35 @@ public class CharacterTests : GameTestBase
     }
 
     [Fact]
+    public async Task GamePacketHandler_Login_SaysWhenTheThrottleRefuses()
+    {
+        using var provider = CreateProvider(_ => { });
+        using var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+        listener.Start();
+        using var caller = new System.Net.Sockets.TcpClient();
+        await caller.ConnectAsync(System.Net.IPAddress.Loopback, ((System.Net.IPEndPoint)listener.LocalEndpoint).Port);
+        using var accepted = await listener.AcceptSocketAsync();
+        var throttle = provider.GetRequiredService<LoginThrottle>();
+        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
+            throttle.TryAttempt(LoginThrottle.Bucket(System.Net.IPAddress.Loopback), "game-login");
+
+        var sentPackets = new List<Packet>();
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.Socket.Returns(accepted);
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(ClonePacket(packet))), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var request = new Packet(GameOpcodes.GS_LOGIN);
+        request.WriteString("game-login");
+        request.WriteString("pw");
+
+        await provider.GetRequiredService<IPacketHandler>().HandlePacket(client, request);
+
+        sentPackets.Should().ContainSingle();
+        sentPackets[0].GetData().Should().Equal(SessionPacketWriter.LoginDeniedTooManyAttempts().GetData());
+    }
+
+    [Fact]
     public async Task GamePacketHandler_Login_SendsFailurePacketForInvalidCredentials()
     {
         using var provider = CreateProvider(

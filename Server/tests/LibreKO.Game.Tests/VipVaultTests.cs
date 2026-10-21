@@ -241,6 +241,7 @@ public class VipVaultTests : GameTestBase
         var vault = Vault(_ => { });
         vault.Session.VipVaultExpiry = DateTime.UtcNow.AddMinutes(-1);
         var expiry = new ItemExpiryService(vault.Provider.GetRequiredService<SessionManager>(),
+            vault.Provider.GetRequiredService<IItemEquipmentEffectService>(), vault.Provider.GetRequiredService<IUserNotificationService>(),
             NullLogger<ItemExpiryService>.Instance);
 
         await expiry.ProcessTickAsync(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
@@ -257,6 +258,7 @@ public class VipVaultTests : GameTestBase
         var vault = Vault(_ => { });
         vault.Session.VipVaultExpiry = default;
         var expiry = new ItemExpiryService(vault.Provider.GetRequiredService<SessionManager>(),
+            vault.Provider.GetRequiredService<IItemEquipmentEffectService>(), vault.Provider.GetRequiredService<IUserNotificationService>(),
             NullLogger<ItemExpiryService>.Instance);
 
         await expiry.ProcessTickAsync(DateTimeOffset.UtcNow.ToUnixTimeSeconds());

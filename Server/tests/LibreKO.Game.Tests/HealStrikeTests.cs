@@ -12,6 +12,7 @@ public class HealStrikeTests
 {
     private const int MaceId = 1111471741;
     private const int PlainId = 1111471000;
+    private const long Now = 1_800_000_000;
 
     private static IEnumerable<ItemOpData>? Ops(int itemId) => itemId == MaceId
         ? [new ItemOpData { ItemId = MaceId, TriggerType = HealStrike.ItemOpOnEquip, SkillId = HealStrike.ArmingSkill, TriggerRate = 100 }]
@@ -29,9 +30,19 @@ public class HealStrikeTests
     [Fact]
     public void AWornMaceArmsTheStrikeButOneInTheBagDoesNot()
     {
-        HealStrike.Armed(Inventory(InventoryConstants.RightHand, MaceId), Ops).Should().BeTrue();
-        HealStrike.Armed(Inventory(InventoryConstants.SlotMax, MaceId), Ops).Should().BeFalse();
-        HealStrike.Armed(Inventory(InventoryConstants.RightHand, PlainId), Ops).Should().BeFalse();
+        HealStrike.Armed(Inventory(InventoryConstants.RightHand, MaceId), Ops, Now).Should().BeTrue();
+        HealStrike.Armed(Inventory(InventoryConstants.SlotMax, MaceId), Ops, Now).Should().BeFalse();
+        HealStrike.Armed(Inventory(InventoryConstants.RightHand, PlainId), Ops, Now).Should().BeFalse();
+    }
+
+    [Fact]
+    public void AWornMaceThatRanOutDoesNotArmTheStrike()
+    {
+        var inventory = Inventory(InventoryConstants.RightHand, MaceId);
+        inventory[InventoryConstants.RightHand].ExpiresAt = Now;
+
+        HealStrike.Armed(inventory, Ops, Now).Should().BeFalse();
+        HealStrike.Armed(inventory, Ops, Now - 1).Should().BeTrue();
     }
 
     [Fact]

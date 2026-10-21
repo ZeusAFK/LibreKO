@@ -5,6 +5,11 @@ namespace LibreKO.Tests;
 
 public class CastInterruptTests
 {
+    private const int Fireball = 110503;
+    private const int BindScroll = 500022;
+    private const int Unknown = 999999;
+    private const int NoCast = 0;
+
     [Theory]
     [InlineData(false, false)]
     [InlineData(false, true)]
@@ -39,4 +44,19 @@ public class CastInterruptTests
         Assert.Equal(CastInterruptAction.Ignore,
             CastInterrupt.OnMove(hasCastPhase: false, released: false, rangedDraw: false, pastRangedCommit: false));
     }
+
+    [Fact]
+    public void AStunDropsOnlyTheCastsThatPlayAnAction()
+    {
+        var dropped = CastInterrupt.OnStun([Fireball, BindScroll, Fireball, Unknown, NoCast], IsNonAction);
+
+        Assert.Equal([Fireball], dropped);
+    }
+
+    private static bool? IsNonAction(int skillId) => skillId switch
+    {
+        Fireball => false,
+        BindScroll => true,
+        _ => null,
+    };
 }

@@ -10,7 +10,7 @@ using LibreKO.Game.Protocol.Writers;
 
 namespace LibreKO.Game.Protocol;
 
-public record GameLoginResult(int AccountId, AccountNation Nation, bool Success);
+public record GameLoginResult(int AccountId, AccountNation Nation, bool Success, bool Throttled = false);
 public record CharacterSelectResult(Packet Packet, int CharacterId);
 
 public interface IPreGameService
@@ -52,10 +52,16 @@ public class PreGameService(
 
     public async Task<GameLoginResult> LoginAsync(string login, string password, string address = "")
     {
+        if (login.Length > Account.MaxLoginLength)
+        {
+            logger.LogDebug("Login from {Address} names no account: the name is longer than any account's", address);
+            return new(0, 0, false);
+        }
+
         if (!throttle.TryAttempt(address, login))
         {
-            logger.LogDebug("Login for {Login} from {Address} refused without checking: too many failures, or a name longer than any account's", login, address);
-            return new(0, 0, false);
+            logger.LogDebug("Login for {Login} from {Address} refused without checking: too many failures", login, address);
+            return new(0, 0, false, Throttled: true);
         }
 
         await Task.Delay(throttle.SlowdownFor(address, login));

@@ -34,7 +34,7 @@ public class ItemEquipmentEffectService(
         }
 
         if (itemInventoryRuleService.GetItemEnteringEquipment(direction, sourceItemIdBeforeMove, destinationItemIdBeforeMove) is int equippedItemId
-            && equippedItemId > 0)
+            && equippedItemId > 0 && WornUnexpired(session, equippedItemId))
         {
             await TriggerItemOpsAsync(session, equippedItemId);
         }
@@ -129,7 +129,7 @@ public class ItemEquipmentEffectService(
             if (operation.TriggerType != ItemOpOnEquip || operation.SkillId <= 0)
                 continue;
 
-            if (HasOtherEquippedItemOp(session, itemId, operation.SkillId))
+            if (HasOtherEquippedItemOp(session, operation.SkillId))
                 continue;
 
             if (!session.RemoveBuff(operation.SkillId, out var removedBuff))
@@ -163,12 +163,26 @@ public class ItemEquipmentEffectService(
         }
     }
 
-    private bool HasOtherEquippedItemOp(UserSession session, int removedItemId, int skillId)
+    private static bool WornUnexpired(UserSession session, int itemId)
     {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        for (var slotIndex = 0; slotIndex < InventoryConstants.SlotMax; slotIndex++)
+        {
+            if (session.Inventory[slotIndex].ItemId == itemId && !session.Inventory[slotIndex].HasExpired(now))
+                return true;
+        }
+
+        return false;
+    }
+
+    // The item leaving has left its slot by now, or has expired in it.
+    private bool HasOtherEquippedItemOp(UserSession session, int skillId)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         for (var slotIndex = 0; slotIndex < InventoryConstants.SlotMax; slotIndex++)
         {
             var equippedItem = session.Inventory[slotIndex];
-            if (equippedItem.ItemId == 0 || equippedItem.ItemId == removedItemId)
+            if (equippedItem.ItemId == 0 || equippedItem.HasExpired(now))
                 continue;
 
             var operations = gameDataService.GetItemOps(equippedItem.ItemId) ?? [];

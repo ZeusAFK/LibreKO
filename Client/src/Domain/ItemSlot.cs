@@ -15,6 +15,8 @@ public struct ItemSlot
 
     public bool IsLinked => UniqueId != 0;
 
+    public bool HasExpired(long nowUnixSeconds) => ExpiresAt > 0 && ExpiresAt <= nowUnixSeconds;
+
     public bool IsTradable => !IsLinked && State
         is not (ItemFlag.Rented or ItemFlag.CharacterSeal or ItemFlag.Duplicate or ItemFlag.Sealed or ItemFlag.Bound);
 

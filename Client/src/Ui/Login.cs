@@ -63,6 +63,7 @@ public partial class Login : Control
         Game.LoginServer.ServerListEvent += OnServerList;
         Game.LoginServer.ErrorEvent += OnError;
         Game.Session.PreGame.LoginResultEvent += OnGameLogin;
+        Game.Session.PreGame.LoginThrottledEvent += OnGameLoginThrottled;
         Game.Session.AccountLock.AccountInUseEvent += OnGameAccountInUse;
         Game.Session.AccountLock.KickResultEvent += OnKickResult;
         Game.Connection.ErrorEvent += OnError;
@@ -501,6 +502,12 @@ public partial class Login : Control
         Game.Connection.BeginGameLogin(Config.GameHostFor(server.Address), server.Port, account, password);
     }
 
+    private void OnGameLoginThrottled()
+    {
+        CloseBusy();
+        Notice.Show(this, LoginResults.Describe((int)LoginResult.TooManyAttempts));
+    }
+
     private void OnGameLogin(bool ok, int nation)
     {
         CloseBusy();
@@ -696,6 +703,7 @@ public partial class Login : Control
         Game.LoginServer.ServerListEvent -= OnServerList;
         Game.LoginServer.ErrorEvent -= OnError;
         Game.Session.PreGame.LoginResultEvent -= OnGameLogin;
+        Game.Session.PreGame.LoginThrottledEvent -= OnGameLoginThrottled;
         Game.Session.AccountLock.AccountInUseEvent -= OnGameAccountInUse;
         Game.Session.AccountLock.KickResultEvent -= OnKickResult;
         Game.Connection.ErrorEvent -= OnError;

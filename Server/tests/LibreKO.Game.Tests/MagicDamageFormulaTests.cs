@@ -49,6 +49,20 @@ public class MagicDamageFormulaTests
     }
 
     [Fact]
+    public void AnExpiredStaffAddsNothingToANova()
+    {
+        var mage = Mage(Erenion);
+        mage.Inventory[InventoryConstants.RightHand].ExpiresAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 1;
+        var monster = new NpcInstance { FireR = 0 };
+
+        var hits = Enumerable.Range(0, Samples)
+            .Select(_ => MagicCombatHelper.GetMagicDamage(mage, monster, FlameNovaDamage, Fire, GameData))
+            .ToList();
+
+        hits.Should().OnlyContain(hit => hit >= 2933 && hit <= 3073, "a staff that ran out casts like no staff");
+    }
+
+    [Fact]
     public void ANovaOnAPlayerIsCutToAThirdWithTheTargetClassScale()
     {
         var mage = Mage(0);

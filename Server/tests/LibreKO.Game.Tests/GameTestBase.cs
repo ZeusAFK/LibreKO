@@ -75,15 +75,21 @@ public abstract class GameTestBase
         Action<AppDbContext> seed,
         Action<IGameDataService>? configureGameData = null,
         Action<GameServerSettings>? configureSettings = null,
-        Action<IServiceCollection>? configureServices = null)
+        Action<IServiceCollection>? configureServices = null,
+        Action<DbContextOptionsBuilder>? useDatabase = null)
     {
         var dbRoot = new InMemoryDatabaseRoot();
         var dbName = $"GameTests_{Guid.NewGuid():N}";
         var services = new ServiceCollection();
         services.AddLogging();
-        services.AddDbContext<AppDbContext>(options => options
-            .UseInMemoryDatabase(dbName, dbRoot)
-            .ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning)));
+        services.AddDbContext<AppDbContext>(options =>
+        {
+            if (useDatabase != null)
+                useDatabase(options);
+            else
+                options.UseInMemoryDatabase(dbName, dbRoot);
+            options.ConfigureWarnings(warnings => warnings.Ignore(CoreEventId.ManyServiceProvidersCreatedWarning, InMemoryEventId.TransactionIgnoredWarning));
+        });
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ICharacterRepository, CharacterRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();

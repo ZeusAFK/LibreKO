@@ -13,12 +13,12 @@ public static class HealStrike
     public static bool Arms(IEnumerable<ItemOpData>? operations) =>
         operations?.Any(operation => operation.TriggerType == ItemOpOnEquip && operation.SkillId == ArmingSkill) == true;
 
-    public static bool Armed(IReadOnlyList<ItemSlot> inventory, Func<int, IEnumerable<ItemOpData>?> operations)
+    public static bool Armed(IReadOnlyList<ItemSlot> inventory, Func<int, IEnumerable<ItemOpData>?> operations, long nowUnixSeconds)
     {
         for (var slot = 0; slot < InventoryConstants.SlotMax && slot < inventory.Count; slot++)
         {
             var itemId = inventory[slot].ItemId;
-            if (itemId != 0 && Arms(operations(itemId)))
+            if (itemId != 0 && !inventory[slot].HasExpired(nowUnixSeconds) && Arms(operations(itemId)))
                 return true;
         }
 

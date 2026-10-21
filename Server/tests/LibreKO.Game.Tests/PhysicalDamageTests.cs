@@ -187,6 +187,21 @@ public class PhysicalDamageTests : GameTestBase
     }
 
     [Fact]
+    public void AnExpiredWeaponCarriesNoElement()
+    {
+        using var provider = CreateProvider(_ => { }, ElementItems);
+        var gameData = provider.GetRequiredService<IGameDataService>();
+        var attacker = CreateAttacker(provider, MoradonZone);
+        Equip(attacker, InventoryConstants.RightHand, HellBreaker);
+        attacker.Inventory[InventoryConstants.RightHand].ExpiresAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 1;
+        Equip(attacker, InventoryConstants.LeftRing, IceRing);
+
+        var hit = ItemCombatBonus.Of(attacker, ElementResistances.Of(new NpcInstance()), gameData);
+
+        hit.Element.Should().Be(IceRingCold, "only the items still in time add their element");
+    }
+
+    [Fact]
     public void AMissStillCarriesTheWeaponElement()
     {
         using var provider = CreateProvider(_ => { }, ElementItems);

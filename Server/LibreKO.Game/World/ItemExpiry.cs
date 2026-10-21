@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 
 namespace LibreKO.Game.World;
 
@@ -16,5 +16,20 @@ public static class ItemExpiry
             (cleared ??= []).Add(index);
         }
         return cleared ?? (IReadOnlyList<int>)[];
+    }
+
+    public static IReadOnlyList<int> RanOutWorn(ItemSlot[] inventory, long sinceUnixSeconds, long nowUnixSeconds)
+    {
+        List<int>? ranOut = null;
+        for (var index = 0; index < InventoryConstants.MagicBagStart; index++)
+        {
+            if (index >= InventoryConstants.SlotMax && index < InventoryConstants.CospreStart)
+                continue;
+
+            var slot = inventory[index];
+            if (slot.HasExpired(nowUnixSeconds) && !slot.HasExpired(sinceUnixSeconds))
+                (ranOut ??= []).Add(slot.ItemId);
+        }
+        return ranOut ?? (IReadOnlyList<int>)[];
     }
 }

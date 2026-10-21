@@ -717,6 +717,27 @@ public class PetTests : GameTestBase
     }
 
     [Fact]
+    public async Task AFamiliarsScrollsGiveNothingOnceItsItemRunsOut()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var gameData = provider.GetRequiredService<IGameDataService>();
+        var (owner, _) = Player(sessions, 700);
+        await EquipPet(provider, owner);
+        owner.RecalculateStatsWithBuffs(gameData);
+        var baseline = owner.MaxHp;
+        var pets = provider.GetRequiredService<IPetService>();
+        await pets.SummonAsync(owner);
+        Carry(owner, 0, HpScroll);
+        (await pets.MoveItemAsync(owner, intoPet: true, HpScroll, 0, 0)).Should().BeTrue();
+
+        owner.Inventory[InventoryConstants.Pet].ExpiresAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds() - 1;
+        owner.RecalculateStatsWithBuffs(gameData);
+
+        owner.MaxHp.Should().Be(baseline, "an expired pet item stops counting toward its owner's stats");
+    }
+
+    [Fact]
     public async Task AnAttackPacketInTheBagRaisesTheFamiliarsAttack()
     {
         using var provider = Provider();

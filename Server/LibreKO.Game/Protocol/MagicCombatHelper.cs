@@ -252,7 +252,9 @@ internal static class MagicCombatHelper
         amount * WeaponBaseShare + amount * level / levelDivisor;
 
     private static ItemData? ItemAt(UserSession caster, int slot, IGameDataService gameData) =>
-        caster.Inventory[slot] is { IsEmpty: false } item ? gameData.GetItem(item.ItemId) : null;
+        caster.Inventory[slot] is { IsEmpty: false } item && !item.HasExpired(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+            ? gameData.GetItem(item.ItemId)
+            : null;
 
     private static bool IsHeavyWeapon(ItemData? item) => item?.Category is ItemKind.SwordOneHand
         or ItemKind.SwordTwoHand or ItemKind.AxeOneHand or ItemKind.AxeTwoHand or ItemKind.Mace

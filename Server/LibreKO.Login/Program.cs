@@ -62,7 +62,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddMemoryCache();
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ILoginService, LoginService>();
-        services.AddSingleton<LoginThrottle>();
+        services.AddSingleton(sp => new LoginThrottle(settings: sp.GetRequiredService<IOptions<LoginServerSettings>>().Value.Logins));
         services.AddSingleton<AccountCreationLimiter>();
 
         services.AddSingleton<IPatchRepository, PatchRepository>();

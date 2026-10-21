@@ -6,6 +6,7 @@ namespace LibreKO.Tests;
 public class IconVeilTests
 {
     private const int AnyItem = 120050000;
+    private const long Now = 1_800_000_000;
 
     private static ItemSlot Slot(ItemFlag flag, short durability = 100) =>
         new() { ItemId = AnyItem, Count = 1, Durability = durability, Flag = (byte)flag };
@@ -21,20 +22,44 @@ public class IconVeilTests
     [InlineData(ItemFlag.Bound, IconWash.None)]
     public void EachItemStateGetsItsWash(ItemFlag flag, IconWash wash)
     {
-        Assert.Equal(wash, IconVeil.Wash(Slot(flag)));
+        Assert.Equal(wash, IconVeil.Wash(Slot(flag), Now));
     }
 
     [Fact]
     public void AnExhaustedItemIsRedWhateverItsState()
     {
-        Assert.Equal(IconWash.Exhausted, IconVeil.Wash(Slot(ItemFlag.Sealed, durability: 0)));
-        Assert.Equal(IconWash.Exhausted, IconVeil.Wash(Slot(ItemFlag.Unsealed, durability: 0)));
+        Assert.Equal(IconWash.Exhausted, IconVeil.Wash(Slot(ItemFlag.Sealed, durability: 0), Now));
+        Assert.Equal(IconWash.Exhausted, IconVeil.Wash(Slot(ItemFlag.Unsealed, durability: 0), Now));
+    }
+
+    [Fact]
+    public void AnItemIsRedFromTheSecondItRunsOut()
+    {
+        var timed = Slot(ItemFlag.Sealed);
+        timed.ExpiresAt = (int)Now;
+
+        Assert.Equal(IconWash.Expired, IconVeil.Wash(timed, Now));
+        Assert.Equal(IconWash.Sealed, IconVeil.Wash(timed, Now - 1));
+        Assert.Equal(IconWash.Sealed, IconVeil.Wash(Slot(ItemFlag.Sealed), Now));
+    }
+
+    [Fact]
+    public void AClearedSlotForgetsItsExpiry()
+    {
+        var timed = Slot(ItemFlag.Unsealed);
+        timed.ExpiresAt = (int)Now;
+
+        timed.Clear();
+        timed.ItemId = AnyItem;
+        timed.Durability = 100;
+
+        Assert.Equal(IconWash.None, IconVeil.Wash(timed, Now));
     }
 
     [Fact]
     public void AnEmptySlotHasNoWash()
     {
-        Assert.Equal(IconWash.None, IconVeil.Wash(default));
+        Assert.Equal(IconWash.None, IconVeil.Wash(default, Now));
     }
 
     [Theory]

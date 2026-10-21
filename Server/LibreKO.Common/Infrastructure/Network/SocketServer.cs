@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using Microsoft.Extensions.Hosting;
@@ -141,7 +141,7 @@ public class SocketServer(
 
                 if (socket.RemoteEndPoint is IPEndPoint remoteEp && !(exemptLoopback && IPAddress.IsLoopback(remoteEp.Address)))
                 {
-                    var ip = remoteEp.Address;
+                    var ip = AddressBucket.Of(remoteEp.Address);
 
                     if (IsRateLimited(ip))
                     {
