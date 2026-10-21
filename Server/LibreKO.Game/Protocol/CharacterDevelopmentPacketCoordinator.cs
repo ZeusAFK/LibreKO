@@ -348,7 +348,6 @@ public class CharacterDevelopmentPacketCoordinator(
     public const int FortuneTellerNpcId = 19005;
     public const int GrandMerchantNpcId = 18004;
 
-    // A rebirth is offered by the Fortune Teller, a reset by the Grand Merchant or a class-change NPC.
     private bool AtTheNpcFor(UserSession session, ClassChangeSubOpcode sub) => sub switch
     {
         ClassChangeSubOpcode.RebirthStatChange => NpcPresence.IsAt(sessionManager, session, FortuneTellerNpcId),

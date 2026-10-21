@@ -58,7 +58,6 @@ public static class PvpRules
         _ => true,
     };
 
-    // A cure whose moral names no side takes it from what it lifts: blessings come off enemies, harm off friends.
     public static SkillMoral CureMoral(SkillMoral moral, bool liftsBlessings) => moral switch
     {
         SkillMoral.None or SkillMoral.All or SkillMoral.AreaAll or SkillMoral.SelfArea

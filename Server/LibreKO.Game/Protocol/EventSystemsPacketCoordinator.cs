@@ -268,7 +268,6 @@ public class EventSystemsPacketCoordinator(
         await sessionManager.BroadcastToAll(EventPacketWriter.TempleSignUps(contest, karus, elMorad));
     }
 
-    // Leaving an event takes a player out only when they are free and out of a fight.
     private async Task HandleTempleEventDisbandAsync(UserSession session)
     {
         var inEvent = session.InstanceReturn != null || CharacterReconnectZoneRepair.IsEventZone(session.ZoneId);

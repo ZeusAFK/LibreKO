@@ -26,11 +26,9 @@ public class NpcAiDeathService(
         var deadPacket = DeathPacketWriter.PlayerDeath(target.CharacterId, npc.UniqueId);
         await sessionManager.Regions.SendToRegion(target, deadPacket, excludeSender: false);
 
-        // Cancelling hands both players' escrowed offers back; clearing the list would lose them.
         if (target.Trade.IsTrading)
             await exchangeLifecycleService.CancelAsync(target, isOnDeath: true);
 
-        // Closing the stall clears its setup flags too and hands back a buying stall's gold.
         if (target.Trade.IsMerchanting || target.Trade.IsMerchantPreparing || target.Trade.BuyMerchantGold > 0)
             await merchantLifecycleService.CloseAsync(target, MerchantInOut.StallClosed);
 

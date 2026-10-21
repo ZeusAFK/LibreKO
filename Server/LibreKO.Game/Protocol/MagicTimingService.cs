@@ -208,7 +208,6 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         if (session.CastingSkillId == magic.Id)
             ClearCast(session);
         session.AcceptedCasts.TryRemove(magic.Id, out _);
-        // The client gives a failed skill its timer back unless the skill has a flight.
         if (magic.FlyingEffect > 0)
             return;
 
@@ -286,7 +285,6 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
 
     private static bool ConsumesAnItem(MagicData magic) => magic.UseItem != 0;
 
-    // A skill released without a cast keeps one per burst floor, two at once.
     private static bool IsPacedRelease(MagicData magic) =>
         !ConsumesAnItem(magic) && magic.PrimaryType != MagicSkillType.Ranged;
 

@@ -134,7 +134,6 @@ public sealed class InstanceEntryService(
         var room = rooms.Open(zoneId, set, duration, endsOnBossKill);
         Populate(room);
 
-        // Each member is checked just before their move, and whoever stays behind is told, as is the opener.
         var leftBehind = new List<string>();
         foreach (var member in members.ToList())
         {

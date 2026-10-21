@@ -62,7 +62,6 @@ public class BountyPacketCoordinator(
 
     public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    // Kills still queued at shutdown are saved before the server stops, within the host's shutdown time.
     public async Task StopAsync(CancellationToken cancellationToken)
     {
         try
@@ -125,7 +124,6 @@ public class BountyPacketCoordinator(
         _ = SaveKillsAsync();
     }
 
-    // One task saves the queued kills, and stops while the board cannot load.
     private async Task SaveKillsAsync()
     {
         while (!kills.IsEmpty && !LoadResting && Interlocked.CompareExchange(ref draining, 1, 0) == 0)
@@ -164,7 +162,6 @@ public class BountyPacketCoordinator(
 
     private bool Resting(Dictionary<int, long> rests, int id) => rests.TryGetValue(id, out var until) && Now < until;
 
-    // Only the killer or the poster wakes a target, and no sooner than a few seconds into its rest.
     private void Wake(Bounty bounty)
     {
         if (restingTargets.TryGetValue(bounty.TargetCharacterId, out var until) && Now >= until - RetryDelay.Ticks + WakeDelay.Ticks)
@@ -235,7 +232,6 @@ public class BountyPacketCoordinator(
                 if (outcome == StateCommit.Saved)
                 {
                     posted = bounty;
-                    // A save whose answer was lost leaves the new row's id unknown, so the board is read again.
                     if (bounty.Id > 0)
                         board.Add(bounty);
                     else
@@ -473,7 +469,6 @@ public class BountyPacketCoordinator(
         return true;
     }
 
-    // A kill still waiting for its save may have earned the bounty.
     private bool KillWaitsOn(Bounty bounty) =>
         unsaved.Any(kill => kill.VictimId == bounty.TargetCharacterId) || kills.Any(kill => kill.VictimId == bounty.TargetCharacterId);
 
@@ -502,7 +497,6 @@ public class BountyPacketCoordinator(
         }
     }
 
-    // A close reported as failed may still have been written.
     private async Task<bool> ForgetIfClosedAsync(Bounty bounty)
     {
         try

@@ -62,7 +62,6 @@ public static class TempleEventHelpers
         return party.Index;
     }
 
-    // A player who joined another party meanwhile stays in it; the first one still free leads.
     private static PartyGroup? SeatParty(SessionManager sessionManager, List<UserSession> sessions)
     {
         PartyGroup? party = null;

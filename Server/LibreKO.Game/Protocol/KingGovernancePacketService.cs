@@ -322,7 +322,6 @@ public class KingGovernancePacketService(
             return;
         }
 
-        // The prize lands whole in the winner's purse, or goes back to the treasury.
         if (!target.WithLock(t =>
             {
                 if ((long)t.Money + amount > ExchangePacketConstants.CoinMax)

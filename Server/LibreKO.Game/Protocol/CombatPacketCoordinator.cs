@@ -32,7 +32,6 @@ public class CombatPacketCoordinator(
     private const short BareHandedSwingInterval = 100;
     private const int MillisecondsPerDelayUnit = 10;
     private const int BareHandedSwingMs = 1000;
-    // The item extension rows carry no attack interval; this is the fastest one any extension gives.
     private const int FastestAttackIntervalPercent = 90;
     private const int PercentScale = 100;
     private const int SwingJitterMs = 250;
