@@ -1,4 +1,5 @@
-﻿using Godot;
+﻿using System;
+using Godot;
 using LibreKO.Domain;
 
 namespace LibreKO;
@@ -14,6 +15,7 @@ public sealed partial class IconVeilView : Control
     private static Texture2D? notBound, bound;
     private IconWash wash;
     private IconBadge badge;
+    private ItemSlot shown;
 
     public IconVeilView()
     {
@@ -28,14 +30,25 @@ public sealed partial class IconVeilView : Control
         return veil;
     }
 
+    public override void _Ready() => SetProcess(RunsOut);
+
+    public override void _Process(double delta)
+    {
+        if (shown.HasExpired(DateTimeOffset.UtcNow.ToUnixTimeSeconds())) Set(shown);
+    }
+
+    private bool RunsOut => wash != IconWash.Expired && !shown.IsEmpty && shown.ExpiresAt > 0;
+
     public void Set(ItemSlot slot)
     {
-        var wash = IconVeil.Wash(slot);
+        shown = slot;
+        var wash = IconVeil.Wash(slot, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         var badge = slot.IsEmpty ? IconBadge.None : IconVeil.Badge(ItemData.ShownFlag(slot));
-        if (wash == this.wash && badge == this.badge) return;
+        var changed = wash != this.wash || badge != this.badge;
         this.wash = wash;
         this.badge = badge;
-        QueueRedraw();
+        SetProcess(RunsOut);
+        if (changed) QueueRedraw();
     }
 
     public void Clear() => Set(default);
@@ -45,7 +58,7 @@ public sealed partial class IconVeilView : Control
         var rect = new Rect2(Vector2.Zero, Size);
         Color? washColor = wash switch
         {
-            IconWash.Exhausted => ExhaustedWash,
+            IconWash.Exhausted or IconWash.Expired => ExhaustedWash,
             IconWash.Rented => RentedWash,
             IconWash.Duplicate => DuplicateWash,
             IconWash.Sealed => SealedWash,

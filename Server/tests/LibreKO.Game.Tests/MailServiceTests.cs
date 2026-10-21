@@ -882,7 +882,8 @@ public class MailServiceTests : GameTestBase
         rented.ItemId = Sword;
         rented.Count = 1;
         rented.ExpiresAt = LongExpired;
-        var expiry = new ItemExpiryService(provider.GetRequiredService<SessionManager>(), NullLogger<ItemExpiryService>.Instance);
+        var expiry = new ItemExpiryService(provider.GetRequiredService<SessionManager>(), provider.GetRequiredService<IItemEquipmentEffectService>(),
+            provider.GetRequiredService<IUserNotificationService>(), NullLogger<ItemExpiryService>.Instance);
         using var inside = new ManualResetEventSlim();
         using var release = new ManualResetEventSlim();
         var holder = Task.Run(() => alice.WithLock(_ =>

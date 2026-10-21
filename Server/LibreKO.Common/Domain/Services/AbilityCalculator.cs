@@ -62,9 +62,10 @@ public static class AbilityCalculator
         byte level, byte strength, byte stamina, byte dexterity, byte intelligence,
         short classId, CoefficientData coefficient, ItemSlot[] inventory, IGameDataService gameData,
         byte[]? skillPoints = null, AchievementTitleData? title = null,
-        RebirthBonus? rebirth = null, StatBonus? buffs = null, short weaponDamageBonus = 0)
+        RebirthBonus? rebirth = null, StatBonus? buffs = null, short weaponDamageBonus = 0, long? nowUnixSeconds = null)
     {
         var stats = new DerivedStats();
+        var now = nowUnixSeconds ?? DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         // Phase 1: Accumulate item bonuses (SetSlotItemValue)
         short itemAc = 0;
@@ -120,6 +121,8 @@ public static class AbilityCalculator
                 continue; // inventory items don't give stat bonuses
             if (i >= InventoryConstants.MagicBagStart)
                 continue; // magic bag items don't give stat bonuses
+            if (slot.HasExpired(now))
+                continue; // an expired item is still carried but gives nothing
 
             var ac = (short)itemProto.Ac;
             if (slot.Durability == 0) ac /= 10; // broken items have reduced AC
@@ -190,7 +193,7 @@ public static class AbilityCalculator
         stats.ItemNpBonus = setTotals.NpBonus;
 
         // Phase 2: Calculate weapon damage and hit coefficient
-        var (itemDamage, hitCoefficient) = CalculateEquippedWeaponStats(inventory, gameData, coefficient, weaponDamageBonus);
+        var (itemDamage, hitCoefficient) = CalculateEquippedWeaponStats(inventory, gameData, coefficient, now, weaponDamageBonus);
 
         // Phase 3: Compute derived stats
         int totalStr = strength + itemStrB;
@@ -201,7 +204,7 @@ public static class AbilityCalculator
 
         // Attack power
         var intelligenceAttack = IsPriest(classId)
-            && GetEquippedItemProto(inventory, InventoryConstants.RightHand, gameData)?.Category == ItemKind.Mace;
+            && GetEquippedItemProto(inventory, InventoryConstants.RightHand, gameData, now)?.Category == ItemKind.Mace;
         stats.TotalHit = CalculateTotalHitCore(
             level,
             intelligenceAttack ? intelligence : strength,
@@ -261,7 +264,7 @@ public static class AbilityCalculator
         if (stats.TotalEvasionrate < 1) stats.TotalEvasionrate = 1;
 
         if (skillPoints is { Length: >= MagicSkillTreeSlots })
-            ApplyDefenceTreeBonuses(stats, classId, skillPoints, inventory, gameData);
+            ApplyDefenceTreeBonuses(stats, classId, skillPoints, inventory, gameData, now);
 
         ApplyStatThresholdBonuses(stats, stamina, intelligence);
 
@@ -299,7 +302,7 @@ public static class AbilityCalculator
 
     private static void ApplyDefenceTreeBonuses(
         DerivedStats stats, short classId, byte[] skillPoints,
-        ItemSlot[] inventory, IGameDataService gameData)
+        ItemSlot[] inventory, IGameDataService gameData, long now)
     {
         const int ProSkill2 = 6; // Defense skill tree index
 
@@ -329,7 +332,7 @@ public static class AbilityCalculator
                 resistanceBonus = 30;
 
             // Bonuses halved if no shield equipped
-            var leftHand = GetEquippedItemProto(inventory, InventoryConstants.LeftHand, gameData);
+            var leftHand = GetEquippedItemProto(inventory, InventoryConstants.LeftHand, gameData, now);
             if (leftHand == null || !leftHand.IsShield())
             {
                 defenseBonus /= 2;
@@ -343,11 +346,11 @@ public static class AbilityCalculator
 
     private const byte StatBonusThreshold = 100;
 
-    private static ItemData? GetEquippedItemProto(ItemSlot[] inventory, int slot, IGameDataService gameData)
+    private static ItemData? GetEquippedItemProto(ItemSlot[] inventory, int slot, IGameDataService gameData, long now)
     {
         if (slot < 0 || slot >= InventoryConstants.SlotMax) return null;
         var item = inventory[slot];
-        if (item.IsEmpty) return null;
+        if (item.IsEmpty || item.HasExpired(now)) return null;
         return gameData.GetItem(item.ItemId);
     }
 
@@ -355,19 +358,20 @@ public static class AbilityCalculator
         ItemSlot[] inventory,
         IGameDataService gameData,
         CoefficientData coefficient,
+        long now,
         short flatWeaponDamageBonus = 0)
     {
         ushort itemDamage = 0;
         float hitCoefficient = 0f;
 
-        var rightHand = GetEquippedItemProto(inventory, InventoryConstants.RightHand, gameData);
+        var rightHand = GetEquippedItemProto(inventory, InventoryConstants.RightHand, gameData, now);
         if (rightHand != null)
         {
             hitCoefficient = GetWeaponCoefficient(rightHand.Category, coefficient);
             itemDamage += (ushort)Math.Max(0, (int)rightHand.Damage + flatWeaponDamageBonus);
         }
 
-        var leftHand = GetEquippedItemProto(inventory, InventoryConstants.LeftHand, gameData);
+        var leftHand = GetEquippedItemProto(inventory, InventoryConstants.LeftHand, gameData, now);
         if (leftHand != null)
         {
             if (leftHand.IsBow())
