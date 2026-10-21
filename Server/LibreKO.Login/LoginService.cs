@@ -137,7 +137,7 @@ public class LoginService(
             remainingPremiumHours = account.RemainingPremiumHours;
         }
 
-        if (result is not (LoginResult.IdNotFound or LoginResult.InvalidPassword))
+        if (result is not (LoginResult.IdNotFound or LoginResult.InvalidPassword or LoginResult.TooManyAttempts))
             throttle.Succeeded(address, login);
 
         return result switch

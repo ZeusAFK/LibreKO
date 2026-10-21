@@ -91,6 +91,20 @@ public class LoginTests : ServerTest
     }
 
     [Fact]
+    public async Task LS_LOGIN_ARefusedAttemptDoesNotLiftTheLock()
+    {
+        await StartServerAsync();
+        var (_, stream) = await ConnectAsync();
+
+        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
+            (await LoginResultAsync(stream, "user", "wrong_password")).Should().Be(LoginResult.InvalidPassword);
+
+        for (var retry = 0; retry < LoginThrottle.MaxFailuresPerName; retry++)
+            (await LoginResultAsync(stream, "user", "password")).Should().Be(LoginResult.TooManyAttempts,
+                "a refused attempt is not a sign-in that clears the misses before it");
+    }
+
+    [Fact]
     public async Task LS_LOGIN_ANameLongerThanAnyAccountIsNotFound()
     {
         await StartServerAsync();
