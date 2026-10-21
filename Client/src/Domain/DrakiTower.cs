@@ -52,6 +52,7 @@ public static class DrakiTower
         DrakiEnterResult.ServerIndexMismatch => (40073, "Server internal instance index info does not match."),
         DrakiEnterResult.PacketIndexMismatch => (40074, "Packet instance index Info does not match."),
         DrakiEnterResult.NoUserInfo => (40075, "No user information"),
+        DrakiEnterResult.CannotEnterNow => (40077, "You cannot enter right now."),
         DrakiEnterResult.SilentRefusal => (40090, ""),
         DrakiEnterResult.LadderPoints => (40091, "You do not have enough ladder point (30 pts) to enter Draki's Tower."),
         DrakiEnterResult.TowerFull => (40076, "Draki's Tower is currently at maximum capacity."),

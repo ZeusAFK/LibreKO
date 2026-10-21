@@ -14,6 +14,7 @@ public enum DrakiEnterResult : byte
     ServerIndexMismatch = 10,
     PacketIndexMismatch = 11,
     NoUserInfo = 12,
+    CannotEnterNow = 13,
     SilentRefusal = 14,
     LadderPoints = 15,
     TowerFull = 100,

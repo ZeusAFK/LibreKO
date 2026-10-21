@@ -265,6 +265,27 @@ public class DrakiTowerTests : GameTestBase
         reply.ReadByte().Should().Be((byte)DrakiEnterResult.WrongZone);
     }
 
+    [Theory]
+    [InlineData(false, false, DrakiEnterResult.CannotEnterNow)]
+    [InlineData(true, true, DrakiEnterResult.AlreadyInInstance)]
+    public async Task HandleEnterAsync_SaysWhyItRefuses(bool atTheRift, bool inARoom, DrakiEnterResult expected)
+    {
+        var session = CreatePlayer(zone: (byte)ZoneId.ElMoradCamp1);
+        if (inARoom)
+            session.Room = 1;
+        var packet = new Packet((byte)GameOpcodes.GS_EVENT);
+        packet.WriteInt(0);
+        packet.WriteByte(1);
+
+        if (atTheRift)
+            AtTheRift(session);
+        await service.HandleEnterAsync(session, packet);
+
+        var reply = sent[session].Single();
+        reply.ReadByte().Should().Be((byte)TempleSubOpcode.DrakiEnter);
+        reply.ReadByte().Should().Be((byte)expected, "a player away from the rift is not told they are in an instance");
+    }
+
     [Fact]
     public async Task HandleEnterAsync_WhenStageNotYetUnlocked_FailsWithFloorNotReached()
     {

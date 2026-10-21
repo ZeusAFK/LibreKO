@@ -36,6 +36,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
     private readonly ILogger<FullMoonRiftService> logger;
     private readonly ConcurrentDictionary<ushort, FullMoonRiftRoomState> activeRooms = new();
     private const string StayedBehindNotice = "You stayed behind: you were busy, held or fighting when the Full Moon Rift opened.";
+    private const string NoVoucherNotice = "You stayed behind: you had no Full Moon Rift Voucher when the Full Moon Rift opened.";
     private const int NoVoucher = -1;
     private readonly Timer? timer;
     private int checkingTimeouts;
@@ -179,14 +180,11 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         foreach (var member in members)
         {
             var (free, spent) = member.WithLock(m => m.MayBeMovedByOthers ? (true, SpendVoucher(m, entryTimestamp)) : (false, NoVoucher));
-            if (!free)
+            if (!free || spent == NoVoucher)
             {
-                await StayBehindAsync(member, leftBehind);
+                await StayBehindAsync(member, leftBehind, free ? NoVoucherNotice : StayedBehindNotice);
                 continue;
             }
-
-            if (spent == NoVoucher)
-                continue;
 
             if (room == null || state == null)
             {
@@ -233,7 +231,6 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         return true;
     }
 
-    // Only a voucher that has not run out pays.
     private static int SpendVoucher(UserSession member, long now)
     {
         for (var index = InventoryConstants.InventoryStart; index < member.Inventory.Length; index++)
@@ -259,10 +256,10 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
         await userNotification.SendWeightChangeAsync(member);
     }
 
-    private static async Task StayBehindAsync(UserSession member, List<string> leftBehind)
+    private static async Task StayBehindAsync(UserSession member, List<string> leftBehind, string notice)
     {
         leftBehind.Add(member.Name);
-        await member.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)member.Nation, StayedBehindNotice));
+        await member.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)member.Nation, notice));
     }
 
     public async Task CheckTimeoutsAsync()

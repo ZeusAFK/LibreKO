@@ -284,6 +284,8 @@ public class EventEscapeTests : GameTestBase
         await transitions.Received(1).ChangeZoneAsync(leader, (byte)ZoneId.DungeonDefence, Arg.Any<float>(), Arg.Any<float>());
         await transitions.DidNotReceive().ChangeZoneAsync(member, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
         FullMoonRules.HasEnteredToday(member).Should().BeFalse("a member who spent nothing used up no entry");
+        Notices(member).Should().ContainSingle(notice => notice.Contains("no Full Moon Rift Voucher"), "the member hears why they stayed behind");
+        Notices(leader).Should().Contain(notice => notice.Contains(member.Name), "the leader hears who stayed behind");
     }
 
     [Fact]
