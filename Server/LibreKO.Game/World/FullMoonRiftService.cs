@@ -38,6 +38,7 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
     private const string StayedBehindNotice = "You stayed behind: you were busy, held or fighting when the Full Moon Rift opened.";
     private const string NoVoucherNotice = "You stayed behind: you had no Full Moon Rift Voucher when the Full Moon Rift opened.";
     private const int NoVoucher = -1;
+    private const short NoNpcSet = 0;
     private readonly Timer? timer;
     private int checkingTimeouts;
 
@@ -171,11 +172,10 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
 
         // Each member is checked, pays and is moved with nothing in between.
         var entryTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        var difficulty = FullMoonRules.DifficultyForPartySize(members.Count);
-        var startStageId = FullMoonRules.StartingStageForDifficulty(difficulty);
         var duration = TimeSpan.FromMinutes(FullMoonRules.RoomDurationMinutes);
         InstanceRoom? room = null;
-        FullMoonRiftRoomState? state = null;
+        DateTime opened = default;
+        var entered = new List<UserSession>();
         var leftBehind = new List<string>();
         foreach (var member in members)
         {
@@ -186,26 +186,15 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
                 continue;
             }
 
-            if (room == null || state == null)
+            if (room == null)
             {
-                room = rooms.Open((byte)ZoneId.DungeonDefence, (short)difficulty, duration, endsOnBossKill: false);
-                var now = DateTime.UtcNow;
-                state = new FullMoonRiftRoomState
-                {
-                    RoomId = room.Id,
-                    Difficulty = difficulty,
-                    CurrentStageId = startStageId,
-                    StartTime = now,
-                    NextSpawnTime = now.AddSeconds(FullMoonRules.InitialSpawnDelaySeconds),
-                    Deadline = now + duration,
-                    WaveActive = false,
-                    RemainingTowers = FullMoonRules.InitialTowers.Length
-                };
+                room = rooms.Open((byte)ZoneId.DungeonDefence, NoNpcSet, duration, endsOnBossKill: false);
+                opened = DateTime.UtcNow;
             }
 
             member.DailyOps[(int)DailyOperation.FullMoonRift] = entryTimestamp;
             rooms.Join(room, member);
-            state.Participants[member.CharacterId] = 0;
+            entered.Add(member);
             member.InstanceReturn = (member.ZoneId, member.X, member.Z);
             await zoneTransition.ChangeZoneAsync(member, (byte)ZoneId.DungeonDefence, FullMoonRules.SpawnX, FullMoonRules.SpawnZ);
             await SendVoucherSpentAsync(member, spent);
@@ -216,11 +205,27 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
                 $"{string.Join(", ", leftBehind)} stayed behind."));
 
-        if (room == null || state == null)
+        if (room == null)
         {
             await session.Client.SendPacket(EventPacketWriter.FullMoonEntry(FullMoonRules.InstanceFailed));
             return false;
         }
+
+        var difficulty = FullMoonRules.DifficultyForPartySize(entered.Count);
+        var startStageId = FullMoonRules.StartingStageForDifficulty(difficulty);
+        var state = new FullMoonRiftRoomState
+        {
+            RoomId = room.Id,
+            Difficulty = difficulty,
+            CurrentStageId = startStageId,
+            StartTime = opened,
+            NextSpawnTime = opened.AddSeconds(FullMoonRules.InitialSpawnDelaySeconds),
+            Deadline = opened + duration,
+            WaveActive = false,
+            RemainingTowers = FullMoonRules.InitialTowers.Length
+        };
+        foreach (var member in entered)
+            state.Participants[member.CharacterId] = 0;
 
         SpawnInitialTowers(room);
 

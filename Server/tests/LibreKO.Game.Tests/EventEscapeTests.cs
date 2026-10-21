@@ -20,6 +20,7 @@ public class EventEscapeTests : GameTestBase
     private const int StunRow = 110560;
     private const int JoinWindowSeconds = 600;
     private const byte FittingLevel = 60;
+    private const int NormalPartySize = 4;
 
     [Theory]
     [InlineData(false, false, false, true)]
@@ -254,20 +255,26 @@ public class EventEscapeTests : GameTestBase
 
     private static (UserSession Leader, UserSession Member) FullMoonParty(SessionManager sessions)
     {
-        var leader = Player(sessions, 1, (byte)ZoneId.Moradon);
-        var member = Player(sessions, 2, (byte)ZoneId.Moradon);
-        var party = sessions.Parties.CreateParty((short)leader.CharacterId);
+        var party = FullMoonParty(sessions, 2);
+        return (party[0], party[1]);
+    }
+
+    private static List<UserSession> FullMoonParty(SessionManager sessions, int size)
+    {
+        var players = Enumerable.Range(1, size).Select(id => Player(sessions, id, (byte)ZoneId.Moradon)).ToList();
+        var party = sessions.Parties.CreateParty((short)players[0].CharacterId);
         party.BoardType = FullMoonRules.FullMoonBoard;
-        party.TryJoin((short)member.CharacterId);
-        leader.PartyIndex = member.PartyIndex = party.Index;
-        foreach (var player in new[] { leader, member })
+        foreach (var player in players)
         {
+            if (player != players[0])
+                party.TryJoin((short)player.CharacterId);
+            player.PartyIndex = party.Index;
             player.Level = FullMoonRules.MinEntryLevel;
             player.Inventory[InventoryConstants.InventoryStart].ItemId = FullMoonRules.VoucherItem;
             player.Inventory[InventoryConstants.InventoryStart].Count = 1;
         }
 
-        return (leader, member);
+        return players;
     }
 
     [Fact]
@@ -286,6 +293,25 @@ public class EventEscapeTests : GameTestBase
         FullMoonRules.HasEnteredToday(member).Should().BeFalse("a member who spent nothing used up no entry");
         Notices(member).Should().ContainSingle(notice => notice.Contains("no Full Moon Rift Voucher"), "the member hears why they stayed behind");
         Notices(leader).Should().Contain(notice => notice.Contains(member.Name), "the leader hears who stayed behind");
+    }
+
+    [Fact]
+    public async Task TheFullMoonDifficultyFollowsTheMembersWhoWentIn()
+    {
+        var transitions = Substitute.For<IZoneTransitionService>();
+        using var provider = CreateProvider(_ => { }, configureServices: services => services.AddSingleton(transitions));
+        var party = FullMoonParty(provider.GetRequiredService<SessionManager>(), NormalPartySize);
+        var leader = party[0];
+        transitions.When(t => t.ChangeZoneAsync(leader, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>()))
+            .Do(_ => party[^1].Inventory[InventoryConstants.InventoryStart].Clear());
+        var rift = provider.GetRequiredService<IFullMoonRiftService>();
+
+        await rift.HandlePartyEntryAsync(leader);
+
+        var state = rift.GetRoomState(leader.Room)!;
+        state.Participants.Should().HaveCount(NormalPartySize - 1);
+        state.Difficulty.Should().Be(FullMoonRules.DifficultyEasy, "the member who stayed behind does not make the room harder");
+        state.CurrentStageId.Should().Be(FullMoonRules.EasyMinStage);
     }
 
     [Fact]
