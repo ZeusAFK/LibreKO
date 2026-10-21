@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Enums;
+using LibreKO.Common.Enums;
 
 namespace LibreKO.Game.World;
 
@@ -47,7 +47,6 @@ public static class PvpRules
             && BattleZoneManager.AllowsNationCombat(attacker.ZoneId);
     }
 
-    // One rule for who an aimed skill may touch, both before the cast is paid and when it lands.
     public static bool MayTouch(UserSession caster, UserSession target, SkillMoral moral, bool healStrikes) => moral switch
     {
         SkillMoral.Enemy or SkillMoral.AreaEnemy or SkillMoral.Npc => CanAttackPlayer(caster, target),

@@ -118,7 +118,6 @@ public class MerchantListingService(
             MerchantSubOpcode.ItemCancel, slotIndex));
     }
 
-    // A stall's listings change only while it is being set up.
     private static bool StallBeingSetUp(UserSession session) =>
         session.Trade.IsSellingMerchantPreparing && !session.Trade.IsMerchanting;
 

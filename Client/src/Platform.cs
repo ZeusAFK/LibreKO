@@ -15,6 +15,8 @@ public static class Platform
 
     public static bool BundledContent => OS.HasFeature("android");
 
+    public static bool Android => OS.HasFeature("android");
+
     public static bool HasTouchscreen => DisplayServer.IsTouchscreenAvailable();
 
     public static bool TouchUi => (Override ?? Config.TouchUi) switch

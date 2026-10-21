@@ -13,7 +13,6 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// Stall sales run under both players' locks and sell only what the seller's slot holds.
 public class MerchantStallTests : GameTestBase
 {
     private const int Ware = 379_080_000;
@@ -35,7 +34,6 @@ public class MerchantStallTests : GameTestBase
         using var market = new Market();
         var seller = market.Player(96001, gold: 0);
         ListByHand(seller, Ware, count: 1);
-        // The listed item left the slot by some route; something else sits there now.
         Stock(Bag(seller, BagPos), Other, 1);
         var buyer = market.Player(96002, gold: StartingGold);
         buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
@@ -478,7 +476,6 @@ public class MerchantStallTests : GameTestBase
         first.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
         second.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
-        // The item is looked up before the locks and again inside them.
         market.HoldEachRequestAtLookups(2);
         await Task.WhenAll(
             Task.Run(() => market.BuyAsync(first, Ware, 1)),
@@ -562,7 +559,6 @@ public class MerchantStallTests : GameTestBase
         using var market = new Market();
         var owner = market.Player(96015, gold: StartingGold);
         await market.OpenBuyingStallAsync(owner, (Ware, 5, Price));
-        // Gold reached the purse by some route while the stall held its share.
         owner.Money = ExchangePacketConstants.CoinMax - 1_000;
 
         await market.SendAsync(owner, MerchantSubOpcode.BuyClose);
@@ -624,7 +620,6 @@ public class MerchantStallTests : GameTestBase
         using var halfWay = new ManualResetEventSlim();
         using var saved = new ManualResetEventSlim();
 
-        // Another connection pays, takes the item and hurts the player in one locked step.
         var purchase = Task.Run(() => owner.WithLock(s =>
         {
             s.Money -= Price;

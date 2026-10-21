@@ -142,6 +142,9 @@ internal sealed class GatherSystem : IFeature
             : GatherZones.IsMiningArea(context.Zone, mapX, mapZ);
     }
 
+    internal bool GatherHere() =>
+        Gathering || (!context.Self.Dead && (SelfInGatherArea(fishing: true) || SelfInGatherArea(fishing: false)));
+
     internal bool TryStartGather()
     {
         if (Gathering) { StopGather(sendStop: true); return true; }
@@ -429,7 +432,7 @@ internal sealed class GatherSystem : IFeature
     {
         if (position >= 0 && position < self.Inventory.Length)
         {
-            self.SetInventorySlot(position, new ItemSlot { ItemId = self.Inventory[position].ItemId, Count = self.Inventory[position].Count, Durability = dura });
+            self.SetInventoryDurability(position, dura);
             if (context.MainWindows.CharTabOpen()) context.Inventory.Refresh();
         }
 

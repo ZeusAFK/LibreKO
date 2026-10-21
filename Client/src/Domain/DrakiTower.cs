@@ -13,6 +13,7 @@ public static class DrakiTower
     public const string ClearLabel = "Clear";
     public const string GiveUpLabel = "Give Up";
     public const int NoCertificate = 0;
+    public const string TownPrompt = "Leave Draki's Tower and go back to town?";
 
     private const int MaxRank = 100;
     private const int SecondsPerHour = 3600;

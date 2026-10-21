@@ -91,7 +91,7 @@ internal sealed class WhispersFeature : IFeature
         friends.WhisperRequested -= OpenWhisperWith;
         roomMedia.KeepOpenWhispers(Windows.Values
             .Where(whisper => GodotObject.IsInstanceValid(whisper.Window) && whisper.Window.Visible)
-            .Select(whisper => new OpenWhisper(whisper.Name, whisper.Window.Position.X, whisper.Window.Position.Y, whisper.Window.Minimized,
+            .Select(whisper => new OpenWhisper(whisper.Name, whisper.Window.Position.X, whisper.Window.Position.Y, Folded(whisper),
                 whisper.Blink != null && whisper.Blink.IsValid())));
         chat.ChatEvent -= OnWhisper;
         roomMedia.DirectTimelineEvent -= OnDirectTimeline;
@@ -299,6 +299,7 @@ internal sealed class WhispersFeature : IFeature
     internal void CloseWhisper(string name)
     {
         if (!Windows.Remove(name, out var whisper)) return;
+        themedFolded.Remove(name);
         StopWhisperBlink(whisper);
         if (VoiceChat.I is { } voice && voice.RecordingFor(name)) voice.StopRecording(send: false);
         whisper.Window.QueueFree();
@@ -426,12 +427,27 @@ internal sealed class WhispersFeature : IFeature
 
     internal void MinimizeAllWhispers()
     {
-        foreach (var whisper in Windows.Values)
-            if (IsWhisperExpanded(whisper)) whisper.Window.SetMinimized(true);
+        foreach (var whisper in Windows.Values.ToList())
+            if (IsWhisperExpanded(whisper)) Fold(whisper);
     }
 
-    private static bool IsWhisperExpanded(Whisper whisper) =>
-        GodotObject.IsInstanceValid(whisper.Window) && whisper.Window.Visible && !whisper.Window.Minimized;
+    private readonly Dictionary<string, bool> themedFolded = new(StringComparer.OrdinalIgnoreCase);
+
+    internal void ReportThemedFold(string name, bool folded) => themedFolded[name] = folded;
+
+    private bool Folded(Whisper whisper) =>
+        whisper.Window.PluginReplaced
+            ? themedFolded.GetValueOrDefault(whisper.Name, whisper.StartCollapsed)
+            : whisper.Window.Minimized;
+
+    private void Fold(Whisper whisper)
+    {
+        if (whisper.Window.PluginReplaced) context.Plugins.WhisperCollapse(whisper.Name);
+        else whisper.Window.SetMinimized(true);
+    }
+
+    private bool IsWhisperExpanded(Whisper whisper) =>
+        GodotObject.IsInstanceValid(whisper.Window) && whisper.Window.Visible && !Folded(whisper);
 
     internal bool WhisperInputHasFocus()
     {
@@ -449,8 +465,8 @@ internal sealed class WhispersFeature : IFeature
             if (n is not HudWindow window) continue;
             foreach (var whisper in Windows.Values)
             {
-                if (whisper.Window != window || window.Minimized) continue;
-                window.SetMinimized(true);
+                if (whisper.Window != window || Folded(whisper)) continue;
+                Fold(whisper);
                 focus?.ReleaseFocus();
                 return true;
             }

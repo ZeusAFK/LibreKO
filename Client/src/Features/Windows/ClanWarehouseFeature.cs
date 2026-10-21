@@ -12,8 +12,9 @@ internal sealed partial class ClanWarehouseFeature : IFeature, IClosableWindow
     private readonly IClanWarehouseRequests requests;
     private readonly WarehouseFeature warehouse;
     private readonly IInteractionDialogs interactionDialogs;
+    private readonly ExchangeFeature exchange;
 
-    public ClanWarehouseFeature(IWorldContext context, ClanSession clan, ClanWarehouseSession clanWarehouse, ProgressSession progress, SelfSession self, IClanWarehouseRequests requests, WarehouseFeature warehouse, IInteractionDialogs interactionDialogs)
+    public ClanWarehouseFeature(IWorldContext context, ClanSession clan, ClanWarehouseSession clanWarehouse, ProgressSession progress, SelfSession self, IClanWarehouseRequests requests, WarehouseFeature warehouse, IInteractionDialogs interactionDialogs, ExchangeFeature exchange)
     {
         this.context = context;
         this.clan = clan;
@@ -23,7 +24,10 @@ internal sealed partial class ClanWarehouseFeature : IFeature, IClosableWindow
         this.requests = requests;
         this.warehouse = warehouse;
         this.interactionDialogs = interactionDialogs;
+        this.exchange = exchange;
     }
+
+    private const string TradingText = "You cannot use the clan warehouse while trading.";
 
     internal const int Slots = ClanWarehouseWire.NetSlots;
     private const int PageSize = 24;
@@ -161,6 +165,7 @@ internal sealed partial class ClanWarehouseFeature : IFeature, IClosableWindow
     {
         if (shown) { Close(); return; }
         if (!clan.MyClan.InClan) { context.Log.Notice(NotInText); return; }
+        if (exchange.TradeHoldsInput) { context.Log.Notice(TradingText); return; }
         page = 0;
         pageTabs.Select(0, notify: false);
         status.ResetStatus();
@@ -238,19 +243,14 @@ internal sealed partial class ClanWarehouseFeature : IFeature, IClosableWindow
         withdrawBtn.TooltipText = CanWithdraw ? "Take gold out of the clan bank" : NoRightsText;
     }
 
-    private bool FitsIn(int whIdx, int itemId, int count) =>
-        slots[whIdx].IsEmpty
-        || (slots[whIdx].ItemId == itemId && UiKit.IsStackable(itemId) && slots[whIdx].Count + count <= Inventory.StackMax);
+    private bool FitsIn(int whIdx, ItemSlot source, int count) =>
+        StorageDestination.Fits(slots[whIdx], source, count, UiKit.IsStackable(source.ItemId));
 
-    private int WhDestination(int itemId, int count, out bool merge)
+    private int WhDestination(ItemSlot source, int count, out bool merge)
     {
-        merge = false;
-        if (UiKit.IsStackable(itemId))
-            for (int i = 0; i < Slots; i++)
-                if (slots[i].ItemId == itemId && slots[i].Count + count <= Inventory.StackMax)
-                { merge = true; return i; }
-        for (int i = 0; i < Slots; i++) if (slots[i].IsEmpty) return i;
-        return -1;
+        int whIdx = StorageDestination.Find(slots, source, count, UiKit.IsStackable(source.ItemId));
+        merge = whIdx >= 0 && !slots[whIdx].IsEmpty;
+        return whIdx;
     }
 
     private bool CanDropOn(int whIdx, Variant data)
@@ -294,13 +294,13 @@ internal sealed partial class ClanWarehouseFeature : IFeature, IClosableWindow
         bool merge;
         if (target >= 0)
         {
-            if (!FitsIn(target, slot.ItemId, count)) { status.Status("That slot is taken.", bad: true); return; }
+            if (!FitsIn(target, slot, count)) { status.Status("That slot is taken.", bad: true); return; }
             whIdx = target;
             merge = !slots[target].IsEmpty;
         }
         else
         {
-            whIdx = WhDestination(slot.ItemId, count, out merge);
+            whIdx = WhDestination(slot, count, out merge);
             if (whIdx < 0) { status.Status("The clan bank is full.", bad: true); return; }
         }
         pending = new ClanPending { Op = WarehouseSubOpcode.Input, Merge = merge, InvAbs = abs, WhIdx = whIdx, Count = count };
@@ -330,13 +330,13 @@ internal sealed partial class ClanWarehouseFeature : IFeature, IClosableWindow
         bool merge;
         if (target >= 0)
         {
-            if (!warehouse.FitsInBag(target, slot.ItemId, count)) { status.Status("That slot is taken.", bad: true); return; }
+            if (!warehouse.FitsInBag(target, slot, count)) { status.Status("That slot is taken.", bad: true); return; }
             dest = target;
             merge = !self.Inventory[target].IsEmpty;
         }
         else
         {
-            dest = warehouse.BagDestination(slot.ItemId, count, out merge);
+            dest = warehouse.BagDestination(slot, count, out merge);
             if (dest < 0) { status.Status("Your bags are full.", bad: true); return; }
         }
         pending = new ClanPending { Op = WarehouseSubOpcode.Output, Merge = merge, InvAbs = dest, WhIdx = whIdx, Count = count };
@@ -407,13 +407,17 @@ internal sealed partial class ClanWarehouseFeature : IFeature, IClosableWindow
             return;
         }
 
-        if (!inFlight) return;
+        if (!inFlight || op != pending.Op) return;
         inFlight = false;
         if (result != ClanWarehouseResult.Succeeded)
         {
             status.Status(result == ClanWarehouseResult.Failed && op == WarehouseSubOpcode.Output
                 ? ItemData.Text(WarehouseFeature.NoRoomText, "Your bags are full.") : RefusalText(result), bad: true);
-            if (shown) Refresh();
+            if (shown)
+            {
+                requests.ClanWhOpen();
+                Refresh();
+            }
             return;
         }
 

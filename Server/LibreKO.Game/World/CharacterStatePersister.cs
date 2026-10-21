@@ -234,7 +234,6 @@ public class CharacterStatePersister(
         }
     }
 
-    // A store that retries a save runs it in a transaction and first asks whether a lost answer was a write.
     private async Task SaveOnceAsync(AppDbContext db, Character character, (int Money, byte[] Items) stored,
         Func<AppDbContext, Task<bool>>? landed, CancellationToken cancellationToken)
     {
@@ -365,7 +364,6 @@ public class CharacterStatePersister(
 
             using var scope = scopeFactory.CreateScope();
             var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-            // Direct single-column UPDATE — no full character row read or rewrite.
             await characterRepository.UpdateQuestDataAsync(session.CharacterId, session.SerializeQuestData());
         }
         finally

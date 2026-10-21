@@ -178,6 +178,18 @@ public sealed class PartySession
 
     internal void RaisePartyInvite(int arg1, string arg2) => PartyInviteEvent?.Invoke(arg1, arg2);
 
+    public event Action<PartyInviteSent>? PartyInviteSentEvent;
+
+    internal void RaisePartyInviteSent(PartyInviteSent sent) => PartyInviteSentEvent?.Invoke(sent);
+
+    public event Action<int>? PartyInviteClosedEvent;
+
+    internal void RaisePartyInviteClosed(int inviteeId) => PartyInviteClosedEvent?.Invoke(inviteeId);
+
+    public event Action<int>? PartyInviteWithdrawnEvent;
+
+    internal void RaisePartyInviteWithdrawn(int inviterId) => PartyInviteWithdrawnEvent?.Invoke(inviterId);
+
     public event Action<int, string>? PartyRemovedEvent;
 
     internal void RaisePartyRemoved(int arg1, string arg2) => PartyRemovedEvent?.Invoke(arg1, arg2);

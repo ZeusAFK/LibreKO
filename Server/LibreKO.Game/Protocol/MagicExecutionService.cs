@@ -87,7 +87,7 @@ public class MagicExecutionService(
     {
         var moral = (SkillMoral)magic.Moral;
         var groundMoral = moral is SkillMoral.AreaEnemy or SkillMoral.AreaFriend or SkillMoral.AreaAll;
-        var casterMoral = moral is SkillMoral.PartyAll or SkillMoral.SelfArea;
+        var casterMoral = moral is SkillMoral.PartyAll or SkillMoral.SelfArea or SkillMoral.SiegeWeapon;
         var radius = AreaRadius(magic, skillId);
         var isArea = radius > 0
             && magic.PrimaryType is MagicSkillType.Melee or MagicSkillType.OverTime or MagicSkillType.Buff or MagicSkillType.Area;

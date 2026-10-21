@@ -132,7 +132,6 @@ public class ClanFundTests : GameTestBase
         player.Loyalty.Should().Be(1);
     }
 
-    // Every thread is released at once and runs its share of the rounds, so the steps overlap from the first round.
     private static void Together(Action round)
     {
         using var start = new Barrier(Threads);

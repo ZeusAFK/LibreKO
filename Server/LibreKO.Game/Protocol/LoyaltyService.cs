@@ -67,7 +67,6 @@ public class LoyaltyService(
             await achievementProgressService.RefreshAsync(session);
     }
 
-    // A total of national points stops at the largest value it can hold instead of wrapping negative.
     internal static int Gained(int total, long gain) => (int)Math.Clamp(total + gain, 0, int.MaxValue);
 
     // Call under the player's lock.
@@ -110,7 +109,6 @@ public class LoyaltyService(
         return true;
     }
 
-    // A donor keeps a floor of national points; the check and the payment are one step.
     private static bool TryDonate(UserSession session, int amount)
     {
         if (amount <= 0 || (long)session.Loyalty - amount < ClanRules.DonorKeepsNationalPoints)

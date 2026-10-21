@@ -775,13 +775,19 @@ internal sealed class PlayerSystem : IFeature, IMovement, ISelfView
 
     private bool RangedAutoAttack() => skillCast.BasicRangedAttackSkill() != null;
 
+    private bool approachHalted;
+
     private Vector3 AutoAttackWish(EntityView autoTarget)
     {
         if (RangedAutoAttack()) return Vector3.Zero;
         Vector3 towardTarget = autoTarget.Body.GlobalPosition - avatar.Body.Position;
         towardTarget.Y = 0;
-        float closeTo = basicAttack.BasicAttackRange(autoTarget) * BasicAttackSystem.ApproachFraction;
-        if (towardTarget.LengthSquared() <= closeTo * closeTo) return Vector3.Zero;
+        float range = basicAttack.BasicAttackRange(autoTarget);
+        float distance2 = towardTarget.LengthSquared();
+        if (distance2 > range * range) approachHalted = false;
+        else if (basicAttack.SwingDue(FrameClock.Now())) approachHalted = true;
+        float closeTo = range * BasicAttackSystem.ApproachFraction;
+        if (approachHalted || distance2 <= closeTo * closeTo) return Vector3.Zero;
         avatar.Facing = towardTarget.Normalized();
         return avatar.Facing;
     }
@@ -848,6 +854,11 @@ internal sealed class PlayerSystem : IFeature, IMovement, ISelfView
                 }
 
                 Vector3 hit = from + direction * high;
+                if (scenery.WalkableHitAlong(from, from + direction * (high + ClickFloorRayMargin)) is { } deck)
+                {
+                    worldPosition = deck + Vector3.Up * lift;
+                    return true;
+                }
                 var (mapX, mapZ) = scenery.WorldToMap(hit);
                 worldPosition = context.Terrain.GroundPos(mapX, mapZ, hit.Y, lift);
                 return true;
@@ -857,8 +868,15 @@ internal sealed class PlayerSystem : IFeature, IMovement, ISelfView
             previousHeightDelta = heightDelta;
         }
 
+        if (scenery.WalkableHitAlong(from, from + direction * maxRayDistance) is { } floor)
+        {
+            worldPosition = floor + Vector3.Up * lift;
+            return true;
+        }
         return false;
     }
+
+    private const float ClickFloorRayMargin = 0.5f;
 
     internal void ShowMoveIndicator(Vector3 destination)
     {

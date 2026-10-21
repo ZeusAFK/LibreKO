@@ -620,7 +620,7 @@ public class MagicOverTimeService(
 
         if (target.CharacterId == caster.CharacterId)
             return (SkillMoral)moral is SkillMoral.Self or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe
-                or SkillMoral.Party or SkillMoral.PartyAll or SkillMoral.AreaFriend or SkillMoral.AreaAll;
+                or SkillMoral.Party or SkillMoral.PartyAll or SkillMoral.AreaFriend or SkillMoral.AreaAll or SkillMoral.SiegeWeapon;
 
         var isAlly = target.Nation == caster.Nation;
         var isFoe = PvpRules.IsEnemy(caster, target);
@@ -629,7 +629,7 @@ public class MagicOverTimeService(
         {
             SkillMoral.Party or SkillMoral.PartyAll => isPartyMember,
             SkillMoral.AreaEnemy or SkillMoral.SelfArea => isFoe,
-            SkillMoral.AreaFriend => isAlly,
+            SkillMoral.AreaFriend or SkillMoral.SiegeWeapon => isAlly,
             SkillMoral.AreaAll => true,
             SkillMoral.Npc or SkillMoral.Enemy or SkillMoral.All or SkillMoral.None => isFoe,
             SkillMoral.Self or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe => isAlly,

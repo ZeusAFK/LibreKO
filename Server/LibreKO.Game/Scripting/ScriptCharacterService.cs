@@ -163,7 +163,6 @@ public class ScriptCharacterService(
             return false;
         }
 
-        // The token and the new job change in one step, and not while the player is tied up or fighting.
         var refusal = session.WithLock(s =>
         {
             if (s.IsBusy || s.IsHeld || s.IsInCombat)

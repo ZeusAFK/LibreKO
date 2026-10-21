@@ -26,4 +26,5 @@ public class FtpSettings
 public class AccountSettings
 {
     public bool AutoCreate { get; set; }
+    public int AutoCreatePerNetworkPerHour { get; set; } = 3;
 }

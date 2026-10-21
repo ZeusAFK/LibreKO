@@ -12,7 +12,7 @@ public enum DropBand : byte
 
 public readonly record struct DropLine(int ItemId, DropBand Band);
 
-public sealed record DropSummary(int CoinMin, int CoinMax, int Experience, IReadOnlyList<DropLine> Items);
+public sealed record DropSummary(int CoinMin, int CoinMax, int Experience, IReadOnlyList<DropLine> Items, int Total);
 
 public static class DropSummaries
 {
@@ -61,7 +61,7 @@ public static class DropSummaries
         lines.Sort((a, b) => a.Band != b.Band ? a.Band.CompareTo(b.Band) : a.ItemId.CompareTo(b.ItemId));
         int coinMax = Math.Max(0, npc.GoldDrop);
         return new DropSummary(coinMax * CoinMinPercent / 100, coinMax, Math.Max(0, npc.Experience),
-            lines.Take(MaxLines).ToList());
+            lines.Take(MaxLines).ToList(), lines.Count);
     }
 
     private static void Add(List<DropLine> lines, HashSet<int> seen, IGameDataService gameData, int itemId, int chance)

@@ -90,7 +90,6 @@ public sealed class LoginThrottle(TimeProvider? clock = null, LoginThrottleSetti
         }
     }
 
-    // A login that let the player in was no failure: it clears the name for this address and takes its attempt back, keeping no empty entry.
     public void Succeeded(string address, string login)
     {
         var name = Normal(login);
@@ -137,7 +136,6 @@ public sealed class LoginThrottle(TimeProvider? clock = null, LoginThrottleSetti
             return Now - failures.Since < Window && failures.Count >= limit;
     }
 
-    // A table sweeps expired entries once a minute and drops its oldest when full; an attempt whose entry left meanwhile counts on a fresh one.
     private int Count(Table table, string key)
     {
         while (true)

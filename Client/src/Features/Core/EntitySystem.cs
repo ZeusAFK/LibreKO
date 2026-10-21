@@ -96,6 +96,12 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
             if (moveStep > 0f && !Perf.SkipMove && e.HasTarget && e.Speed > 0f && !e.Dead)
             {
                 var moved = pos.MoveToward(e.Target, e.Speed * moveStep);
+                if (pos.DistanceSquaredTo(selfPos) <= FollowGroundDist * FollowGroundDist)
+                {
+                    var flat = new Vector2(pos.X, pos.Z).MoveToward(new Vector2(e.Target.X, e.Target.Z), e.Speed * moveStep);
+                    if (flat.X != pos.X || flat.Y != pos.Z)
+                        moved = new Vector3(flat.X, scenery.FollowGroundY(new Vector3(flat.X, pos.Y - e.Lift, flat.Y)) + e.Lift, flat.Y);
+                }
                 if (moved != pos) { pos = moved; e.Body.Position = pos; }
             }
 
@@ -167,7 +173,11 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
     void IEntityAccess.SpawnFxOn(int charId, string fxName, float y) => SpawnFxOn(charId, fxName, y);
     Node3D IEntityAccess.Layer => EntityLayer;
     void IEntityAccess.ReleaseCorpse(EntityView e) => entityAction.ReleaseCorpse(e);
-    void IEntityAccess.GenieAura(int entityId, bool on) => entityStates.ShowGenieAura(entityId, on);
+    void IEntityAccess.GenieAura(int entityId, bool on)
+    {
+        if (pendingSpawns.TryGetValue(entityId, out var queued)) queued.GenieActive = on;
+        entityStates.ShowGenieAura(entityId, on);
+    }
     void IEntityAccess.RefreshClanLine(int charId) => entityPlates.RefreshClanLine(charId);
     void IEntityAccess.RefreshSelfClanLine() => entityPlates.RefreshSelfClanLine();
     Vector3? IEntityAccess.WorldPosOf(int charId) => WorldPosOf(charId);
@@ -197,6 +207,7 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
     }
 
     private const float TeleportSnap = 30.0f;
+    private const float FollowGroundDist = 64f;
 
     internal Node3D EntityLayer { get; private set; } = null!;
 
@@ -235,6 +246,24 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
     internal event Action<EntityView, EntitySnapshot>? EntityRefreshed;
 
     internal event Action<int>? EntityRevived;
+
+    internal void Revive(EntityView e)
+    {
+        if (!e.Dead) return;
+        EntityRevived?.Invoke(e.Id);
+        e.Dead = false;
+        e.DeathDueAt = 0;
+        e.CorpseRemoveAt = 0;
+        e.ActionUntil = 0;
+        e.ActionRank = 0;
+        e.ActionClip = null;
+        e.Clip = null;
+        e.PushStart = -1;
+        e.DeathCryAt = 0;
+        e.KillStriker = -1;
+        e.Flinch?.Stop();
+        NpcGatesFeature.RefreshGateBlocker(e);
+    }
 
     internal event Action<int>? EntityRemoved;
 
@@ -278,20 +307,15 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
                 existing.KnightsRank = info.KnightsRank;
                 existing.ClanFlag = info.ClanFlag;
                 existing.ClanFame = info.ClanFame;
+                if (info.GenieActive != entityStates.GenieUsers.Contains(info.Id)) entityStates.ShowGenieAura(info.Id, info.GenieActive);
                 entityPlates.RefreshClanLine(existing, info.Id);
                 EntityRefreshed?.Invoke(existing, info);
             }
             if (info.Dead) entityAction.LayOutCorpse(existing);
             else if (existing.Dead)
             {
-                EntityRevived?.Invoke(info.Id);
-                existing.Dead = false;
-                existing.DeathDueAt = 0;
-                existing.CorpseRemoveAt = 0;
-                existing.ActionUntil = 0; existing.ActionRank = 0;
-                existing.ActionClip = null; existing.Clip = null;
+                Revive(existing);
                 existing.Hp = existing.MaxHp;
-                NpcGatesFeature.RefreshGateBlocker(existing);
             }
             return;
         }
@@ -534,12 +558,7 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
         if (move.Id == context.Self.CharId) return;
         if (!Ents.TryGetValue(move.Id, out var e)) return;
         if (e.Dead && e.IsNpc) return;
-        if (e.Dead)
-        {
-            e.Dead = false; e.DeathDueAt = 0; e.CorpseRemoveAt = 0; e.ActionUntil = 0; e.ActionClip = null; e.Clip = null;
-            e.PushStart = -1; e.DeathCryAt = 0; e.KillStriker = -1;
-            NpcGatesFeature.RefreshGateBlocker(e);
-        }
+        if (e.Dead) Revive(e);
 
         var dest = e.Body.Position.DistanceSquaredTo(context.Self.Body.Position) <= EntityProbeDist * EntityProbeDist
             ? scenery.GroundPosFor(e.IsNpc, move.X, move.Z, move.Y, e.Lift)
@@ -603,6 +622,7 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
     internal const int OffScreenMoveEvery = 6;
     internal const float OnScreenMoveFloor = 1f / 30f;
     private const float AnimViewMargin = 4f;
+    private const float BigBodyRadius = 2f;
     internal const double FarEntityInterval = 0.1;
     private readonly ViewFrustum frustum = new();
     private int animFull;
@@ -613,7 +633,9 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
 
     internal void RefreshFrustum() => frustum.Refresh(context.Camera);
 
-    private bool InView(Vector3 pos) => frustum.Contains(pos, AnimViewMargin);
+    private bool InView(EntityView e, Vector3 pos) => e.BoundRadius > BigBodyRadius
+        ? frustum.Contains(pos + Vector3.Up * e.BoundRadius, AnimViewMargin + e.BoundRadius)
+        : frustum.Contains(pos, AnimViewMargin);
 
     private readonly List<EntityView> animRanking = new();
 
@@ -636,7 +658,7 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
         float pause2 = EntityRig.EntityRenderDist * EntityRig.EntityRenderDist;
         float resume2 = (EntityRig.EntityRenderDist - 12f) * (EntityRig.EntityRenderDist - 12f);
         e.Far = e.Far ? d2 > resume2 : d2 > pause2;
-        bool inView = InView(pos);
+        bool inView = InView(e, pos);
         e.JustEntered = inView && !e.OnScreen;
         e.OnScreen = inView;
         if (e.Anim == null) return;
@@ -715,8 +737,10 @@ internal sealed class EntitySystem : IFeature, IEntityAccess
         if (e.BridgeFloor != null && GodotObject.IsInstanceValid(e.BridgeFloor))
             e.BridgeFloor.QueueFree();
         e.Crowd?.Release();
+        if (e.RigCrowd != e.Crowd) e.RigCrowd?.Release();
         e.Body.QueueFree();
         Ents.Remove(id);
+        entityStates.GenieUsers.Remove(id);
         entityStates.StateVisualForgetEntity(id);
         entityStates.SizeStateForgetEntity(id);
         stealth.StealthForgetEntity(id);

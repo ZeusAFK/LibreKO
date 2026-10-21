@@ -2,7 +2,7 @@
 
 namespace LibreKO.Features.Hud;
 
-internal sealed class EventPlatesFeature : IFeature
+internal sealed class EventPlatesFeature : IFeature, IHudTickFeature
 {
     private readonly IWorldContext context;
     private readonly TargetHudFeature targetHud;
@@ -29,6 +29,21 @@ internal sealed class EventPlatesFeature : IFeature
     public void Dispose()
     {
         if (context.Root.IsInsideTree()) context.Root.GetViewport().SizeChanged -= Queue;
+    }
+
+    private const double HudWatchInterval = 0.25;
+    private double hudWatchAt;
+    private int hudRectsKey;
+
+    public void HudTick(double delta, double nowSec)
+    {
+        if (nowSec < hudWatchAt || plateOrder.Count == 0) return;
+        hudWatchAt = nowSec + HudWatchInterval;
+        int key = 0;
+        foreach (var rect in PlateHudRects()) key = HashCode.Combine(key, rect);
+        if (key == hudRectsKey) return;
+        hudRectsKey = key;
+        Queue();
     }
 
     internal void AddPlate(Control plate, HudLayout? layout = null, string? layoutId = null)

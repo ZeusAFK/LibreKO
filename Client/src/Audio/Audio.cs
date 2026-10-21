@@ -286,9 +286,20 @@ public partial class Audio : Node
     private bool Reserve(int soundId, int cap)
     {
         live.TryGetValue(soundId, out int n);
+        if (n >= cap) n = live[soundId] = PlayingCopies(soundId);
         if (n >= cap) return false;
         live[soundId] = n + 1;
         return true;
+    }
+
+    private int PlayingCopies(int soundId)
+    {
+        int n = 0;
+        foreach (var p in pool3)
+            if (p.Playing && p.HasMeta(SoundMeta) && p.GetMeta(SoundMeta).AsInt32() == soundId) n++;
+        foreach (var p in pool2)
+            if (p.Playing && p.HasMeta(SoundMeta) && p.GetMeta(SoundMeta).AsInt32() == soundId) n++;
+        return n;
     }
 
     private void Release(int soundId)
@@ -309,7 +320,11 @@ public partial class Audio : Node
     private AudioStreamPlayer3D? Take3D()
     {
         foreach (var p in pool3)
-            if (!p.Playing) return p;
+            if (!p.Playing)
+            {
+                OnFinished(p);
+                return p;
+            }
         if (pool3.Count >= Pool3D) return null;
         var np = new AudioStreamPlayer3D
         {
@@ -327,7 +342,11 @@ public partial class Audio : Node
     private AudioStreamPlayer? Take2D()
     {
         foreach (var p in pool2)
-            if (!p.Playing) return p;
+            if (!p.Playing)
+            {
+                OnFinished(p);
+                return p;
+            }
         if (pool2.Count >= Pool2D) return null;
         var np = new AudioStreamPlayer { Bus = BusUi };
         AddChild(np);

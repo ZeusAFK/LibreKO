@@ -152,6 +152,8 @@ public static class SkillData
 
         public int TransformUse => Effect.TryGetValue("UserSkillUse", out var v) ? v : 0;
 
+        public bool SiegeForm => Effect.TryGetValue("UserSkillUse", out var v) && v == SiegeFormSkillUse;
+
         public bool IsResurrect => SpecialKind == SpecialMagic.Resurrect;
 
         public bool Revives => SpecialKind is SpecialMagic.Resurrect or SpecialMagic.ResurrectSelf or SpecialMagic.LifeCrystal;
@@ -237,8 +239,36 @@ public static class SkillData
 
     public readonly record struct Page(int Category, string Label, List<Skill> Skills);
 
-    public static List<Page> Pages(int classCode, int transformId = 0)
+    private const int SiegeFormSkillUse = 0;
+    private const int NationSkillSpan = 100_000;
+    private const int SiegeBandOffset = 20_000;
+    private const int SiegeBandSpan = 10_000;
+    private const int RamLook = 30040;
+    private const int LadderLook = 30060;
+    public const string SiegePageName = "Siege";
+
+    public static List<Page>? SiegeFormPages(Skill? form, int nation)
     {
+        if (form is not { SiegeForm: true }) return null;
+        int kind = form.TransformModelId switch
+        {
+            RamLook => MagicType.DotHeal,
+            LadderLook => MagicType.Transform,
+            _ => MagicType.None,
+        };
+        var list = new List<Skill>();
+        int first = nation * NationSkillSpan + SiegeBandOffset;
+        if (kind != MagicType.None)
+            foreach (var s in skills.Values)
+                if (s.Id >= first && s.Id < first + SiegeBandSpan && (s.Type1 == kind || s.Type2 == kind))
+                    list.Add(s);
+        list.Sort((a, b) => a.Id.CompareTo(b.Id));
+        return list.Count == 0 ? new List<Page>() : new List<Page> { new(SkillPage.Basic, SiegePageName, list) };
+    }
+
+    public static List<Page> Pages(int classCode, int transformId = 0, Skill? form = null, int nation = 0)
+    {
+        if (SiegeFormPages(form, nation) is { } siege) return siege;
         var byPage = new Dictionary<int, List<Skill>>();
         foreach (var s in ForClass(classCode))
         {

@@ -206,13 +206,14 @@ internal sealed class SkillMovementSystem : IFeature, IMovementSkills
         var (dx, dz) = BlinkPath.MapDirection(context.Self.Body.RotationDegrees.Y);
         var dir = Coord.DirToGodot(dx, 0f, dz);
         var end = start + dir * reach;
-        var from = new Vector3(start.X, start.Y - context.Self.Lift + BlinkProbeLift, start.Z);
-        var to = new Vector3(end.X, scenery.HeightNear(end) + BlinkProbeLift, end.Z);
+        float feetY = start.Y - context.Self.Lift;
+        var from = new Vector3(start.X, feetY + BlinkProbeLift, start.Z);
+        var to = new Vector3(end.X, scenery.FollowGroundY(new Vector3(end.X, feetY, end.Z)) + BlinkProbeLift, end.Z);
 
         float clear = BlinkClearDistance(from, to, reach);
         if (clear < reach) clear = Mathf.Max(0f, clear - BlinkWallMargin);
         var stop = start + dir * clear;
-        stop.Y = scenery.HeightNear(stop);
+        stop.Y = scenery.FollowGroundY(new Vector3(stop.X, feetY, stop.Z));
         return stop;
     }
 

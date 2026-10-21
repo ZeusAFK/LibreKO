@@ -40,5 +40,30 @@ public class DropSummaryTests
             new DropLine(GroupA, DropBand.Uncommon),
             new DropLine(GroupB, DropBand.Uncommon),
             new DropLine(Sword, DropBand.VeryRare));
+        summary.Total.Should().Be(4);
+    }
+
+    [Fact]
+    public void AListCutAtTheLineLimitStillCountsEveryItem()
+    {
+        const int BigGroup = 1_300;
+        const int GroupSize = DropSummaries.MaxLines + 6;
+        var data = Substitute.For<IGameDataService>();
+        data.GetNpcItem(DropGroup, true).Returns(new NpcItemData
+        {
+            Index = DropGroup, IsMonster = true,
+            Item1 = BigGroup, Percent1 = 5000,
+        });
+        data.MakeItemGroupTable.Returns(new Dictionary<int, int[]>
+        {
+            [BigGroup] = Enumerable.Range(0, GroupSize).Select(i => GroupA + i).ToArray(),
+        });
+        data.GetItem(Arg.Any<int>()).Returns(call => new ItemData { Num = call.Arg<int>() });
+        var npc = new NpcInstance { IsMonster = true, DropItemGroup = DropGroup };
+
+        var summary = DropSummaries.For(npc, data);
+
+        summary.Items.Should().HaveCount(DropSummaries.MaxLines);
+        summary.Total.Should().Be(GroupSize);
     }
 }

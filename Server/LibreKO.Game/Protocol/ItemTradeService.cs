@@ -317,7 +317,6 @@ public class ItemTradeService(
         static (ItemTradeRefusal Error, int Price, int Money, int Loyalty, byte SellingGroup, bool HasItems) Refuse(
             ItemTradeRefusal reason) => (reason, 0, 0, 0, 0, false);
 
-        // Every line is checked before any is applied, and the gold is settled once.
         var outcome = session.WithLock(s =>
         {
             if (type == 2 && loyaltyShop)

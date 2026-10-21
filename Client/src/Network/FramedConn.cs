@@ -19,6 +19,7 @@ public class FramedConn
     private int attempt;
 
     private const int ConnectTimeoutMs = 5000;
+    private const int WriteTimeoutMs = 8000;
 
     public readonly ConcurrentQueue<Packet> Incoming = new();
     public volatile bool Connected;
@@ -36,7 +37,7 @@ public class FramedConn
         int attempt = Volatile.Read(ref this.attempt);
         _ = Task.Run(() =>
         {
-            var tcp = new TcpClient { NoDelay = true };
+            var tcp = new TcpClient { NoDelay = true, SendTimeout = WriteTimeoutMs };
             try
             {
                 if (!tcp.ConnectAsync(host, port).Wait(ConnectTimeoutMs, ct))

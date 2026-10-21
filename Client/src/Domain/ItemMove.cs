@@ -100,6 +100,7 @@ public static class ItemMove
         && !source.IsEmpty
         && destination.ItemId == source.ItemId
         && destination.Flag == source.Flag
+        && destination.ExpiresAt == source.ExpiresAt
         && !source.IsLinked
         && !destination.IsLinked
         && source.Count + destination.Count <= Inventory.StackMax;

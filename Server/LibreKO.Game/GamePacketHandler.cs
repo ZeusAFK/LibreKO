@@ -86,7 +86,6 @@ public class GamePacketHandler(
             return;
         }
 
-        // A connection that lost its account to a kick, or whose session is closing, is heard no more.
         if (client.AccountId != 0
             && (!accountLockService.Owns(client) || sessionManager.GetByClientId(client.Id) is { IsClosing: true }))
             return;

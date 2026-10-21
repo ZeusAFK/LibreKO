@@ -1,4 +1,4 @@
-﻿using LibreKO.Login;
+using LibreKO.Login;
 using LibreKO.Login.Seed;
 using LibreKO.Login.Startup;
 using LibreKO.Common.Domain.Services;
@@ -63,6 +63,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ILoginService, LoginService>();
         services.AddSingleton(sp => new LoginThrottle(settings: sp.GetRequiredService<IOptions<LoginServerSettings>>().Value.Logins));
+        services.AddSingleton<AccountCreationLimiter>();
 
         services.AddSingleton<IPatchRepository, PatchRepository>();
         services.AddSingleton<IServerRepository, ServerRepository>();

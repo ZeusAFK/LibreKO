@@ -98,33 +98,32 @@ internal sealed class ShoutFeature : IFeature
     private static readonly Color ResultColour = new(1f, 1f, 0f);
     private static readonly Color AnnouncementColour = Color.Color8(229, 204, 255);
 
-    private void OnUpgrade(bool ok, string name, int itemId, int rank)
-    {
-        string template = ok
+    private void OnUpgrade(bool ok, string name, int itemId, int nation) =>
+        Announce(ok
             ? GameText.System(TextUpgrade, "%s has successfully upgraded to the %s item. Please congratulate them.")
-            : GameText.System(TextUpgradeFail, "%s failed to upgrade the %s item. Please send them your support.");
-        string line = TextTemplate.Fill(template, name, AnnouncedItem(itemId));
-        ShowBanner(line, ok ? Gold : new Color("ff8a5c"));
-        context.Log.Add(line, CombatLogKind.Status, AnnouncementColour, AnnouncedMarkup(template, name, itemId));
-    }
+            : GameText.System(TextUpgradeFail, "%s failed to upgrade the %s item. Please send them your support."),
+            name, itemId, nation);
 
-    private void OnRareItem(string finder, int itemId, byte nation)
-    {
-        string line = TextTemplate.Fill(
-            GameText.System(TextRareItem, "%s has obtained the %s item. Please congratulate them."),
-            finder, AnnouncedItem(itemId));
-        var colour = nation == Nations.Karus ? Karus
-            : nation == Nations.ElMorad ? Elmorad : Gold;
-        ShowBanner(line, colour);
-        context.Log.Add(line, CombatLogKind.Status, AnnouncementColour,
-            AnnouncedMarkup(GameText.System(TextRareItem, "%s has obtained the %s item. Please congratulate them."), finder, itemId));
-    }
+    private void OnRareItem(string finder, int itemId, byte nation) =>
+        Announce(GameText.System(TextRareItem, "%s has obtained the %s item. Please congratulate them."), finder, itemId, nation);
+
+    private void Announce(string template, string name, int itemId, int nation) =>
+        context.Log.Add(TextTemplate.Fill(template, name, AnnouncedItem(itemId, name)), CombatLogKind.Status, AnnouncementColour,
+            AnnouncedMarkup(template, name, itemId, nation));
 
     private const string LogItemMeta = "i:";
+    private const string SelfNameTag = "<selfname>";
 
-    private static string AnnouncedMarkup(string template, string name, int itemId) =>
-        TextTemplate.Fill(BbCode.Esc(template), BbCode.Esc(name),
-            $"[url={LogItemMeta}{itemId}][color=#{ItemGrade.Tint(itemId).ToHtml(false)}][lb]{BbCode.Esc(AnnouncedItem(itemId))}[rb][/color][/url]");
+    private static string AnnouncedMarkup(string template, string name, int itemId, int nation)
+    {
+        string shownName = BbCode.Esc(name);
+        if (NationColour(nation) is { } colour) shownName = $"[color=#{colour.ToHtml(false)}]{shownName}[/color]";
+        return TextTemplate.Fill(BbCode.Esc(template), shownName,
+            $"[url={LogItemMeta}{itemId}][color=#{ItemGrade.Tint(itemId).ToHtml(false)}][lb]{BbCode.Esc(AnnouncedItem(itemId, name))}[rb][/color][/url]");
+    }
+
+    private static Color? NationColour(int nation) =>
+        nation == Nations.Karus ? Karus : nation == Nations.ElMorad ? Elmorad : null;
 
     internal void OnLogMetaHover(Variant meta)
     {
@@ -133,10 +132,8 @@ internal sealed class ShoutFeature : IFeature
             context.Tooltips.ShowItem(itemId);
     }
 
-    private static string AnnouncedItem(int itemId) =>
-        ItemData.DisplayName(itemId) is { Length: > 0 }
-
-    name ? name : $"item {itemId}";
+    private static string AnnouncedItem(int itemId, string owner) =>
+        ItemData.DisplayName(itemId) is { Length: > 0 } name ? name.Replace(SelfNameTag, owner) : $"item {itemId}";
 
     private void OnResult(LogosShoutRegisterResult result, int number)
     {

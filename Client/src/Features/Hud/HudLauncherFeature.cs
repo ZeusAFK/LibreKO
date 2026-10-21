@@ -38,7 +38,7 @@ internal sealed partial class HudLauncherFeature : IFeature
     {
         layer = new CanvasLayer { Layer = UiLayers.HudLauncher };
         context.Root.AddChild(layer);
-        context.Hud.PluginSeam(layer, HudPart.Launcher);
+        if (!Platform.TouchUi) context.Hud.PluginSeam(layer, HudPart.Launcher);
 
         Root = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Stop };
         Root.AddThemeConstantOverride("separation", (int)LauncherGap);

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -94,18 +94,44 @@ public class ExchangeTests : GameTestBase
         asker.Trade.ExchangeItemList.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(0)]
+    public async Task ASecondAnswerFromThePartnerLeavesAnOpenTradeAlone(byte answer)
+    {
+        using var provider = CreateProvider(_ => { }, StockOneTradableItem);
+        var (asker, partner, askerClient, partnerClient) = PendingTrade(provider);
+        var coordinator = provider.GetRequiredService<IExchangePacketCoordinator>();
+        await coordinator.HandleAsync(partnerClient, Agree(1));
+        var slot = asker.Inventory[InventoryConstants.SlotMax + OfferedSlot];
+        slot.ItemId = TradedItemId;
+        slot.Count = 1;
+        await AddAsync(provider, askerClient, TradedItemId, 1);
+
+        await coordinator.HandleAsync(partnerClient, Agree(answer));
+
+        asker.Trade.ExchangeItemList.Should().ContainSingle("the offer stays on the table");
+        asker.Trade.ExchangeUser.Should().Be(partner.CharacterId);
+        partner.Trade.ExchangeUser.Should().Be(asker.CharacterId);
+    }
+
+    private static Packet Agree(byte answer)
+    {
+        var agree = new Packet(GameOpcodes.GS_EXCHANGE);
+        agree.WriteByte(ExchangeAgree);
+        agree.WriteByte(answer);
+        agree.ResetOffset();
+        return agree;
+    }
+
     [Fact]
     public async Task AnAcceptTheServerRefusesClosesTheAcceptersWindow()
     {
         using var provider = CreateProvider(_ => { }, StockOneTradableItem);
-        var (_, partner, _, partnerClient) = OpenTrade(provider);
+        var (_, partner, _, partnerClient) = PendingTrade(provider);
         partner.X += FarAway;
 
-        var agree = new Packet(GameOpcodes.GS_EXCHANGE);
-        agree.WriteByte(ExchangeAgree);
-        agree.WriteByte(1);
-        agree.ResetOffset();
-        await provider.GetRequiredService<IExchangePacketCoordinator>().HandleAsync(partnerClient, agree);
+        await provider.GetRequiredService<IExchangePacketCoordinator>().HandleAsync(partnerClient, Agree(1));
 
         partner.Trade.IsTrading.Should().BeFalse();
         partnerClient.ReceivedCalls()
@@ -150,6 +176,14 @@ public class ExchangeTests : GameTestBase
         asker.Trade.ExchangeAccepted = partner.Trade.ExchangeAccepted = true;
 
         return (asker, partner, askerClient, partnerClient);
+    }
+
+    private static (UserSession Asker, UserSession Partner, IClient AskerClient, IClient PartnerClient)
+        PendingTrade(ServiceProvider provider)
+    {
+        var trade = OpenTrade(provider);
+        trade.Asker.Trade.ExchangeAccepted = trade.Partner.Trade.ExchangeAccepted = false;
+        return trade;
     }
 
     private static IClient MakeClient(int characterId)

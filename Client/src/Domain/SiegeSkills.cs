@@ -40,6 +40,10 @@ public static class SiegeSkills
     private static readonly int[] WideShells = { 490101, 490102, 490104, 490105, 490107, 490108, 490122 };
     private static readonly int[] WaterShells = { 490139, 490142, 490143 };
 
+    private const int LookLevelFloor = 30000;
+
+    public static int RequiredLook(int level) => level >= LookLevelFloor ? level : 0;
+
     public static bool IsSiegeSkill(int selfAnim2) => selfAnim2 is >= FirstBand and < BandEnd;
 
     public static bool IsBecome(int selfAnim2) => IsSiegeSkill(selfAnim2) && selfAnim2 % BandWidth == BecomeDigit;

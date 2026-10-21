@@ -32,6 +32,7 @@ internal sealed class GateSystem : IFeature
         entitiesSession.EntitySpawnEvent += OnEntitySpawn;
         scenery.ObjectsReset += ClearObjects;
         scenery.ObjectBuilt += AddGateCollider;
+        scenery.MapFxBuilt += PairGasSprays;
     }
 
     public void Dispose()
@@ -39,6 +40,32 @@ internal sealed class GateSystem : IFeature
         entitiesSession.EntitySpawnEvent -= OnEntitySpawn;
         scenery.ObjectsReset -= ClearObjects;
         scenery.ObjectBuilt -= AddGateCollider;
+        scenery.MapFxBuilt -= PairGasSprays;
+    }
+
+    private const string GasSprayFx = "marseu_poison";
+    private const float GasSprayReach = 16f;
+    private readonly List<(Vector2 MapXZ, ScenerySystem.FxInfo Spray)> gasSprays = new();
+
+    private void PairGasSprays()
+    {
+        gasSprays.Clear();
+        var vents = scenery.Objects.Where(o => o.EventType == ObjectEventType.PoisonGas).ToList();
+        var sprays = scenery.MapFx.Where(f => f.Fx.StartsWith(GasSprayFx, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (vents.Count == 0 || sprays.Count == 0) return;
+        var pairs = GasVentPairing.Pair(
+            vents.Select(v => (v.MapPos.X, v.MapPos.Z)).ToList(),
+            sprays.Select(s => (s.MapPos.X, s.MapPos.Z)).ToList(),
+            GasSprayReach);
+        foreach (var (vent, spray) in pairs)
+            gasSprays.Add((new Vector2(vents[vent].MapPos.X, vents[vent].MapPos.Z), sprays[spray]));
+        foreach (var (at, on) in gateStates) SwitchGasSprays(at, on);
+    }
+
+    private void SwitchGasSprays(Vector2 at, bool on)
+    {
+        foreach (var (vent, spray) in gasSprays)
+            if (vent.DistanceTo(at) <= GateRig.GateMatchRadius) scenery.SwitchMapFx(spray, on);
     }
 
     private void OnEntitySpawn(EntitySnapshot info)
@@ -199,6 +226,7 @@ internal sealed class GateSystem : IFeature
         foreach (var gas in GasShapes)
             if (gas.MapXZ.DistanceTo(at) <= GateRig.GateMatchRadius && GodotObject.IsInstanceValid(gas.Node))
                 gas.Node.Visible = open;
+        SwitchGasSprays(at, open);
     }
 
     private static void PlaceKeyGate(KeyGate gate)

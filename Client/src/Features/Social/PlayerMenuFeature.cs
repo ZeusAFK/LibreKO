@@ -271,12 +271,11 @@ internal sealed partial class PlayerMenuFeature : IFeature
 
         if (party.InParty) partyRequests.Invite(name);
         else partyRequests.Create(name);
-        context.Log.Notice($"Inviting {name} to your party…");
     }
 
     internal void RequestTradeWith(int charId, string name)
     {
-        if (world.Exchange.IsOpen || world.Exchange.Waiting) { context.Log.Notice("You are already trading."); return; }
+        if (world.Exchange.TradeHoldsInput) { context.Log.Notice("You are already trading."); return; }
         if (context.Self.Dead) return;
 
         if (!context.Entities.Views.TryGetValue(charId, out var e) || e.Dead)

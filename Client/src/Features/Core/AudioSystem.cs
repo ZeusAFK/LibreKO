@@ -131,7 +131,7 @@ internal sealed class AudioSystem : IFeature
     private void MiningStrike(Node3D body, bool audible = true)
     {
         Vector3 at = body.GlobalPosition - body.GlobalTransform.Basis.Z * GatherSystem.MiningStrikeReach;
-        if (scenery.FxGroundHeight(at.X, at.Z) is { } groundY) at.Y = groundY;
+        if (scenery.FxGroundHeight(at) is { } groundY) at.Y = groundY;
         if (Fx.NameForId(GatherSystem.MiningStrikeFx) is { } name)
             Fx.Spawn(name, context.Root, at, oneShot: true);
         int sid = SoundCatalog.FxSound(GatherSystem.MiningStrikeFx);

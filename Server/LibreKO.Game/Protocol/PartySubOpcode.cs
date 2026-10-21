@@ -21,6 +21,9 @@ public enum PartySubOpcode : byte
     SignalProbe = 65,
     SignalTable = 66,
     LevelProgress = 67,
+    InviteSent = 68,
+    InviteClosed = 69,
+    InviteWithdrawn = 70,
 }
 
 public enum PartyRequest : byte
@@ -38,4 +41,5 @@ public enum PartyRequest : byte
     UserVoteAnswer = 34,
     WarBoard = 38,
     SignalEcho = 65,
+    InviteCancel = 68,
 }

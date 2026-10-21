@@ -21,6 +21,7 @@ public sealed class EntityView
     public AnimationPlayer? Anim;
     public CrowdAnimator? Crowd;
     public AnimationPlayer? RigAnim;
+    public CrowdAnimator? RigCrowd;
     public Flinch? Flinch;
     public string? Clip;
     public AnimationPlayer?[]? WingAnims;

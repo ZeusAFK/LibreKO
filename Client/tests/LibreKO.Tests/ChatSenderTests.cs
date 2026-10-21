@@ -28,6 +28,13 @@ public class ChatSenderTests
         Assert.Equal(0, ChatSender.MaskText(31, false, Nations.Karus, SelfId, ChatType.General, Nations.Karus, OtherId));
     }
 
+    [Theory]
+    [InlineData(37)]
+    [InlineData(31)]
+    [InlineData(85)]
+    public void ANamedServerLineIsNeverMasked(int zone) =>
+        Assert.Equal(0, ChatSender.MaskText(zone, false, Nations.Karus, SelfId, ChatType.Shout, Nations.ElMorad, -1));
+
     [Fact]
     public void GameMastersAreNeverMaskedOutsideThePathoistZones()
     {

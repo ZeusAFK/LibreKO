@@ -596,7 +596,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         AudioSystem = new AudioSystem(this, Game.Session.Self, Avatar, EntityActionSystem, ScenerySystem, EntityLooksSystem, EntityStatesSystem);
         EntitySystem = new EntitySystem(this, Game.Session.Clan, Game.Session.GmFx, Game.Session.Self, Game.Session.Entities, Game.Session.Items, Game.Session.Achievement, Avatar, EntityPlatesSystem, AudioSystem, EntityActionSystem, EntityStatesSystem, EntityLooksSystem, StealthSystem, ScenerySystem);
         BuffSystem = new BuffSystem(this, Game.Session.Combat, Game.Session.Self, Game.Session.Zone, Game.Requests.Combat, Game.Session.Progress, EntityStatesSystem);
-        CombatFxSystem = new CombatFxSystem(this, EntityActionSystem, EntitySystem, AudioSystem, EntityLooksSystem, EntityStatesSystem);
+        CombatFxSystem = new CombatFxSystem(this, EntityActionSystem, EntitySystem, AudioSystem, EntityLooksSystem, EntityStatesSystem, ScenerySystem);
         SoccerSystem = new SoccerSystem(this, Game.Session.Progress, Game.Session.Self, Game.Session.Soccer, Game.Requests.Soccer, Avatar, ScenerySystem, EntitySystem);
         MapInteractablesSystem = new MapInteractablesSystem(this, Avatar, Game.Requests.ObjectEvent, ScenerySystem);
         GateSystem = new GateSystem(this, Game.Session.ObjectEvent, Game.Requests.ObjectEvent, Avatar, ScenerySystem, CameraSystem, MapInteractablesSystem, Game.Session.Entities);
@@ -650,7 +650,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Facet(ScenerySystem.BuildClockHud);
         Facet(Selection.BuildRing);
         Facet(Selection.BuildObjectHighlight);
-        Features.Add(UpgradeNotice = new UpgradeNoticeFeature(this, Game.Session.UpgradeNotice));
+        Features.Add(UpgradeNotice = new UpgradeNoticeFeature(this));
         Features.Add(Effect = new EffectFeature(this, Game.Session.Effect, UpgradeNotice));
         Features.Add(TargetEffects = new TargetEffectsFeature(this, Game.Session.TargetState, Game.Requests.TargetState, Effect));
         Features.Add(LootFilterWindow = new LootFilterFeature(this, Game.Session.Self, Game.Session.TargetState, Game.Requests.TargetState));
@@ -754,7 +754,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Features.Add(ZoneAbility = new ZoneAbilityFeature(this, Game.Session.Entities, Game.Session.ZoneAbility, Game.Session.Hostility, Game.Session.Siege));
         Features.Add(Shout = new ShoutFeature(this, Game.Session.Shout, Game.Requests.Shout));
         Features.Add(ChaosGuide = new ChaosGuideFeature(this, EntryPopups, Rank));
-        Features.Add(Chaos = new ChaosFeature(this, Game.Session.Bifrost, Game.Session.Chaos, Game.Session.MonsterStone, Game.Session.Self, Game.Requests.Rank, MsgOut, Rank, EventPlates, ChaosGuide));
+        Features.Add(Chaos = new ChaosFeature(this, Game.Session.Bifrost, Game.Session.Chaos, Game.Session.MonsterStone, Game.Session.Self, Game.Requests.Rank, MsgOut, Rank, EventPlates, ChaosGuide, Game.Requests.Bifrost));
         Features.Add(KnightRoyaleWindow = new KnightRoyaleFeature(this, Game.Session.KnightRoyale, Game.Requests.KnightRoyale, Map));
         Features.Add(Challenge = new ChallengeFeature(this, Game.Session.Challenge, Game.Requests.Challenge));
         Features.Add(Warp = new WarpFeature(this, Game.Session.NpcQuest, Game.Session.Progress, Game.Session.Self, Game.Session.Warp, Game.Requests.Warp, MapInteractablesSystem, NpcInteraction));
@@ -785,7 +785,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Features.Add(NpcGates = new NpcGatesFeature(this));
         Features.Add(RankerStatueWindow = new RankerStatueFeature(this, EntitySystem));
         Features.Add(ControlState = new ControlStateFeature(this, Game.Session.TargetState));
-        Features.Add(ClanWarehouse = new ClanWarehouseFeature(this, Game.Session.Clan, Game.Session.ClanWarehouse, Game.Session.Progress, Game.Session.Self, Game.Requests.ClanWarehouse, Warehouse, NpcInteraction));
+        Features.Add(ClanWarehouse = new ClanWarehouseFeature(this, Game.Session.Clan, Game.Session.ClanWarehouse, Game.Session.Progress, Game.Session.Self, Game.Requests.ClanWarehouse, Warehouse, NpcInteraction, Exchange));
         Features.Add(VipWarehouse = new VipWarehouseFeature(this, Game.Session.Self, Game.Session.VipWarehouse, Game.Requests.VipWarehouse, Warehouse, NpcInteraction));
         Features.Add(UiOpacity = new UiOpacityFeature(this));
         Facet(() => NamePlate.RescaledEvent += EntityPlatesSystem.OnNamePlatesRescaled, () => NamePlate.RescaledEvent -= EntityPlatesSystem.OnNamePlatesRescaled);

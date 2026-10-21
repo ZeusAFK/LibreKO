@@ -100,7 +100,9 @@ internal sealed class ItemsReader : IPacketReader
             if (kind == ItemCountChangeKind.None || pos >= InventoryConstants.HaveMax) continue;
 
             int abs = InventoryConstants.InventoryStart + pos;
-            var item = new ItemSlot { ItemId = itemId, Durability = dur, Count = count };
+            var item = abs < self.Inventory.Length && self.Inventory[abs].ItemId == itemId ? self.Inventory[abs] : new ItemSlot { ItemId = itemId };
+            item.Durability = dur;
+            item.Count = count;
             RaiseItemGained(abs, itemId, count);
             self.ApplyInventorySlot(abs, item);
             items.RaiseInventorySlot(abs, item);

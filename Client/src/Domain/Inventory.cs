@@ -55,11 +55,11 @@ public sealed class Inventory
         return -1;
     }
 
-    public int GridSlotFor(int itemId, int count, bool stackable)
+    public int GridSlotFor(ItemSlot source, int count, bool stackable)
     {
         if (stackable)
             for (int abs = GridStart; abs < GridStart + GridCount && abs < slots.Length; abs++)
-                if (slots[abs].ItemId == itemId && slots[abs].Count + count <= StackMax) return abs;
+                if (!slots[abs].IsEmpty && StorageDestination.Fits(slots[abs], source, count, true)) return abs;
         return FirstFreeGridSlot();
     }
 
@@ -201,7 +201,7 @@ public sealed class Inventory
     public int CountInBackpack(int itemId)
     {
         int n = 0;
-        for (int abs = GridStart; abs < Length; abs++)
+        for (int abs = GridStart; abs < GridStart + GridCount && abs < Length; abs++)
             if (this[abs].ItemId == itemId) n += Math.Max(ItemData.ShownCount(ItemData.Get(itemId), this[abs]), 1);
         return n;
     }

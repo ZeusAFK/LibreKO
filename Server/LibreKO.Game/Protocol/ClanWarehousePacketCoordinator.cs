@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -22,7 +22,6 @@ public class ClanWarehousePacketCoordinator(
     IServiceScopeFactory scopeFactory,
     ILogger<ClanWarehousePacketCoordinator> logger) : IClanWarehousePacketCoordinator
 {
-
 
     private const int ItemNoTradeMin = 900_000_001;
     private const int ItemNoTradeMax = 999_999_999;

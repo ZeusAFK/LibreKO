@@ -215,6 +215,12 @@ public partial class FxSceneDepth : CompositorEffect
     private Vector2I targetSize;
     private Texture2Drd? targetTexture;
     private Rid shader, pipeline, sampler;
+    private const int PushFloats = 20;
+    private readonly float[] pushValues = new float[PushFloats];
+    private readonly byte[] pushBytes = new byte[PushFloats * sizeof(float)];
+    private readonly RDUniform depthUniform = new() { UniformType = RenderingDevice.UniformType.SamplerWithTexture, Binding = 0 };
+    private readonly RDUniform targetUniform = new() { UniformType = RenderingDevice.UniformType.Image, Binding = 1 };
+    private readonly Godot.Collections.Array<RDUniform> uniforms = new();
     private bool broken;
 
     public FxSceneDepth()
@@ -274,15 +280,20 @@ public partial class FxSceneDepth : CompositorEffect
         var projection = scene.GetCamProjection();
         var view = new Projection(scene.GetCamTransform().AffineInverse());
 
-        var depthUniform = new RDUniform { UniformType = RenderingDevice.UniformType.SamplerWithTexture, Binding = 0 };
+        depthUniform.ClearIds();
         depthUniform.AddId(sampler);
         depthUniform.AddId(buffers.GetDepthLayer(0, false));
-        var targetUniform = new RDUniform { UniformType = RenderingDevice.UniformType.Image, Binding = 1 };
+        targetUniform.ClearIds();
         targetUniform.AddId(target);
-        var set = UniformSetCacheRD.GetCache(shader, 0, new Godot.Collections.Array<RDUniform> { depthUniform, targetUniform });
+        if (uniforms.Count == 0)
+        {
+            uniforms.Add(depthUniform);
+            uniforms.Add(targetUniform);
+        }
+        var set = UniformSetCacheRD.GetCache(shader, 0, uniforms);
 
         var inverse = projection.Inverse();
-        var push = new float[20];
+        var push = pushValues;
         for (int c = 0; c < 4; c++)
         {
             var column = inverse[c];
@@ -293,7 +304,7 @@ public partial class FxSceneDepth : CompositorEffect
         }
         push[16] = size.X;
         push[17] = size.Y;
-        var bytes = new byte[push.Length * sizeof(float)];
+        var bytes = pushBytes;
         System.Buffer.BlockCopy(push, 0, bytes, 0, bytes.Length);
 
         long list = rd.ComputeListBegin();

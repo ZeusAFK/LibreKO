@@ -2,7 +2,6 @@
 
 namespace LibreKO.Game.World;
 
-// An item goes only into an empty slot or onto a stack of the very same item.
 public static class ItemPlacement
 {
     public static bool IsSameItem(ItemSlot slot, ExchangeItem item) =>

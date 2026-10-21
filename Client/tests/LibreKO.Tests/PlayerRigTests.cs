@@ -25,6 +25,21 @@ public class PlayerRigTests
     public void AStandardLookIsWornAsTheNationsBaseRace(int race, int expected) =>
         Assert.Equal(expected, PlayerRig.StandardRace(race));
 
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 2)]
+    [InlineData(2, 3)]
+    [InlineData(3, 4)]
+    [InlineData(4, 5)]
+    public void TheWrinkleTuarekBodyHasNoLowerPart(int part, int slot) =>
+        Assert.Equal(slot, PlayerRig.BodyPartSlot(PlayerRig.WrinkleTuarekBody, part));
+
+    [Theory]
+    [InlineData("upc_ka_wt_face00")]
+    [InlineData("upc_ka_wa")]
+    public void OtherModelsKeepTheirPartNumbers(string model) =>
+        Assert.Equal(3, PlayerRig.BodyPartSlot(model, 3));
+
     [Fact]
     public void ALookWithTheSameBonesInTheSameOrderMatches() =>
         Assert.True(PlayerRig.SameBones(new[] { "Hips", "Chest", "Chest2" }, new[] { "Hips", "Chest", "Chest2" }));

@@ -217,6 +217,8 @@ internal sealed class BasicAttackSystem : IFeature
 
     private float MeleeWeaponReach() => entityLooks.HandWeaponReach(rightFirst: true);
     internal const float ApproachFraction = 0.8f;
+
+    internal bool SwingDue(double now) => now >= nextSwing;
     private const float RangedSwingPad = 0.15f;
 
     private void AimAttack(double now)

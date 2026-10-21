@@ -35,6 +35,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
     private sealed class LootBox
     {
         public Node3D Node = null!;
+        public Vector3 DropPos;
         public Vector3 BasePos;
         public double SpawnTime;
         public int OwnerId;
@@ -47,6 +48,23 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
     private const float RangeSq = LootWire.Range * LootWire.Range;
 
     private int openBundleId = -1;
+    private bool openPending;
+    private double openSentAt;
+    private const double OpenAnswerSeconds = 2.0;
+
+    private static float FlatDistanceSq(Vector3 a, Vector3 b)
+    {
+        float dx = a.X - b.X, dz = a.Z - b.Z;
+        return dx * dx + dz * dz;
+    }
+
+    private void RequestOpen(int bundleId)
+    {
+        openBundleId = bundleId;
+        openPending = true;
+        openSentAt = context.Now;
+        itemsRequests.BundleOpen(bundleId);
+    }
     internal List<LootEntry> Entries { get; } = new();
     private CanvasLayer layer = null!;
     internal PanelContainer Panel { get; private set; } = null!;
@@ -151,6 +169,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
     private void OnRefused(int bundleId, int result)
     {
         if (bundleId != openBundleId) return;
+        openPending = false;
         bool quiet = autoLooting;
         if (LootOpenResult.BoxIsEmpty(result)) DespawnBox(bundleId);
         else Close();
@@ -168,7 +187,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
         node.Position = pos;
         node.Visible = false;
         context.Entities.Layer.AddChild(node);
-        var box = new LootBox { Node = node, BasePos = pos, SpawnTime = context.Now, OwnerId = sourceId };
+        var box = new LootBox { Node = node, DropPos = pos, BasePos = pos, SpawnTime = context.Now, OwnerId = sourceId };
         boxes[bundleId] = box;
         if (e.Dead) e.CorpseRemoveAt = 0;
         TryPlaceBox(box, context.Now);
@@ -244,6 +263,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
 
     private void LootTick(double now)
     {
+        if (openPending && now - openSentAt > OpenAnswerSeconds) Close();
         AutoTick();
         if (boxes.Count == 0) { if (prompt.Visible) prompt.Visible = false; return; }
 
@@ -254,7 +274,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
         {
             if (now - box.SpawnTime >= BoxLife) { despawnScratch.Add(id); continue; }
             TryPlaceBox(box, now);
-            if (box.Placed && box.BasePos.DistanceSquaredTo(me) <= RangeSq) anyInRange = true;
+            if (box.Placed && FlatDistanceSq(box.DropPos, me) <= RangeSq) anyInRange = true;
         }
         foreach (var id in despawnScratch) DespawnBox(id);
 
@@ -298,13 +318,12 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
             if (context.Camera.IsPositionBehind(world)) continue;
             float px = context.Camera.UnprojectPosition(world).DistanceTo(mouse);
             if (px >= bestD) continue;
-            if (box.BasePos.DistanceSquaredTo(me) > RangeSq) continue;
+            if (FlatDistanceSq(box.DropPos, me) > RangeSq) continue;
             bestD = px; best = id;
         }
         if (best < 0)
             return false;
-        openBundleId = best;
-        itemsRequests.BundleOpen(best);
+        RequestOpen(best);
         return true;
     }
 
@@ -313,7 +332,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
         if (context.Self.Body == null || context.Self.Dead || boxes.Count == 0) return false;
         Vector3 me = context.Self.Body.Position;
         foreach (var (_, box) in boxes)
-            if (box.Placed && box.BasePos.DistanceSquaredTo(me) <= RangeSq)
+            if (box.Placed && FlatDistanceSq(box.DropPos, me) <= RangeSq)
                 return true;
         return false;
     }
@@ -327,7 +346,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
         foreach (var (id, box) in boxes)
         {
             if (!box.Placed) continue;
-            float d = box.BasePos.DistanceSquaredTo(me);
+            float d = FlatDistanceSq(box.DropPos, me);
             if (d <= bestDistSq)
             {
                 bestDistSq = d;
@@ -335,8 +354,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
             }
         }
         if (best < 0) return false;
-        openBundleId = best;
-        itemsRequests.BundleOpen(best);
+        RequestOpen(best);
         return true;
     }
 
@@ -400,6 +418,7 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
     private void OnContents(int bundleId, List<LootEntry> entries)
     {
         if (bundleId != openBundleId) return;
+        openPending = false;
         if (entries.Count == 0) { DespawnBox(bundleId); return; }
 
         Entries.Clear();
@@ -482,13 +501,14 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
             return;
         }
         if (autoLooting) { StopAuto(); return; }
-        if (openBundleId >= 0) itemsRequests.BundleOpen(openBundleId);
+        if (openBundleId >= 0) RequestOpen(openBundleId);
     }
 
     internal void Close()
     {
         autoLooting = false;
         openBundleId = -1;
+        openPending = false;
         Entries.Clear();
         if (layer != null && layer.Visible)
         {
@@ -519,11 +539,10 @@ internal sealed partial class LootFeature : IFeature, ILateTickFeature, IEscapab
         var me = context.Self.Body.Position;
         foreach (var (id, box) in boxes)
         {
-            if (!box.Placed || autoTried.Contains(id) || box.BasePos.DistanceSquaredTo(me) > AutoRangeSq) continue;
+            if (!box.Placed || autoTried.Contains(id) || FlatDistanceSq(box.DropPos, me) > AutoRangeSq) continue;
             autoTried.Add(id);
             autoLooting = true;
-            openBundleId = id;
-            itemsRequests.BundleOpen(id);
+            RequestOpen(id);
             return;
         }
     }

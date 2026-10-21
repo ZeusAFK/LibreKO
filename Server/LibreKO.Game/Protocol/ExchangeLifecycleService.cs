@@ -59,7 +59,7 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
 
     public async Task AgreeAsync(UserSession session, Packet packet)
     {
-        if (!session.Trade.IsTrading || session.Trade.AskedForExchange)
+        if (!session.Trade.IsTrading || session.Trade.AskedForExchange || session.Trade.ExchangeAccepted)
             return;
 
         var agreed = packet.ReadByte();
@@ -147,7 +147,6 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
             await SettleReturnAsync(target, returnedTarget);
     }
 
-    // Runs after the client knows the trade is over, to tell it where each offer really went.
     public async Task SettleReturnAsync(UserSession session, ExchangeReturn? returned)
     {
         if (returned == null)
@@ -173,7 +172,6 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         }
     }
 
-    // A trade never overlaps death, a stall, its setup or gathering.
     private static bool CannotStartTrade(UserSession session) =>
         session.Hp <= 0 || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.IsGathering;
 

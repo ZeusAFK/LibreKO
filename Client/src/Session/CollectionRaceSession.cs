@@ -2,6 +2,8 @@
 
 public sealed class CollectionRaceSession
 {
+    public EventWindowMemory Window { get; } = new();
+
     public event Action<CollectionRaceState>? CollectionRaceStateEvent;
 
     internal void RaiseCollectionRaceState(CollectionRaceState collectionRaceState) => CollectionRaceStateEvent?.Invoke(collectionRaceState);

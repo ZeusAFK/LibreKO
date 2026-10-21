@@ -273,7 +273,6 @@ public class SlaveMerchantService(
         await owner.Client.SendPacket(SlaveMerchantPacketWriter.Status(open: false, hours, held?.EarnedNoah ?? 0, Lines(items)));
     }
 
-    // Items reach or leave the bag only while it is not tied up in a trade, an open stall or gathering.
     private static bool BagIsFree(UserSession owner) =>
         !owner.Trade.IsTrading && !owner.Trade.IsMerchanting && !owner.IsGathering;
 

@@ -210,15 +210,7 @@ internal sealed class CombatSystem : IFeature
     private void Revive(int id)
     {
         if (id == context.Self.CharId) { OnSelfResurrected(); return; }
-        if (!context.Entities.Views.TryGetValue(id, out var e) || !e.Dead) return;
-        e.Dead = false;
-        e.DeathDueAt = 0;
-        e.CorpseRemoveAt = 0;
-        e.ActionUntil = 0;
-        e.ActionRank = 0;
-        e.ActionClip = null;
-        e.Clip = null;
-        NpcGatesFeature.RefreshGateBlocker(e);
+        if (context.Entities.Views.TryGetValue(id, out var e)) entities.Revive(e);
     }
 
     private void OnSelfResurrected()

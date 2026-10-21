@@ -63,6 +63,13 @@ public sealed class PartyPacketWriter
             p.WriteInt(inviterId);
             p.WriteString(inviterName);
         }).Build();
+    public static Packet InviteSent(int inviteeId, string inviteeName) => new PartyPacketWriter(PartySubOpcode.InviteSent, p =>
+        {
+            p.WriteInt(inviteeId);
+            p.WriteString(inviteeName);
+        }).Build();
+    public static Packet InviteClosed(int inviteeId) => new PartyPacketWriter(PartySubOpcode.InviteClosed, p => p.WriteInt(inviteeId)).Build();
+    public static Packet InviteWithdrawn(int inviterId) => new PartyPacketWriter(PartySubOpcode.InviteWithdrawn, p => p.WriteInt(inviterId)).Build();
     public static Packet MemberLeft(int characterId) => new PartyPacketWriter(PartySubOpcode.MemberLeft, p => p.WriteInt(characterId)).Build();
     public static Packet RejoinForget(int characterId) => new PartyPacketWriter(PartySubOpcode.RejoinForget, p => p.WriteInt(characterId)).Build();
     public static Packet UserVoteRefused(short result) => new PartyPacketWriter(PartySubOpcode.UserVote, p => p.WriteShort(result)).Build();

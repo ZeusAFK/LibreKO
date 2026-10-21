@@ -57,7 +57,6 @@ public class UserSession
 
     private volatile bool savesSealed;
 
-    // After the final save nothing more is written for this session.
     public bool SavesSealed => savesSealed;
 
     public void SealSaves() => savesSealed = true;
@@ -174,7 +173,6 @@ public class UserSession
         }
     }
 
-    // One death per life: a second blow on the corpse records nothing.
     public bool TryRecordDeath() => Interlocked.CompareExchange(ref deathRecorded, 1, 0) == 0;
     public short MaxMp { get; set; }
     public short Mp { get; set; }
@@ -210,7 +208,6 @@ public class UserSession
     // Clan/Knights
     private short knightsId;
 
-    // A player who changes clan leaves their clan's war behind.
     public short KnightsId
     {
         get => knightsId;
@@ -329,33 +326,36 @@ public class UserSession
 
     public bool IsInParty => PartyIndex >= 0;
 
-    // A player enters a party only from outside every party, and leaves only the party they are in.
     public bool TryEnterParty(int index) => Interlocked.CompareExchange(ref partyIndex, index, -1) == -1;
 
     public bool TryLeaveParty(int index) => Interlocked.CompareExchange(ref partyIndex, -1, index) == index;
 
-    private int invitedToParty = -1;
+    private long partyInvite = PartyInvite.None.Packed;
+
+    public PartyInvite PendingPartyInvite => PartyInvite.Unpack(Volatile.Read(ref partyInvite));
 
     public int InvitedToParty
     {
-        get => Volatile.Read(ref invitedToParty);
-        set => Volatile.Write(ref invitedToParty, value);
+        get => PendingPartyInvite.PartyIndex;
+        set => Volatile.Write(ref partyInvite, new PartyInvite(value, PartyInvite.None.InviterId).Packed);
     }
 
-    // An invite stands until it is answered or its party is gone.
-    public bool TryOfferPartyInvite(int index, Func<int, bool> partyStands)
+    public bool TryOfferPartyInvite(PartyInvite invite, Func<int, bool> partyStands)
     {
-        var pending = InvitedToParty;
-        return (pending < 0 || !partyStands(pending))
-            && Interlocked.CompareExchange(ref invitedToParty, index, pending) == pending;
+        var pending = Volatile.Read(ref partyInvite);
+        var pendingIndex = PartyInvite.Unpack(pending).PartyIndex;
+        return (pendingIndex < 0 || !partyStands(pendingIndex))
+            && Interlocked.CompareExchange(ref partyInvite, invite.Packed, pending) == pending;
     }
 
-    public int TakePartyInvite() => Interlocked.Exchange(ref invitedToParty, -1);
+    public PartyInvite TakePartyInvite() => PartyInvite.Unpack(Interlocked.Exchange(ref partyInvite, PartyInvite.None.Packed));
+
+    public bool TryWithdrawPartyInvite(PartyInvite invite) =>
+        Interlocked.CompareExchange(ref partyInvite, PartyInvite.None.Packed, invite.Packed) == invite.Packed;
 
     private const int MaxBoardInvites = PartyGroup.MaxMembers;
     private readonly List<PartyBoardInvite> boardInvites = [];
 
-    // Several board invites wait at once; past the cap the oldest makes way.
     public void OfferBoardInvite(PartyBoardInvite invite)
     {
         lock (boardInvites)
@@ -448,7 +448,6 @@ public class UserSession
     public bool IsHeld => activeBuffs.Any(entry => entry.Value.BuffType is BuffType.Freeze or BuffType.Stun && !entry.Value.IsExpired);
     public bool CarriesManes => activeBuffs.Any(entry => entry.Value.BuffType == BuffType.FragmentOfManes && !entry.Value.IsExpired);
 
-    // Another player's call moves this one only while free and out of a fight, not under NoRecall or the Fragment, and not in Prison.
     public bool MayBeMovedByOthers =>
         !IsBusy && !IsHeld && !IsInCombat && CanTeleport && !CarriesManes && !IsWarping
         && ZoneId != (byte)LibreKO.Common.Enums.ZoneId.Prison;

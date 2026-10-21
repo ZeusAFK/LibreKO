@@ -10,6 +10,7 @@ internal sealed class CombatReader : IPacketReader
     private const byte AttackChainedFlag = 1;
     private const byte StaminaBar = 1;
     private const byte StaminaBarShown = 1;
+    private const int MagicLongFormBytes = 12;
 
     public CombatReader(CombatSession combat, DisguiseSession disguise, EntitiesSession entities, SelfSession self)
     {
@@ -64,7 +65,7 @@ internal sealed class CombatReader : IPacketReader
     {
         byte sub = p.ReadByte();
         if (HandleTransformationMagic(sub, p)) return;
-        if (sub == MagicSub.DurationExpired)
+        if (sub == MagicSub.DurationExpired && p.RemainingBytes < MagicLongFormBytes)
         {
             if (p.RemainingBytes >= 1) combat.RaiseBuffExpired(p.ReadByte());
             return;
@@ -74,7 +75,7 @@ internal sealed class CombatReader : IPacketReader
             if (p.RemainingBytes >= 4) combat.RaiseBuffExtended(p.ReadInt());
             return;
         }
-        if (p.RemainingBytes < 12)
+        if (p.RemainingBytes < MagicLongFormBytes)
         {
             combat.RaiseMagic(new MagicReply(Sub: sub, SkillId: 0, CasterId: 0, TargetId: 0, Data: new short[MagicData.Length]));
             return;

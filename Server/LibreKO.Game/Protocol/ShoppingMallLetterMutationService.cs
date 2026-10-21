@@ -215,7 +215,6 @@ public class ShoppingMallLetterMutationService(
             await userNotificationService.SendUnreadNotificationAsync(online);
     }
 
-    // Checked and taken in one locked step.
     private static (bool Taken, ExchangeItem? Item, byte Refusal) TakeLetterCost(
         UserSession session, int sourceIndex, int itemId, ItemData? itemData, int cost)
     {
@@ -307,7 +306,6 @@ public class ShoppingMallLetterMutationService(
         var refusal = Rejected;
         var slot = -1;
         var coins = 0;
-        // The bag, the purse and the letter are saved together.
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var letter = await db.MailBoxes
@@ -353,7 +351,6 @@ public class ShoppingMallLetterMutationService(
             ShoppingMallLetterProtocol.StoreLetter, ShoppingMallLetterProtocol.LetterGetItem, Succeeded));
     }
 
-    // The enclosed item and all its coins arrive, or nothing does.
     private bool TakeLetter(UserSession session, MailBox letter, InventoryJournal journal, out int slot)
     {
         slot = -1;

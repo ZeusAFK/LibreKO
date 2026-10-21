@@ -8,6 +8,7 @@ public interface IPartyRequests
     void UserVoteAnswer(UserVoteAnswer answer);
     void Create(string targetName, PartyBoardType boardType = PartyBoardType.Normal);
     void Invite(string targetName, PartyBoardType boardType = PartyBoardType.Normal);
+    void CancelInvite(int inviteeId);
     void Leave(int memberId);
     void Disband();
     void Commander(int memberId);
@@ -68,6 +69,14 @@ public sealed class PartyRequests : IPartyRequests
     }
 
     public void Invite(string targetName, PartyBoardType boardType = PartyBoardType.Normal) => SendPartyInviteName(PartyRequest.Insert, targetName, boardType);
+
+    public void CancelInvite(int inviteeId)
+    {
+        var p = new Packet(GameOpcodes.GS_PARTY);
+        p.WriteByte(PartyRequest.InviteCancel);
+        p.WriteInt(inviteeId);
+        sink.Send(p);
+    }
 
     public void Leave(int memberId)
     {
@@ -130,8 +139,11 @@ public sealed class PartyRequests : IPartyRequests
     public void BbsInvite(string name, PartyBoardType board = PartyBoardType.Normal) =>
             SendPartyBbsName(PartyBbsSubOpcode.Invite, name, board);
 
-    public void BbsAccept(string inviter, PartyBoardType board = PartyBoardType.Normal) =>
-            SendPartyBbsName(PartyBbsSubOpcode.InviteAccept, inviter, board);
+    public void BbsAccept(string inviter, PartyBoardType board = PartyBoardType.Normal)
+    {
+        party.Joining = !party.InParty;
+        SendPartyBbsName(PartyBbsSubOpcode.InviteAccept, inviter, board);
+    }
 
     public void BbsDelete(PartyBoardType board = PartyBoardType.Normal)
     {

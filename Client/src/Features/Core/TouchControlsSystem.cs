@@ -64,7 +64,8 @@ internal sealed class TouchControlsSystem : IFeature
             () => mapInteractables.OpenNearestAnvil(),
             () => mapInteractables.OpenNearestWarpGate(),
             at => world.PlayerMenu.OpenNearest(at),
-            () => world.Merchant.TryBrowseNearest());
+            () => world.Merchant.TryBrowseNearest(),
+            () => world.GatherSystem.TryStartGather());
         world.Hotbar.Box.Visible = false;
 
         GD.Print($"[touch] on-screen controls built: sticks {TouchControls.StickSize:F0}px, "
@@ -94,7 +95,8 @@ internal sealed class TouchControlsSystem : IFeature
             mapInteractables.HasNearbyAnvil(),
             mapInteractables.HasNearbyWarpGate(),
             world.PlayerMenu.HasNearbyForUserInfo(),
-            world.Merchant.HasNearbyStall());
+            world.Merchant.HasNearbyStall(),
+            world.GatherSystem.GatherHere());
     }
 
     internal void TouchControlsDispose()

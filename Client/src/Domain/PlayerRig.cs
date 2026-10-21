@@ -26,6 +26,11 @@ public static class PlayerRig
 
     public static int PartRace(int lookRace) => lookRace == PuriTuarekMagician ? PuriTuarek : lookRace;
 
+    public const string WrinkleTuarekBody = "upc_ka_wt";
+
+    public static int BodyPartSlot(string model, int part) =>
+        model == WrinkleTuarekBody && part >= 1 ? part + 1 : part;
+
     public static int StandardRace(int race) => race switch
     {
         KarusKurian => KarusBase,

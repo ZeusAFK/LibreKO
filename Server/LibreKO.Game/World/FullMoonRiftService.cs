@@ -170,7 +170,6 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             return false;
         }
 
-        // Each member is checked, pays and is moved with nothing in between.
         var entryTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var duration = TimeSpan.FromMinutes(FullMoonRules.RoomDurationMinutes);
         InstanceRoom? room = null;

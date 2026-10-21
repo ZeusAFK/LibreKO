@@ -181,8 +181,35 @@ internal sealed class NpcInteractionFeature : IFeature, ILateTickFeature, IInter
         quest.EndTalk();
     }
 
+    private void RebindTalker(int npcId)
+    {
+        if (quest.TalkingNpcId != NpcQuestSession.NoTalker || context.Self.Body == null) return;
+        int talker = InReach(quest.LastNpcId, npcId) ? quest.LastNpcId : NearestOfKind(npcId);
+        if (talker != NpcQuestSession.NoTalker) TrackTalker(talker);
+    }
+
+    private bool InReach(int uniqueId, int npcId) =>
+        context.Entities.Views.TryGetValue(uniqueId, out var e) && e.IsNpc && !e.Dead && e.NpcId == npcId
+        && Coord.FlatDistance(context.Self.Body.Position, e.Body.Position) <= InteractRange;
+
+    private int NearestOfKind(int npcId)
+    {
+        int best = NpcQuestSession.NoTalker;
+        float bestDistance = InteractRange;
+        foreach (var (id, e) in context.Entities.Views)
+        {
+            if (!e.IsNpc || e.Dead || e.NpcId != npcId) continue;
+            float distance = Coord.FlatDistance(context.Self.Body.Position, e.Body.Position);
+            if (distance > bestDistance) continue;
+            bestDistance = distance;
+            best = id;
+        }
+        return best;
+    }
+
     internal void OnDialog(NpcDialog dlg)
     {
+        RebindTalker(dlg.NpcId);
         if (dlg.Flag == NpcDialogStyle.RebirthPanel)
         {
             world.NpcDialogWindow.Close();

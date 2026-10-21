@@ -16,6 +16,7 @@ public enum TempleSubOpcode : byte
     DrakiTimer = 35,
     DrakiLeaveFirst = 36,
     DrakiLeaveSecond = 37,
+    DrakiTown = 38,
     AltarKilledMessage = 49,
     AltarTimer = 50,
     FullMoonEntry = 58,

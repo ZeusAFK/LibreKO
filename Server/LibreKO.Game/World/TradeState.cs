@@ -1,4 +1,4 @@
-﻿using LibreKO.Game.Protocol;
+using LibreKO.Game.Protocol;
 
 namespace LibreKO.Game.World;
 
@@ -39,7 +39,6 @@ public class TradeState
     public MerchantItem[] MerchantItems { get; } = new MerchantItem[MerchantSlots];
     public MerchantItem[] BuyMerchantItems { get; } = new MerchantItem[MerchantSlots];
 
-    // Gold a buying stall took when it opened; what is left goes back when it closes.
     public int BuyMerchantGold { get; set; }
 
     // PvP Challenge (duel)

@@ -19,6 +19,8 @@ public sealed partial class HudLayout : Node
     private readonly string id;
     private readonly Func<Vector2>? defaultPosition;
     private bool userPlaced;
+    private Vector2? preferredPosition;
+    private Vector2? preferredSize;
     private readonly HudAnchor.Spot? anchor;
     private Vector2 anchorMargin;
     private readonly Vector2 anchorSize;
@@ -155,16 +157,7 @@ public sealed partial class HudLayout : Node
         Callable.From(FollowDefaultOnScreen).CallDeferred();
     }
 
-    private void ClampAfterResize() => Callable.From(ClampAndKeep).CallDeferred();
-
-    private void ClampAndKeep()
-    {
-        if (!GodotObject.IsInstanceValid(target)) return;
-        var before = target.Position;
-        ClampOnScreen();
-        if (persist && anchor == null && !dragging && Config.HasWindowPos(id) && !before.IsEqualApprox(target.Position))
-            Config.SaveWindowPos(id, target.Position);
-    }
+    private void ClampAfterResize() => Callable.From(ClampOnScreen).CallDeferred();
 
     public void ReapplyDefault() => FollowDefaultOnScreen();
 
@@ -175,6 +168,8 @@ public sealed partial class HudLayout : Node
         {
             if (!GodotObject.IsInstanceValid(layout)) continue;
             layout.userPlaced = false;
+            layout.preferredPosition = null;
+            layout.preferredSize = null;
             layout.ApplySavedLayout();
             layout.Placed?.Invoke();
         }
@@ -193,6 +188,8 @@ public sealed partial class HudLayout : Node
         target.Size = size;
         target.Position = position;
         userPlaced = true;
+        preferredPosition = position;
+        preferredSize = size;
         ClampOnScreen();
         if (persist)
         {
@@ -205,9 +202,13 @@ public sealed partial class HudLayout : Node
     private void FollowDefaultOnScreen()
     {
         if (!GodotObject.IsInstanceValid(target)) return;
-        if (anchor == null && defaultPosition != null && !dragging && !userPlaced
-            && !(persist && Config.HasWindowPos(id)))
-            target.Position = defaultPosition();
+        if (anchor == null && !dragging && !resizing)
+        {
+            if (resizable && preferredSize is { } size) target.Size = FitSize(size);
+            if (preferredPosition is { } spot) target.Position = spot;
+            else if (defaultPosition != null && !userPlaced && !(persist && Config.HasWindowPos(id)))
+                target.Position = defaultPosition();
+        }
         ClampOnScreen();
     }
 
@@ -242,8 +243,14 @@ public sealed partial class HudLayout : Node
         Vector2 fallback = defaultPosition?.Invoke() ?? target.Position;
         target.SetAnchorsPreset(Control.LayoutPreset.TopLeft, true);
         target.Position = persist ? Config.GetWindowPos(id, fallback) : fallback;
+        if (persist && Config.HasWindowPos(id)) preferredPosition = target.Position;
 
-        if (resizable) target.Size = ClampSize(SavedSize());
+        if (resizable)
+        {
+            var saved = SavedSize();
+            if (persist && Config.HasWindowPos(id)) preferredSize = saved;
+            target.Size = FitSize(saved);
+        }
         ClampOnScreen();
     }
 
@@ -325,6 +332,7 @@ public sealed partial class HudLayout : Node
         bool frozen = Frozen;
         bool gripShown = shown && !frozen && moveGripAlwaysVisible;
         bool showCorner = shown && !frozen;
+        if (gripShown || showCorner) KeepGripsOnTarget();
         var rect = new Rect2(target.GlobalPosition, ScaledTargetSize());
         Vector2 gripSize = moveGrip?.Size ?? Vector2.Zero, cornerSize = resizeGrip?.Size ?? Vector2.Zero;
         if (showCorner == cornerShown && gripShown == this.gripShown && rect == overlayRect
@@ -345,6 +353,21 @@ public sealed partial class HudLayout : Node
             resizeGrip.Visible = showCorner;
             if (showCorner) resizeGrip.GlobalPosition = OverlayPosition(cornerSize, resizeCorner) + resizeGripOffset;
         }
+    }
+
+    private void KeepGripsOnTarget()
+    {
+        if (moveGrip != null) PlaceAfter(moveGrip, target);
+        if (resizeGrip != null) PlaceAfter(resizeGrip, moveGrip ?? target);
+    }
+
+    private static void PlaceAfter(Control grip, Control after)
+    {
+        if (grip.GetParent() is not { } parent || after.GetParent() != parent) return;
+        int at = after.GetIndex();
+        int index = grip.GetIndex();
+        if (index == at + 1) return;
+        parent.MoveChild(grip, index < at ? at : at + 1);
     }
 
     private Vector2 ScaledTargetSize() => target.Size * target.Scale;
@@ -401,6 +424,7 @@ public sealed partial class HudLayout : Node
         }
         userPlaced = true;
         ClampOnScreen();
+        preferredPosition = target.Position;
         if (persist) Config.SaveWindowPos(id, target.Position);
         Placed?.Invoke();
     }
@@ -426,17 +450,24 @@ public sealed partial class HudLayout : Node
         if (!resizing) return;
         resizing = false;
         userPlaced = true;
+        preferredPosition = target.Position;
+        preferredSize = target.Size;
         if (!persist) return;
         if (anchor == null) Config.SaveWindowPos(id, target.Position);
         Config.SaveWindowSize(id, target.Size);
     }
 
-    private Vector2 ClampSize(Vector2 requested, bool fromLeft = false, bool fromTop = false)
+    private Vector2 ClampSize(Vector2 requested, bool fromLeft = false, bool fromTop = false) =>
+        ClampSizeTo(requested, HudResize.Limit(GetViewport().GetVisibleRect().Size, target.Position,
+            new Rect2(resizeOriginPosition, resizeOriginSize), fromLeft, fromTop));
+
+    private Vector2 FitSize(Vector2 requested) => ClampSizeTo(requested, GetViewport().GetVisibleRect().Size);
+
+    private Vector2 ClampSizeTo(Vector2 requested, Vector2 limit)
     {
         var vp = GetViewport().GetVisibleRect().Size;
         float minX = Mathf.Max(120f, minimumSize.X);
         float minY = Mathf.Max(80f, minimumSize.Y);
-        var limit = HudResize.Limit(vp, target.Position, new Rect2(resizeOriginPosition, resizeOriginSize), fromLeft, fromTop);
         float maxX = Mathf.Max(minX, limit.X);
         float maxY = Mathf.Max(minY, limit.Y);
         if (MaximumViewportShare.X > 0f) maxX = Mathf.Max(minX, Mathf.Min(maxX, vp.X * MaximumViewportShare.X));
@@ -488,7 +519,6 @@ public sealed partial class HudLayout : Node
                 ? CursorShape.Bdiagsize
                 : CursorShape.Fdiagsize;
             TooltipText = "Drag to resize";
-            ZIndex = 100;
             MouseEntered += () => { hot = true; QueueRedraw(); };
             MouseExited += () => { hot = false; QueueRedraw(); };
         }
@@ -526,7 +556,6 @@ public sealed partial class HudLayout : Node
             Visible = false;
             MouseFilter = MouseFilterEnum.Stop;
             MouseDefaultCursorShape = CursorShape.Move;
-            ZIndex = 200;
         }
 
         public override void _Draw()

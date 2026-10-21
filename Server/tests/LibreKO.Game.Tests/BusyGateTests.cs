@@ -13,7 +13,6 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// A trade or a stall may count on a busy player's bag.
 public class BusyGateTests : GameTestBase
 {
     // None is the control: an idle player's same request goes through.
