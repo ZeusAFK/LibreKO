@@ -156,7 +156,7 @@ public class GamePacketHandler(
     {
         if (!response.Success)
         {
-            await client.SendPacket(SessionPacketWriter.LoginDenied());
+            await client.SendPacket(response.Throttled ? SessionPacketWriter.LoginDeniedTooManyAttempts() : SessionPacketWriter.LoginDenied());
             return;
         }
 

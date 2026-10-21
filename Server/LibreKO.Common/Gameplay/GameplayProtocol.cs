@@ -21,6 +21,7 @@ public enum AccountClaimStage : byte
 public enum GameLoginDenial : byte
 {
     AccountInUse = 1,
+    TooManyAttempts = 2,
 }
 
 public enum AccountKickCode : byte

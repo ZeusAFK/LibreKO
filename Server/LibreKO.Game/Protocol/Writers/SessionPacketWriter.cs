@@ -30,12 +30,20 @@ public sealed class SessionPacketWriter
         return packet;
     }
 
-    public static Packet LoginDeniedAccountInUse(AccountOccupant occupant)
+    private static Packet LoginDenied(GameLoginDenial denial)
     {
         var packet = LoginDenied();
         packet.WriteUInt(GameplayProtocol.AccountLockMagic);
         packet.WriteByte(GameplayProtocol.ExtensionVersion);
-        packet.WriteByte((byte)GameLoginDenial.AccountInUse);
+        packet.WriteByte((byte)denial);
+        return packet;
+    }
+
+    public static Packet LoginDeniedTooManyAttempts() => LoginDenied(GameLoginDenial.TooManyAttempts);
+
+    public static Packet LoginDeniedAccountInUse(AccountOccupant occupant)
+    {
+        var packet = LoginDenied(GameLoginDenial.AccountInUse);
         packet.WriteByte((byte)occupant.Stage);
         packet.WriteShort((short)occupant.ServerId);
         packet.WriteString(occupant.ServerName);

@@ -186,8 +186,23 @@ public class SessionLifecycleTests : GameTestBase
         for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
             (await preGame.LoginAsync(Login, "wrong", Guesser)).Success.Should().BeFalse();
 
-        (await preGame.LoginAsync(Login, "pw", Guesser)).Success.Should().BeFalse("the guesser waits out the window");
+        var refused = await preGame.LoginAsync(Login, "pw", Guesser);
+        refused.Success.Should().BeFalse("the guesser waits out the window");
+        refused.Throttled.Should().BeTrue("the guesser is told why, not that the password is wrong");
         (await preGame.LoginAsync(Login, "pw", Owner)).Success.Should().BeTrue("the owner is not locked out by someone else's guesses");
+    }
+
+    [Fact]
+    public async Task ANameLongerThanAnyAccountIsRefusedButNotAsThrottled()
+    {
+        using var provider = Provider();
+        using var scope = provider.CreateScope();
+        var preGame = scope.ServiceProvider.GetRequiredService<IPreGameService>();
+
+        var refused = await preGame.LoginAsync(new string('x', Account.MaxLoginLength + 1), "pw", Owner);
+
+        refused.Success.Should().BeFalse();
+        refused.Throttled.Should().BeFalse("no attempts were counted against it");
     }
 
     [Fact]

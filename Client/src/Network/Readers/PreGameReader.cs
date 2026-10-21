@@ -25,7 +25,7 @@ internal sealed class PreGameReader : IPacketReader
     private const int TextServerFull = 6950;
     private const int SelectRetryLimit = 2;
     private const double SelectRetrySeconds = 0.8;
-    private const int AccountInUseHeaderBytes = 6;
+    private const int DenialHeaderBytes = 6;
 
     private readonly GameSession session;
     private readonly IPreGameRequests requests;
@@ -96,7 +96,14 @@ internal sealed class PreGameReader : IPacketReader
 
     private bool HandleLoginDenied(Packet p)
     {
-        if (ReadAccountInUse(p) is not { } occupant)
+        var denial = ReadDenial(p);
+        if (denial == GameLoginDenial.TooManyAttempts && !reconnect.InProgress)
+        {
+            session.PreGame.RaiseLoginThrottled();
+            return true;
+        }
+
+        if (denial != GameLoginDenial.AccountInUse || ReadAccountInUse(p) is not { } occupant)
             return false;
 
         if (reconnect.InProgress)
@@ -115,18 +122,20 @@ internal sealed class PreGameReader : IPacketReader
         return true;
     }
 
-    private static AccountInUse? ReadAccountInUse(Packet p)
+    private static GameLoginDenial? ReadDenial(Packet p)
     {
-        if (p.RemainingBytes < AccountInUseHeaderBytes)
+        if (p.RemainingBytes < DenialHeaderBytes
+            || p.ReadUInt() != LibreKOProtocol.AccountLockMagic
+            || p.ReadByte() != LibreKOProtocol.ExtensionVersion)
             return null;
 
+        return (GameLoginDenial)p.ReadByte();
+    }
+
+    private static AccountInUse? ReadAccountInUse(Packet p)
+    {
         try
         {
-            if (p.ReadUInt() != LibreKOProtocol.AccountLockMagic
-                || p.ReadByte() != LibreKOProtocol.ExtensionVersion
-                || p.ReadByte() != (byte)GameLoginDenial.AccountInUse)
-                return null;
-
             return new AccountInUse
             {
                 Stage = (AccountClaimStage)p.ReadByte(),
