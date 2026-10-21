@@ -3,6 +3,7 @@ using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -13,6 +14,8 @@ public interface ICharacterStatePersister
     Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default);
     Task<bool> SaveAndSealAsync(UserSession session, CancellationToken cancellationToken = default);
     Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
+        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null);
+    Task<StateCommit> CommitTogetherAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
         CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null);
     Task SetOnlineStateAsync(int characterId, bool isOnline, CancellationToken cancellationToken = default);
 
@@ -118,8 +121,17 @@ public class CharacterStatePersister(
     }
 
     // A change that moves neither the purse nor the bag tells whether it was written through landed.
-    public async Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
-        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null)
+    public Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
+        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null) =>
+        CommitAsync(session, change, undo, landed, together: false, cancellationToken);
+
+    // The change may save rows of its own, as it and the character commit in one transaction.
+    public Task<StateCommit> CommitTogetherAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
+        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null) =>
+        CommitAsync(session, change, undo, landed, together: true, cancellationToken);
+
+    private async Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
+        Func<AppDbContext, Task<bool>>? landed, bool together, CancellationToken cancellationToken)
     {
         await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
         try
@@ -130,11 +142,43 @@ public class CharacterStatePersister(
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var mapper = scope.ServiceProvider.GetRequiredService<IUserSessionCharacterMapper>();
+            // A store that retries runs a transaction as one attempt, which throws only before the change runs, so the change never runs twice.
+            var attempt = together
+                ? await db.Database.CreateExecutionStrategy().ExecuteAsync(
+                    () => AttemptAsync(session, db, mapper, change, landed, together, cancellationToken))
+                : await AttemptAsync(session, db, mapper, change, landed, together, cancellationToken);
+            if (attempt is not { Failure: { } exception, Written: { } written })
+                return attempt.Outcome;
+
+            if (await WasWrittenAsync(written, attempt.Stored, landed))
+            {
+                logger.LogWarning(exception, "The commit of {Name} reported a failure but was written; the change stands", session.Name);
+                return StateCommit.Saved;
+            }
+
+            logger.LogError(exception, "Could not commit {Name}; the change is undone", session.Name);
+            undo();
+            return StateCommit.Failed;
+        }
+        finally
+        {
+            session.CharacterPersistenceGate.Release();
+        }
+    }
+
+    private sealed record Attempt(StateCommit Outcome, Exception? Failure = null, Character? Written = null, (int Money, byte[] Items) Stored = default);
+
+    private async Task<Attempt> AttemptAsync(UserSession session, AppDbContext db, IUserSessionCharacterMapper mapper,
+        Func<AppDbContext, Task<bool>> change, Func<AppDbContext, Task<bool>>? landed, bool together, CancellationToken cancellationToken)
+    {
+        var transaction = together ? await db.Database.BeginTransactionAsync(cancellationToken) : null;
+        try
+        {
             var character = await db.Characters.FindAsync([session.CharacterId], cancellationToken);
             if (character == null)
             {
                 logger.LogError("Could not commit {Name}: character {CharacterId} is not stored", session.Name, session.CharacterId);
-                return StateCommit.Failed;
+                return new(StateCommit.Failed);
             }
 
             // The warehouse holds escrowed offers that found no room in the bag.
@@ -144,32 +188,49 @@ public class CharacterStatePersister(
             try
             {
                 if (!await change(db))
-                    return StateCommit.Unchanged;
+                    return new(StateCommit.Unchanged);
 
                 session.WithLock(active =>
                 {
                     ApplyToCharacter(active, character, mapper);
                     mapper.ApplyToWarehouse(active, warehouse);
                 });
-                await SaveOnceAsync(db, character, stored, landed, cancellationToken);
-                return StateCommit.Saved;
+                if (transaction == null)
+                {
+                    await SaveOnceAsync(db, character, stored, landed, cancellationToken);
+                }
+                else
+                {
+                    await db.SaveChangesAsync(cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
+                }
+
+                return new(StateCommit.Saved);
             }
             catch (Exception exception)
             {
-                if (await WasWrittenAsync(character, stored, landed))
-                {
-                    logger.LogWarning(exception, "The commit of {Name} reported a failure but was written; the change stands", session.Name);
-                    return StateCommit.Saved;
-                }
-
-                logger.LogError(exception, "Could not commit {Name}; the change is undone", session.Name);
-                undo();
-                return StateCommit.Failed;
+                return new(StateCommit.Failed, exception, character, stored);
             }
         }
         finally
         {
-            session.CharacterPersistenceGate.Release();
+            // The check for a lost answer must not see this attempt's own uncommitted rows.
+            await EndAsync(transaction);
+        }
+    }
+
+    private async Task EndAsync(IDbContextTransaction? transaction)
+    {
+        if (transaction == null)
+            return;
+
+        try
+        {
+            await transaction.DisposeAsync();
+        }
+        catch (Exception exception)
+        {
+            logger.LogWarning(exception, "Could not end a commit's transaction");
         }
     }
 

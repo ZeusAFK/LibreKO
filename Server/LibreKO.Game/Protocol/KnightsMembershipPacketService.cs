@@ -4,6 +4,7 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +30,7 @@ public class KnightsMembershipPacketService(
     IKnightsRuntimeService knightsRuntimeService,
     IClanStandingService clanStanding,
     IMagicItemUsageService itemUsage,
+    ICharacterStatePersister statePersister,
     ILogger<KnightsMembershipPacketService> logger) : IKnightsMembershipPacketService
 {
     private const int InviteRequestBytes = 4;
@@ -76,7 +78,20 @@ public class KnightsMembershipPacketService(
             return;
         }
 
-        KnightsEntity clan;
+        var clan = new KnightsEntity
+        {
+            Name = clanName,
+            Chief = session.Name,
+            Nation = (byte)session.Nation,
+            Flag = (byte)ClanType.Training,
+            Grade = ClanRules.GradeFromPoints(session.Loyalty),
+            Points = session.Loyalty,
+            Members = 1,
+            Cape = ClanRules.NoCape,
+        };
+        var founding = new Founding(clan);
+        var result = KnightsCreateResult.TryAgainLater;
+        StateCommit commit;
         await NameRules.Changes.WaitAsync();
         try
         {
@@ -86,48 +101,32 @@ public class KnightsMembershipPacketService(
                 return;
             }
 
-            if (!session.WithLock(TryPayForClan))
-            {
-                await session.Client.SendPacket(KnightsPacketWriter.CreateResult(KnightsCreateResult.NotEnoughCoins));
-                return;
-            }
+            commit = await statePersister.CommitTogetherAsync(session,
+                async db =>
+                {
+                    db.Add(clan);
+                    await db.SaveChangesAsync();
+                    result = session.WithLock(founding.Lead);
+                    if (result != KnightsCreateResult.Succeeded)
+                        return false;
 
-            clan = new KnightsEntity
-            {
-                Name = clanName,
-                Chief = session.Name,
-                Nation = (byte)session.Nation,
-                Flag = (byte)ClanType.Training,
-                Grade = ClanRules.GradeFromPoints(session.Loyalty),
-                Points = session.Loyalty,
-                Members = 1,
-                Cape = ClanRules.NoCape,
-            };
-
-            try
-            {
-                await knightsRepo.CreateAsync(clan);
-            }
-            catch
-            {
-                session.WithLock(s => s.Money += ClanRules.CreationCoins);
-                throw;
-            }
-
-            // A player who joined another clan while this one was stored keeps that clan and the coins.
-            if (!session.WithLock(s => LeadNewClan(s, clan)))
-            {
-                await knightsRepo.RemoveAsync(clan);
-                await session.Client.SendPacket(KnightsPacketWriter.CreateResult(KnightsCreateResult.AlreadyInClan));
-                return;
-            }
+                    (await db.Characters.FindAsync(session.CharacterId))!.ClanMemo = string.Empty;
+                    return true;
+                },
+                () => session.WithLock(founding.Undo),
+                landed: db => db.Knights.AnyAsync(stored => stored.Id == clan.Id && stored.Name == clan.Name));
         }
         finally
         {
             NameRules.Changes.Release();
         }
 
-        await knightsRuntimeService.SyncCharacterAsync(knightsRepo, session, includeMoney: true);
+        if (commit != StateCommit.Saved)
+        {
+            await session.Client.SendPacket(KnightsPacketWriter.CreateResult(
+                result == KnightsCreateResult.Succeeded ? KnightsCreateResult.TryAgainLater : result));
+            return;
+        }
 
         sessionManager.Knights.AddClan(clan.Id, clan);
         await knightsRuntimeService.RefreshClanBonusAsync(clan.Id);
@@ -591,29 +590,37 @@ public class KnightsMembershipPacketService(
         });
     }
 
-    private static bool TryPayForClan(UserSession session)
+    // A player who joined another clan or spent the coins while the clan was stored keeps them.
+    private sealed class Founding(KnightsEntity clan)
     {
-        if (session.Money < ClanRules.CreationCoins)
-            return false;
+        private (byte Fame, byte KnightsFame, string KnightsName, int KnightsPoints)? replaced;
 
-        session.Money -= ClanRules.CreationCoins;
-        return true;
-    }
-
-    private static bool LeadNewClan(UserSession session, KnightsEntity clan)
-    {
-        if (session.KnightsId > 0)
+        public KnightsCreateResult Lead(UserSession session)
         {
-            session.Money += ClanRules.CreationCoins;
-            return false;
+            if (session.KnightsId > 0)
+                return KnightsCreateResult.AlreadyInClan;
+            if (session.Money < ClanRules.CreationCoins)
+                return KnightsCreateResult.NotEnoughCoins;
+
+            replaced = (session.Fame, session.KnightsFame, session.KnightsName, session.KnightsPoints);
+            session.Money -= ClanRules.CreationCoins;
+            session.KnightsId = clan.Id;
+            session.KnightsFame = ClanRules.FameChief;
+            session.KnightsName = clan.Name;
+            session.KnightsPoints = 0;
+            session.Fame = ClanRules.FameChief;
+            return KnightsCreateResult.Succeeded;
         }
 
-        session.KnightsId = clan.Id;
-        session.KnightsFame = ClanRules.FameChief;
-        session.KnightsName = clan.Name;
-        session.KnightsPoints = 0;
-        session.Fame = ClanRules.FameChief;
-        return true;
+        public void Undo(UserSession session)
+        {
+            if (replaced is not { } was)
+                return;
+
+            session.Money += ClanRules.CreationCoins;
+            session.KnightsId = 0;
+            (session.Fame, session.KnightsFame, session.KnightsName, session.KnightsPoints) = was;
+        }
     }
 
     private async Task<bool> HasValidClanMembershipAsync(UserSession session, IKnightsRepository knightsRepo)
