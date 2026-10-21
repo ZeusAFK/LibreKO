@@ -68,6 +68,9 @@ public abstract class GameTestBase
         return mapManager;
     }
 
+    private static readonly Lazy<IReadOnlySet<int>> NonActionMagic =
+        new(() => new LibreKO.Common.Infrastructure.Persistence.Seed.Entities.MagicNonActionSeed().GetSeedData().Select(row => row.Id).ToHashSet());
+
     protected static ServiceProvider CreateProvider(
         Action<AppDbContext> seed,
         Action<IGameDataService>? configureGameData = null,
@@ -243,6 +246,7 @@ public abstract class GameTestBase
 
         var gameData = Substitute.For<IGameDataService>();
         gameData.KingSystemTable.Returns(new Dictionary<byte, KingSystemData>());
+        gameData.NonActionMagic.Returns(NonActionMagic.Value);
         configureGameData?.Invoke(gameData);
         services.AddSingleton(gameData);
         configureServices?.Invoke(services);

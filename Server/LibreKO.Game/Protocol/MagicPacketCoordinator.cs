@@ -71,13 +71,12 @@ public class MagicPacketCoordinator(
             return;
         }
 
-        if (session.IsHeld && CastsSomething((MagicProcessOpcode)magicOpcode) && !MayUseWhileHeld(magic))
+        if (session.IsHeld && CastsSomething((MagicProcessOpcode)magicOpcode) && !gameDataService.NonActionMagic.Contains(magic.Id))
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.ForStage((MagicProcessOpcode)magicOpcode));
             return;
         }
 
-        // A dead player cannot be hit back, so only the rows that revive the caster work while dead.
         if (session.Hp <= 0
             && RequiresLearnedSkill((MagicProcessOpcode)magicOpcode)
             && !RevivesTheCaster(session, magic, skillId))
@@ -329,17 +328,6 @@ public class MagicPacketCoordinator(
         && !BattleZoneManager.IsBattleZone(session.ZoneId)
         && !BattleZoneManager.IsPvpZone(session.ZoneId);
 
-    // A frozen or stunned player can only use a friendly item that does not move, hide or change them, or a quiet bar row.
-    private static bool MayUseWhileHeld(MagicData magic) =>
-        MagicSkillRequirement.IsQuietBarRow(magic.Id)
-        || (magic.UseItem != 0
-            && (SkillMoral)magic.Moral is SkillMoral.Self or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe
-                or SkillMoral.Party or SkillMoral.PartyAll or SkillMoral.AreaFriend or SkillMoral.Clan or SkillMoral.ClanAll
-                or SkillMoral.CorpseFriend
-            && magic.PrimaryType is not (MagicSkillType.Warp or MagicSkillType.Transform or MagicSkillType.Stealth)
-            && magic.SecondaryType is not (MagicSkillType.Warp or MagicSkillType.Transform or MagicSkillType.Stealth));
-
-    // A dead player revives only with a self row: a Life Crystal under the castle, a resurrection scroll elsewhere.
     private bool RevivesTheCaster(UserSession session, MagicData magic, int skillId) =>
         magic.PrimaryType == MagicSkillType.Special
         && (SkillMoral)magic.Moral == SkillMoral.Self
@@ -350,7 +338,6 @@ public class MagicPacketCoordinator(
             ? SpecialMagicType.LifeCrystal
             : SpecialMagicType.ResurrectionSelf);
 
-    // A stage that ends or reports a cast is still taken from a player who may not cast.
     private static bool CastsSomething(MagicProcessOpcode opcode) =>
         !IsTerminator(opcode) && opcode != MagicProcessOpcode.Fail;
 
@@ -400,7 +387,6 @@ public class MagicPacketCoordinator(
         int targetId,
         int[] data)
     {
-        // A stall's buyer could take the reagent between this check and its spend.
         if (magic.UseItem != 0 && PaysFromTheCastersBag(magic, skillId)
             && (session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing
                 || (magic.PrimaryType != MagicSkillType.Transform && !magicItemUsageService.CanUseSkillItems(session, magic))))

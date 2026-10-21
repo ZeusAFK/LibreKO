@@ -39,6 +39,10 @@ public class MagicSkillRequirementTests : GameTestBase
     private const int ChaosSpiritSword = 490219;
     private const int Warrior = 105;
     private const int RamLook = 30040;
+    private const int RaiseLadder = 120021;
+    private const int LowerLadder = 220022;
+    private const int LadderLook = 30060;
+    private const int LadderLookAlt = 30061;
     private const int EventItem = 978006000;
     private const AccountNation Karus = AccountNation.Karus;
     private const AccountNation ElMorad = AccountNation.ElMorad;
@@ -203,6 +207,40 @@ public class MagicSkillRequirementTests : GameTestBase
         MagicSkillRequirement.IsCastableBy(strike, Warrior, RamLook, Karus).Should().BeTrue();
         MagicSkillRequirement.IsCastableBy(strike, Warrior, transformId: 0, Karus).Should().BeFalse();
         MagicSkillRequirement.IsCastableBy(strike, Warrior, RamLook, ElMorad).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(RaiseLadder, LadderLook, AccountNation.Karus, true)]
+    [InlineData(RaiseLadder, LadderLookAlt, AccountNation.Karus, true)]
+    [InlineData(LowerLadder, LadderLook, AccountNation.ElMorad, true)]
+    [InlineData(RaiseLadder, RamLook, AccountNation.Karus, false)]
+    [InlineData(RaiseLadder, 0, AccountNation.Karus, false)]
+    [InlineData(RaiseLadder, LadderLook, AccountNation.ElMorad, false)]
+    public void ALadderMoveNeedsALadderFormOfItsOwnNation(int row, int look, AccountNation nation, bool castable)
+    {
+        var move = Magic(row, tree: 0, skillLevel: 0);
+
+        MagicSkillRequirement.IsCastableBy(move, Warrior, look, nation).Should().Be(castable,
+            "the client offers the ladder's raise and lower on its siege page in either ladder form");
+    }
+
+    [Theory]
+    [InlineData(492009, true)]
+    [InlineData(500022, true)]
+    [InlineData(500505, true)]
+    [InlineData(490120, true)]
+    [InlineData(490088, true)]
+    [InlineData(501011, true)]
+    [InlineData(490076, true)]
+    [InlineData(490050, false)]
+    [InlineData(101051, false)]
+    [InlineData(130013, false)]
+    public void TheRowsAStunnedPlayerMaySendAreTheOnesTheClientSendsWithoutAnAction(int row, bool sent)
+    {
+        var rows = new LibreKO.Common.Infrastructure.Persistence.Seed.Entities.MagicNonActionSeed().GetSeedData().Select(entry => entry.Id).ToHashSet();
+
+        rows.Contains(row).Should().Be(sent,
+            "teleport and bind scrolls, transformation scrolls, stealth potions, summon staffs and the Stat Scroll go out during a stun, emotes and shouts do not");
     }
 
     [Fact]

@@ -37,6 +37,7 @@ public interface IGameDataService
     IReadOnlyDictionary<int, ItemExchangeData> ItemExchangeTable { get; }
     IReadOnlyDictionary<int, ItemExchangeExpData> ItemExchangeExpTable { get; }
     ILookup<int, ItemSellData> ItemSellsByGroup { get; }
+    IReadOnlySet<int> NonActionMagic { get; }
     ILookup<(byte OreType, short NpcId), MiningExchangeData> MiningExchangesByOreNpc { get; }
     ILookup<(GatherType Type, GatherTool Tool, GatherWarStatus War), MiningFishingItemData> MiningFishingItemsByPool { get; }
     IReadOnlyDictionary<int, EventTriggerData> EventTriggerTable { get; }

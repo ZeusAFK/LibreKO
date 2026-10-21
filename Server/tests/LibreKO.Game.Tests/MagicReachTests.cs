@@ -61,6 +61,8 @@ public class MagicReachTests : GameTestBase
     private const byte HealCastTenths = 15;
     private const int StunRow = 110560;
     private const int HealthPotionItem = 389010000;
+    private const int WinkEmote = 101051;
+    private const int EmoteItem = 811071000;
     private const byte Moradon = (byte)ZoneId.Moradon;
     private const byte Ronark = (byte)ZoneId.RonarkLand;
     private const int WormHp = 5000;
@@ -496,7 +498,7 @@ public class MagicReachTests : GameTestBase
     }
 
     [Fact]
-    public async Task AStunnedPlayerCannotUseAnItemThatHidesThroughItsSecondType()
+    public async Task AStunnedPlayerMayUseARowTheClientSendsWithoutAnAction()
     {
         using var provider = Provider();
         var caster = Player(provider, 819, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
@@ -510,7 +512,28 @@ public class MagicReachTests : GameTestBase
 
         await Cast(provider, caster, HealthPotion, caster.CharacterId);
 
-        caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(TwoScrolls, "a held player does not go into hiding");
+        caster.Hp.Should().BeGreaterThan(PlayerHp / 2, "the client lets a row with no action out during a stun, whatever its types");
+    }
+
+    [Theory]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    public async Task AStunnedPlayerCannotUseARowThatPlaysAnAction(bool stunned, bool healed)
+    {
+        using var provider = Provider();
+        var caster = Player(provider, 820, AccountNation.Karus, Moradon, Here, hp: PlayerHp / 2);
+        HoldReagent(provider, caster, EmoteItem, count: TwoScrolls);
+        var gameData = provider.GetRequiredService<IGameDataService>();
+        gameData.GetMagic(WinkEmote).Returns(new MagicData
+        {
+            Id = WinkEmote, Type1 = (byte)MagicSkillType.OverTime, Moral = (byte)SkillMoral.FriendWithMe, UseItem = EmoteItem,
+        });
+        if (stunned)
+            Stun(caster);
+
+        await Cast(provider, caster, WinkEmote, caster.CharacterId);
+
+        (caster.Hp > PlayerHp / 2).Should().Be(healed, "the client blocks a row that plays an action while its player is stunned");
     }
 
     [Fact]
@@ -731,6 +754,7 @@ public class MagicReachTests : GameTestBase
             [Heal] = new() { Id = Heal, DirectType = 1, FirstDamage = HealAmount },
             [PartyHeal] = new() { Id = PartyHeal, DirectType = 1, FirstDamage = HealAmount },
             [HealthPotion] = new() { Id = HealthPotion, DirectType = 1, FirstDamage = HealAmount },
+            [WinkEmote] = new() { Id = WinkEmote, DirectType = 1, FirstDamage = HealAmount },
         });
         gameData.MagicType4Table.Returns(new Dictionary<int, MagicType4Data>
         {
