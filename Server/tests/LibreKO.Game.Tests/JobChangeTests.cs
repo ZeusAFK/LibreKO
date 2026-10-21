@@ -30,6 +30,8 @@ public class JobChangeTests : GameTestBase
     private const byte TrainedStrength = 90;
     private const byte TrainedMastery = 4;
     private const byte SpentPoints = 2;
+    private const int ClassChangeNpc = 99_001;
+    private const int Blacksmith = 99_002;
 
     [Fact]
     public async Task AJobChangeSpendsTheTokenAndSavesTheClassAndRaceTogether()
@@ -46,6 +48,34 @@ public class JobChangeTests : GameTestBase
         stored.Class.Should().Be(newClass);
         stored.Race.Should().Be(newRace);
         stored.Items.Should().Equal(player.SerializeItems(), "the token and the new job are saved together");
+    }
+
+    [Theory]
+    [InlineData(CharacterDevelopmentPacketCoordinator.GrandMerchantNpcId, 0)]
+    [InlineData(ClassChangeNpc, NpcData.TypeClassChange)]
+    public async Task AJobChangeAtAClassChangeNpcGoesThrough(int npcId, byte npcType)
+    {
+        using var provider = Provider();
+        var player = Player(provider);
+        StandAt(provider, player, npcId, npcType);
+
+        await provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>().HandleClassChangeAsync(player.Client, JobChangeRequest());
+
+        player.Class.Should().NotBe(Warrior);
+        Token(player).IsEmpty.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task AJobChangeAwayFromTheClassChangeNpcChangesNothing()
+    {
+        using var provider = Provider();
+        var player = Player(provider);
+        StandAt(provider, player, Blacksmith, NpcData.TypeRepairMerchant);
+
+        await provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>().HandleClassChangeAsync(player.Client, JobChangeRequest());
+
+        player.Class.Should().Be(Warrior, "only the NPCs that open the class-change window change jobs");
+        Token(player).IsEmpty.Should().BeFalse();
     }
 
     [Fact]
@@ -423,6 +453,16 @@ public class JobChangeTests : GameTestBase
     }
 
     private static ItemSlot Token(UserSession session) => session.Inventory[InventoryConstants.InventoryStart];
+
+    private static Packet JobChangeRequest()
+    {
+        var packet = new Packet(GameOpcodes.GS_CLASS_CHANGE);
+        packet.WriteByte((byte)ClassChangeSubOpcode.JobChangeResult);
+        packet.WriteByte(Master);
+        packet.WriteByte(Rogue);
+        packet.ResetOffset();
+        return packet;
+    }
 
     private static async Task StoreBagAsync(ServiceProvider provider, UserSession player)
     {

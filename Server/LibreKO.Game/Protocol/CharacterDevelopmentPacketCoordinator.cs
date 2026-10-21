@@ -352,7 +352,8 @@ public class CharacterDevelopmentPacketCoordinator(
     {
         ClassChangeSubOpcode.RebirthStatChange => NpcPresence.IsAt(sessionManager, session, FortuneTellerNpcId),
         ClassChangeSubOpcode.RebirthStatReset => NpcPresence.IsAt(sessionManager, session, GrandMerchantNpcId),
-        ClassChangeSubOpcode.StatReset or ClassChangeSubOpcode.SkillReset or ClassChangeSubOpcode.StatResetCost =>
+        ClassChangeSubOpcode.StatReset or ClassChangeSubOpcode.SkillReset or ClassChangeSubOpcode.StatResetCost
+            or ClassChangeSubOpcode.JobChangeResult =>
             NpcPresence.IsAt(sessionManager, session, npc => npc.NpcId == GrandMerchantNpcId || npc.NpcType == NpcData.TypeClassChange),
         _ => true,
     };
