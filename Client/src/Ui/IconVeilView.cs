@@ -15,7 +15,9 @@ public sealed partial class IconVeilView : Control
     private static Texture2D? notBound, bound;
     private IconWash wash;
     private IconBadge badge;
+    private const double ExpiryCheckSeconds = 1;
     private ItemSlot shown;
+    private double sinceCheck;
 
     public IconVeilView()
     {
@@ -34,6 +36,9 @@ public sealed partial class IconVeilView : Control
 
     public override void _Process(double delta)
     {
+        sinceCheck += delta;
+        if (sinceCheck < ExpiryCheckSeconds) return;
+        sinceCheck = 0;
         if (shown.HasExpired(DateTimeOffset.UtcNow.ToUnixTimeSeconds())) Set(shown);
     }
 

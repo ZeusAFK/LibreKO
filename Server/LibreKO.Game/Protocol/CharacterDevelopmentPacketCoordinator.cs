@@ -306,7 +306,11 @@ public class CharacterDevelopmentPacketCoordinator(
 
         var subOpcode = (ClassChangeSubOpcode)packet.ReadByte();
         if (!AtTheNpcFor(session, subOpcode))
+        {
+            if (subOpcode == ClassChangeSubOpcode.JobChangeResult)
+                await session.Client.SendPacket(ClassChangePacketWriter.JobChangeResult(JobChangeOutcome.JobError));
             return;
+        }
 
         switch (subOpcode)
         {

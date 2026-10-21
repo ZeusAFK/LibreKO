@@ -76,6 +76,8 @@ public class JobChangeTests : GameTestBase
 
         player.Class.Should().Be(Warrior, "only the NPCs that open the class-change window change jobs");
         Token(player).IsEmpty.Should().BeFalse();
+        await player.Client.Received().SendPacket(Arg.Is<Packet>(sent => sent.GetOpcode() == (byte)GameOpcodes.GS_CLASS_CHANGE),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]

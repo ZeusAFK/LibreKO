@@ -97,9 +97,10 @@ internal sealed class PreGameReader : IPacketReader
     private bool HandleLoginDenied(Packet p)
     {
         var denial = ReadDenial(p);
-        if (denial == GameLoginDenial.TooManyAttempts && !reconnect.InProgress)
+        if (denial == GameLoginDenial.TooManyAttempts)
         {
-            session.PreGame.RaiseLoginThrottled();
+            if (reconnect.InProgress) reconnect.GiveUp(LoginResults.Describe((int)LoginResult.TooManyAttempts));
+            else session.PreGame.RaiseLoginThrottled();
             return true;
         }
 
