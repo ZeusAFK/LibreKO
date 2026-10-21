@@ -208,6 +208,7 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         if (session.CastingSkillId == magic.Id)
             ClearCast(session);
         session.AcceptedCasts.TryRemove(magic.Id, out _);
+        // The client gives a failed skill its timer back unless the skill has a flight.
         if (magic.FlyingEffect > 0)
             return;
 

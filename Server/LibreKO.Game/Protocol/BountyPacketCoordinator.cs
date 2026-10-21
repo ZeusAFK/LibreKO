@@ -232,6 +232,7 @@ public class BountyPacketCoordinator(
                 if (outcome == StateCommit.Saved)
                 {
                     posted = bounty;
+                    // A save whose answer was lost leaves the new row's id unknown, so the board is read again.
                     if (bounty.Id > 0)
                         board.Add(bounty);
                     else
