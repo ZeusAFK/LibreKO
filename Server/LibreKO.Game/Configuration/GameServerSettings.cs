@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
 
@@ -39,6 +40,8 @@ public class GameServerSettings
     public SeedingSettings Seeding { get; set; } = new();
 
     public ConnectionLimitsSettings Connections { get; set; } = new();
+
+    public LoginThrottleSettings Logins { get; set; } = new();
 }
 
 public class SeedingSettings

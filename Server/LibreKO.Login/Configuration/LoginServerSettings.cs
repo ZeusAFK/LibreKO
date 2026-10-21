@@ -1,3 +1,4 @@
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Login.Configuration;
@@ -11,6 +12,7 @@ public class LoginServerSettings
     public int Version { get; set; } = default!;
     public FtpSettings Ftp { get; set; } = new();
     public AccountSettings Account { get; set; } = new();
+    public LoginThrottleSettings Logins { get; set; } = new();
 
     public ConnectionLimitsSettings Connections { get; set; } = new();
 }

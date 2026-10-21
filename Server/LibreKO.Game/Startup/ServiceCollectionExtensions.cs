@@ -39,7 +39,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddPreGameServices(this IServiceCollection services)
     {
         services.AddScoped<IPreGameService, PreGameService>();
-        services.AddSingleton<LoginThrottle>();
+        services.AddSingleton(sp => new LoginThrottle(settings: sp.GetRequiredService<IOptions<GameServerSettings>>().Value.Logins));
         services.AddScoped<IPreGamePacketCoordinator, PreGamePacketCoordinator>();
         services.AddScoped<IGameSessionInitializer, GameSessionInitializer>();
         return services;
