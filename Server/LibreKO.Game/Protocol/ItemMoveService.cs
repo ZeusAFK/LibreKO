@@ -45,7 +45,7 @@ public class ItemMoveService(
 
         if (requestType == ItemMoveRequest.Arrange)
         {
-            if (IsBusy(session))
+            if (session.IsBusy)
             {
                 logger.LogDebug("Refused to arrange the bag for {Name}: busy", session.Name);
                 await session.Client.SendPacket(ItemMovePacketMapper.BuildArrangeRefusedResponse());
@@ -121,13 +121,15 @@ public class ItemMoveService(
             return;
         }
 
-        if (IsBusy(session))
+        if (session.IsBusy)
         {
             logger.LogDebug(
-                "Rejected item move for {Name}: blocked state trading={Trading} merchanting={Merchanting} gathering={Gathering}",
+                "Rejected item move for {Name}: blocked state hp={Hp} trading={Trading} merchanting={Merchanting} preparing={Preparing} gathering={Gathering}",
                 session.Name,
+                session.Hp,
                 session.Trade.IsTrading,
                 session.Trade.IsMerchanting,
+                session.Trade.IsMerchantPreparing,
                 session.IsGathering);
             await SendItemMoveResponseAsync(session, 0);
             return;
@@ -205,9 +207,14 @@ public class ItemMoveService(
             return;
         }
 
+        if (sourceIndex == destinationIndex)
+        {
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
         var splits = amount != ItemStackRule.WholeStack && amount != sourceItem.Count;
-        if (splits && (sourceIndex == destinationIndex
-                || !ItemStackRule.Splits(direction, sourceItem, destinationItem, itemData, amount)))
+        if (splits && !ItemStackRule.Splits(direction, sourceItem, destinationItem, itemData, amount))
         {
             logger.LogDebug(
                 "Rejected item move for {Name}: cannot split {Amount} of {Count} from slot {SourceIndex} to {DestinationIndex}",
@@ -216,6 +223,17 @@ public class ItemMoveService(
                 sourceItem.Count,
                 sourceIndex,
                 destinationIndex);
+            await SendItemMoveResponseAsync(session, 0);
+            return;
+        }
+
+        var swaps = !splits && !destinationItem.IsEmpty && !ItemStackRule.Merges(direction, sourceItem, destinationItem, itemData);
+        if (swaps && !itemInventoryRuleService.TakesDisplaced(
+                session, direction, resolvedSourcePosition, gameDataService.GetItem(destinationItem.ItemId)))
+        {
+            logger.LogDebug(
+                "Rejected item move for {Name}: item {ItemId} cannot take slot {SourceIndex} in a swap",
+                session.Name, destinationItem.ItemId, sourceIndex);
             await SendItemMoveResponseAsync(session, 0);
             return;
         }
@@ -231,7 +249,7 @@ public class ItemMoveService(
             sourceItem.Clear();
         }
         else if (!destinationItem.IsEmpty)
-            SwapItems(sourceItem, destinationItem);
+            sourceItem.SwapWith(destinationItem);
         else
             MoveItem(sourceItem, destinationItem);
 
@@ -293,9 +311,6 @@ public class ItemMoveService(
         }
     }
 
-    private static bool IsBusy(UserSession session) =>
-        session.Trade.IsTrading || session.Trade.IsMerchanting || session.IsGathering;
-
     private static void ArrangeBag(UserSession session)
     {
         var start = InventoryConstants.InventoryStart;
@@ -315,16 +330,6 @@ public class ItemMoveService(
             item.ExpiresAt = arranged[offset].ExpiresAt;
             item.UniqueId = arranged[offset].UniqueId;
         }
-    }
-
-    private static void SwapItems(ItemSlot sourceItem, ItemSlot destinationItem)
-    {
-        (sourceItem.ItemId, destinationItem.ItemId) = (destinationItem.ItemId, sourceItem.ItemId);
-        (sourceItem.Durability, destinationItem.Durability) = (destinationItem.Durability, sourceItem.Durability);
-        (sourceItem.Count, destinationItem.Count) = (destinationItem.Count, sourceItem.Count);
-        (sourceItem.Flag, destinationItem.Flag) = (destinationItem.Flag, sourceItem.Flag);
-        (sourceItem.ExpiresAt, destinationItem.ExpiresAt) = (destinationItem.ExpiresAt, sourceItem.ExpiresAt);
-        (sourceItem.UniqueId, destinationItem.UniqueId) = (destinationItem.UniqueId, sourceItem.UniqueId);
     }
 
     private static void SplitItems(ItemSlot sourceItem, ItemSlot destinationItem, ushort amount)

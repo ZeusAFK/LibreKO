@@ -201,7 +201,7 @@ public class MagicDebuffTargetTests : GameTestBase
         await Cast(provider, client, FreezingDistanceId, caster, victim.CharacterId);
 
         victim.ActiveBuffs.Should().ContainKey(FreezingDistanceId);
-        victim.CanUseSkills.Should().BeFalse();
+        victim.IsHeld.Should().BeTrue("a frozen player casts nothing but a friendly item, as when stunned");
         victim.BlockMagic.Should().BeTrue();
         victim.BlockPhysical.Should().BeTrue();
     }
@@ -461,6 +461,7 @@ public class MagicDebuffTargetTests : GameTestBase
     private static async Task Send(
         ServiceProvider provider, IClient client, int skillId, UserSession caster, int targetId, int x, int z)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

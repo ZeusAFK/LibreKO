@@ -192,7 +192,8 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_DATASAVE] = async (c, _) =>
             {
                 var session = sessionManager.GetByClientId(c.Id);
-                if (session != null) await sessionTermination.SaveAsync(session);
+                if (session != null && session.TryTakeClientSave(UserSession.SinceBoot))
+                    await sessionTermination.SaveAsync(session);
             },
             // GS_CONCURRENTUSER is routed to misc.HandleConcurrentUserAsync below
             // (the real GM-gated handler). The inline lambda that used to live here
@@ -217,7 +218,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             [GameOpcodes.GS_SANTA] = (c, _) => misc.HandleSantaAsync(c),
             [GameOpcodes.GS_MINING] = mining.HandleAsync,
 
-            [GameOpcodes.GS_SPEEDHACK_CHECK] = world.HandleSpeedHackCheckAsync,
+            [GameOpcodes.GS_SPEEDHACK_CHECK] = NoOp,
             [GameOpcodes.GS_CONCURRENTUSER] = misc.HandleConcurrentUserAsync,
             [GameOpcodes.GS_ZONE_CONCURRENT] = misc.HandleZoneConcurrentAsync,
             [GameOpcodes.GS_LOGOSSHOUT] = misc.HandleLogosShoutAsync,

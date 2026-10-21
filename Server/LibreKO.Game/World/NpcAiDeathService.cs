@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Services;
+﻿using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
@@ -14,22 +14,23 @@ public class NpcAiDeathService(
     SessionManager sessionManager,
     IGameDataService gameDataService,
     IPlayerProgressionService playerProgressionService,
-    IMiningPacketCoordinator miningPacketCoordinator) : INpcAiDeathService
+    IMiningPacketCoordinator miningPacketCoordinator,
+    IExchangeLifecycleService exchangeLifecycleService,
+    IMerchantLifecycleService merchantLifecycleService) : INpcAiDeathService
 {
     public async Task HandlePlayerKilledByNpcAsync(UserSession target, NpcInstance npc)
     {
+        if (target.IsBot || !target.TryRecordDeath())
+            return;
+
         var deadPacket = DeathPacketWriter.PlayerDeath(target.CharacterId, npc.UniqueId);
         await sessionManager.Regions.SendToRegion(target, deadPacket, excludeSender: false);
 
         if (target.Trade.IsTrading)
-        {
-            target.Trade.ExchangeUser = -1;
-            target.Trade.ExchangeOk = false;
-            target.Trade.ExchangeItemList.Clear();
-        }
+            await exchangeLifecycleService.CancelAsync(target, isOnDeath: true);
 
-        if (target.Trade.IsMerchanting)
-            target.Trade.MerchantState = Protocol.MerchantMode.None;
+        if (target.Trade.IsMerchanting || target.Trade.IsMerchantPreparing || target.Trade.BuyMerchantGold > 0)
+            await merchantLifecycleService.CloseAsync(target, MerchantInOut.StallClosed);
 
         await miningPacketCoordinator.StopGatheringAsync(target);
 

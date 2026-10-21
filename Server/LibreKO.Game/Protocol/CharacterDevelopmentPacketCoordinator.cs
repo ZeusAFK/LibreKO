@@ -305,6 +305,9 @@ public class CharacterDevelopmentPacketCoordinator(
             return;
 
         var subOpcode = (ClassChangeSubOpcode)packet.ReadByte();
+        if (!AtTheNpcFor(session, subOpcode))
+            return;
+
         switch (subOpcode)
         {
             case ClassChangeSubOpcode.Eligibility:
@@ -341,6 +344,18 @@ public class CharacterDevelopmentPacketCoordinator(
                 break;
         }
     }
+
+    public const int FortuneTellerNpcId = 19005;
+    public const int GrandMerchantNpcId = 18004;
+
+    private bool AtTheNpcFor(UserSession session, ClassChangeSubOpcode sub) => sub switch
+    {
+        ClassChangeSubOpcode.RebirthStatChange => NpcPresence.IsAt(sessionManager, session, FortuneTellerNpcId),
+        ClassChangeSubOpcode.RebirthStatReset => NpcPresence.IsAt(sessionManager, session, GrandMerchantNpcId),
+        ClassChangeSubOpcode.StatReset or ClassChangeSubOpcode.SkillReset or ClassChangeSubOpcode.StatResetCost =>
+            NpcPresence.IsAt(sessionManager, session, npc => npc.NpcId == GrandMerchantNpcId || npc.NpcType == NpcData.TypeClassChange),
+        _ => true,
+    };
 
     private async Task HandleRebStatChangeAsync(UserSession session, Packet packet)
     {

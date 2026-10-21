@@ -65,6 +65,7 @@ public class CombatTests : GameTestBase
 
         for (var i = 0; i < 25 && worm.Hp == worm.MaxHp; i++)
         {
+            attacker.NextSwingTicks = 0;
             var packet = new Packet(GameOpcodes.GS_ATTACK);
             packet.WriteByte(1);
             packet.WriteByte(0);
@@ -171,6 +172,7 @@ public class CombatTests : GameTestBase
 
         for (var i = 0; i < 25 && attacker.Inventory[InventoryConstants.InventoryStart].Count == 5; i++)
         {
+            attacker.NextSwingTicks = 0;
             var packet = new Packet(GameOpcodes.GS_ATTACK);
             packet.WriteByte(1);
             packet.WriteByte(0);
@@ -400,6 +402,7 @@ public class CombatTests : GameTestBase
         });
 
         var deathService = provider.GetRequiredService<INpcAiDeathService>();
+        await deathService.HandlePlayerKilledByNpcAsync(target, npc);
         await deathService.HandlePlayerKilledByNpcAsync(target, npc);
 
         var deadPacket = targetPackets.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_DEAD);
@@ -871,8 +874,9 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 530, accountId: 630);
+        session.Hp = 100;
         session.Name = "Mage";
-        session.Class = 101;
+        session.Class = 202;
         session.Level = 20;
         session.Strength = 50;
         session.Stamina = 50;
@@ -904,6 +908,7 @@ public class CombatTests : GameTestBase
     {
         const int skillId = 202008;
         const int arrowItemId = 391010000;
+        const int bowItemId = 160210001;
 
         using var provider = CreateProvider(
             _ => { },
@@ -925,6 +930,7 @@ public class CombatTests : GameTestBase
                         NeedArrow = 1
                     }
                 });
+                gameData.GetItem(bowItemId).Returns(new ItemData { Num = bowItemId, Kind = 70, Slot = 4, Delay = 150, Range = 350, Duration = 83 });
                 gameData.GetItem(arrowItemId).Returns(new ItemData
                 {
                     Num = arrowItemId,
@@ -943,6 +949,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 540, accountId: 640);
+        session.Hp = 100;
         session.Class = 202;
         session.Level = 20;
         session.ZoneId = 1;
@@ -950,6 +957,8 @@ public class CombatTests : GameTestBase
         session.Z = 20;
         session.MaxMp = 100;
         session.Mp = 20;
+        session.Inventory[InventoryConstants.LeftHand].ItemId = bowItemId;
+        session.Inventory[InventoryConstants.LeftHand].Count = 1;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = arrowItemId;
         session.Inventory[InventoryConstants.InventoryStart].Count = 10;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 1;
@@ -1023,6 +1032,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var warrior = sessionManager.CreateSession(client, characterId: 5410, accountId: 6410);
+        warrior.Hp = 100;
         warrior.Class = 101;
         warrior.Level = 20;
         warrior.ZoneId = BattleZoneManager.ZONE_RONARK_LAND;
@@ -1113,6 +1123,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var warrior = sessionManager.CreateSession(client, characterId: 5412, accountId: 6412);
+        warrior.Hp = 100;
         warrior.Class = 101;
         warrior.Level = 20;
         warrior.ZoneId = BattleZoneManager.ZONE_RONARK_LAND;
@@ -1209,7 +1220,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 541, accountId: 641);
-        session.Class = 201;
+        session.Class = 207;
         session.Level = 20;
         session.ZoneId = 1;
         session.X = 20;
@@ -1276,6 +1287,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 561, accountId: 661);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.ZoneId = 1;
@@ -1301,16 +1313,7 @@ public class CombatTests : GameTestBase
         for (var i = 0; i < 7; i++)
             packet.WriteInt(0);
 
-        var castingPacket = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
-        castingPacket.WriteByte((byte)MagicProcessOpcode.Casting);
-        castingPacket.WriteInt(defenseId);
-        castingPacket.WriteInt(session.CharacterId);
-        castingPacket.WriteInt(session.CharacterId);
-        for (var i = 0; i < 7; i++)
-            castingPacket.WriteInt(0);
-
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
-        await coordinator.HandleAsync(client, castingPacket);
         await coordinator.HandleAsync(client, packet);
 
         session.ActiveBuffs.Should().ContainKey(scrollId);
@@ -1480,7 +1483,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 542, accountId: 642);
-        session.Class = 201;
+        session.Class = 207;
         session.Level = 20;
         session.ZoneId = 1;
         session.X = 20;
@@ -1739,6 +1742,7 @@ public class CombatTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 543, accountId: 643);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;
@@ -2503,7 +2507,8 @@ public class CombatTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var mage = sessionManager.CreateSession(client, characterId: 562, accountId: 662);
         mage.Name = "Mage";
-        mage.Class = 101;
+        mage.Class = 209;
+        mage.Magic = ListedSpellDamageCharisma;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;
@@ -2596,7 +2601,8 @@ public class CombatTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var mage = sessionManager.CreateSession(client, characterId: 563, accountId: 663);
         mage.Name = "Mage";
-        mage.Class = 101;
+        mage.Class = 209;
+        mage.Magic = ListedSpellDamageCharisma;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;
@@ -2724,7 +2730,8 @@ public class CombatTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var mage = sessionManager.CreateSession(client, characterId: 5631, accountId: 6631);
         mage.Name = "Mage";
-        mage.Class = 101;
+        mage.Class = 209;
+        mage.Magic = ListedSpellDamageCharisma;
         mage.ZoneId = 21;
         mage.X = 542;
         mage.Z = 377;

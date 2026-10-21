@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities;
+﻿using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Network;
@@ -28,7 +28,6 @@ public class ClanWarehousePacketCoordinator(
     private const int ItemNoTradeMax = 999_999_999;
     private const int CoinMax = 2_100_000_000;
     private const int WarehousePageSize = 24;
-    private const int ItemCountMax = 9999;
 
     public async Task HandleAsync(IClient client, Packet packet)
     {
@@ -40,6 +39,12 @@ public class ClanWarehousePacketCoordinator(
         if (session.KnightsId <= 0 || sessionManager.Knights.GetClan(session.KnightsId) == null)
         {
             await SendResult(session, sub, ClanWarehouseResult.NotInClan);
+            return;
+        }
+
+        if (session.IsBusy && sub is WarehouseSubOpcode.Input or WarehouseSubOpcode.Output or WarehouseSubOpcode.InventoryMove)
+        {
+            await SendResult(session, sub, ClanWarehouseResult.Failed);
             return;
         }
 
@@ -119,7 +124,8 @@ public class ClanWarehousePacketCoordinator(
             await SendResult(session, WarehouseSubOpcode.Input, ClanWarehouseResult.Failed);
             return;
         }
-        if ((itemId >= ItemNoTradeMin && itemId <= ItemNoTradeMax) || !WarehousePacketCoordinator.Storable(itemData))
+        if ((itemId >= ItemNoTradeMin && itemId <= ItemNoTradeMax) || itemData.IsUntradeable
+            || !WarehousePacketCoordinator.Storable(itemData))
         {
             await SendResult(session, WarehouseSubOpcode.Input, ClanWarehouseResult.NotStorable);
             return;
@@ -143,25 +149,17 @@ public class ClanWarehousePacketCoordinator(
                 var source = s.Inventory[absSrc];
                 if (source.ItemId != itemId || source.Count < count)
                     return false;
-                if (!source.IsTradable)
+                if (!ExchangeTransferService.MayChangeHands(itemData, source))
                 {
                     untradable = true;
                     return false;
                 }
 
                 var destination = slots[realDst];
-                if (!CanMergeOrPlace(itemData, destination, itemId, count))
+                if (!ItemTransfer.Fits(source, destination, itemData, count))
                     return false;
 
-                var destinationWasEmpty = destination.IsEmpty;
-                destination.ItemId = itemId;
-                destination.Count += (ushort)count;
-                destination.Flag = source.Flag;
-                if (destinationWasEmpty) destination.Durability = source.Durability;
-                if (destination.Count > ItemCountMax) destination.Count = ItemCountMax;
-
-                source.Count -= (ushort)count;
-                if (source.Count == 0) source.Clear();
+                ItemTransfer.Move(source, destination, count);
 
                 var coefficient = gameDataService.GetCoefficient(s.Class);
                 if (coefficient != null)
@@ -258,17 +256,10 @@ public class ClanWarehousePacketCoordinator(
                     return false;
 
                 var destination = s.Inventory[absDst];
-                if (!CanMergeOrPlace(itemData, destination, itemId, count))
+                if (!ItemTransfer.Fits(source, destination, itemData, count))
                     return false;
 
-                var destinationWasEmpty = destination.IsEmpty;
-                destination.ItemId = itemId;
-                destination.Count += (ushort)count;
-                destination.Flag = source.Flag;
-                if (destinationWasEmpty) destination.Durability = source.Durability;
-
-                source.Count -= (ushort)count;
-                if (source.Count == 0) source.Clear();
+                ItemTransfer.Move(source, destination, count);
 
                 var coefficient = gameDataService.GetCoefficient(s.Class);
                 if (coefficient != null)
@@ -327,11 +318,7 @@ public class ClanWarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         }, false);
 
@@ -375,11 +362,7 @@ public class ClanWarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         });
 
@@ -393,13 +376,6 @@ public class ClanWarehousePacketCoordinator(
 
     private static bool IsLeaderOrAssistant(UserSession session)
         => session.KnightsFame == 1 || session.KnightsFame == 2;
-
-    private static bool CanMergeOrPlace(ItemData itemData, ItemSlot destination, int itemId, int count)
-    {
-        if (destination.IsEmpty) return true;
-        if (destination.ItemId != itemId || itemData.Countable == 0) return false;
-        return destination.Count + count <= ItemCountMax;
-    }
 
     private async Task PersistClanAsync(KnightsEntity clan, bool items)
     {

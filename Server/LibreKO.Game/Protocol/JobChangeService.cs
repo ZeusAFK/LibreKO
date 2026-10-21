@@ -1,4 +1,4 @@
-using LibreKO.Common.Domain.Entities.GameData;
+﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -16,14 +16,19 @@ public interface IJobChangeService
 
 public class JobChangeService(
     IGameDataService gameDataService,
-    IServiceScopeFactory scopeFactory,
+    ICharacterStatePersister statePersister,
+    IUserNotificationService userNotifications,
     ICombatNotificationService combatNotificationService,
     ILogger<JobChangeService> logger) : IJobChangeService
 {
+    private const int FreeStats = 0;
+
+    private sealed record Job(short Class, byte Race, int[] Stats, int[] Skills);
 
     public async Task HandlePromoteNoviceAsync(UserSession session, byte changeType, byte newJob)
     {
-        if (!Enum.IsDefined((JobChangeTarget)newJob) || changeType is > 1)
+        if (!Enum.IsDefined((JobChangeTarget)newJob) || changeType is > 1
+            || session.IsBusy || session.IsHeld || session.IsInCombat)
         {
             await SendFailAsync(session, JobChangeOutcome.JobError);
             return;
@@ -58,28 +63,53 @@ public class JobChangeService(
         }
         var (newClass, newRace) = resolved.Value;
 
-        if (!ConsumeToken(session, tokenId))
+        var oldClass = session.Class;
+        var oldRace = session.Race;
+        var journal = new InventoryJournal(session, logger);
+        Job? before = null;
+        Job? after = null;
+        var tiedUp = false;
+        // The token and the new job are saved together, and the job's race with them.
+        var outcome = await statePersister.CommitAsync(session, async db =>
         {
-            await SendFailAsync(session, JobChangeOutcome.NoTokenOrSameClass);
+            var character = await db.Characters.FindAsync(session.CharacterId);
+            if (character == null || !journal.Apply(s =>
+                {
+                    tiedUp = s.IsBusy || s.IsHeld || s.IsInCombat;
+                    before = JobOf(s);
+                    if (tiedUp || !TakeToken(s, journal, tokenId, newClass, newRace))
+                        return false;
+                    after = JobOf(s);
+                    return true;
+                }))
+                return false;
+
+            character.Race = newRace;
+            return true;
+        }, () => session.WithLock(s =>
+        {
+            journal.Restore();
+            Restore(s, before!, after!);
+        }));
+        if (outcome != StateCommit.Saved)
+        {
+            await SendFailAsync(session, outcome == StateCommit.Failed || tiedUp ? JobChangeOutcome.JobError : JobChangeOutcome.NoTokenOrSameClass);
             return;
         }
 
-        var oldClass = session.Class;
-        var oldRace = session.Race;
-        session.Class = newClass;
-        session.Race = newRace;
-
-        session.ApplyBaseStats();
-        session.StatPoints = ProgressionTable.StatPointsForLevel(session.Level);
-        session.ResetMasteryPoints();
-
+        var stack = journal.TouchedSlots.Single();
+        var token = session.Inventory[stack];
+        await userNotifications.SendStackChangeAsync(session, (byte)stack, token.ItemId, token.Count, token.Durability);
         var coefficient = gameDataService.GetCoefficient(session.Class);
         if (coefficient != null)
             session.RecalculateStats(coefficient, gameDataService);
-        session.Hp = session.MaxHp;
-        session.Mp = session.MaxMp;
-
-        _ = PersistAsync(session);
+        session.WithLock(s =>
+        {
+            if (s.Hp <= 0)
+                return;
+            s.Hp = s.MaxHp;
+            s.Mp = s.MaxMp;
+        });
 
         await session.Client.SendPacket(ClassChangePacketWriter.JobChangeResult(JobChangeOutcome.Succeeded));
 
@@ -95,44 +125,60 @@ public class JobChangeService(
         await session.Client.SendPacket(ClassChangePacketWriter.JobChangeResult(outcome));
     }
 
-    private static bool ConsumeToken(UserSession session, int itemId)
+    private static bool TakeToken(UserSession session, InventoryJournal journal, int tokenId, short newClass, byte newRace)
     {
-        for (var i = InventoryConstants.SlotMax; i < InventoryConstants.SlotMax + InventoryConstants.HaveMax; i++)
-        {
-            var slot = session.Inventory[i];
-            if (slot.ItemId == itemId && slot.Count > 0)
-            {
-                slot.Count--;
-                if (slot.Count == 0) slot.Clear();
-                return true;
-            }
-        }
-        return false;
+        if (!journal.TakeOne(tokenId))
+            return false;
+
+        session.Class = newClass;
+        session.Race = newRace;
+        session.ApplyBaseStats();
+        session.StatPoints = ProgressionTable.StatPointsForLevel(session.Level);
+        session.ResetMasteryPoints();
+        return true;
     }
 
-    private async Task PersistAsync(UserSession session)
+    private static Job JobOf(UserSession session) => new(session.Class, session.Race, StatsOf(session), SkillsOf(session));
+
+    // Free points come first, at FreeStats.
+    private static int[] StatsOf(UserSession session) =>
+        [session.StatPoints, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic];
+
+    private static int[] SkillsOf(UserSession session) => [.. session.SkillPoints.Select(points => (int)points)];
+
+    // The class goes back whole, and stats and points by what the change moved, so points earned meanwhile stay.
+    private static void Restore(UserSession session, Job before, Job after)
     {
-        try
+        (session.Class, session.Race) = (before.Class, before.Race);
+        var stats = Back(StatsOf(session), before.Stats, after.Stats, FreeStats);
+        if (stats is [var points, var strength, var stamina, var dexterity, var intelligence, var magic])
         {
-            using var scope = scopeFactory.CreateScope();
-            var charRepo = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-            var character = await charRepo.GetById(session.CharacterId);
-            if (character == null) return;
-            character.Class = session.Class;
-            character.Race = session.Race;
-            character.Strength = session.Strength;
-            character.Stamina = session.Stamina;
-            character.Dexterity = session.Dexterity;
-            character.Intelligence = session.Intelligence;
-            character.Magic = session.Magic;
-            character.StatPoints = session.StatPoints;
-            character.SkillPointData = session.SkillPoints;
-            await charRepo.UpdateAsync(character);
+            session.StatPoints = (short)Math.Min(points, short.MaxValue);
+            (session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic) =
+                (Capped(strength), Capped(stamina), Capped(dexterity), Capped(intelligence), Capped(magic));
         }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Job change persist failed for {Name}", session.Name);
-        }
+
+        var skills = Back(SkillsOf(session), before.Skills, after.Skills, ProgressionTable.MasteryPoolSlot);
+        for (var index = 0; index < skills.Length; index++)
+            session.SkillPoints[index] = Capped(skills[index]);
     }
 
+    // Points spent since the change come back out of what they raised, so the undo leaves no more than there was.
+    private static int[] Back(int[] now, int[] before, int[] after, int pool)
+    {
+        var back = now.Select((value, index) => value + before[index] - after[index]).ToArray();
+        for (var index = 0; index < back.Length && back[pool] < 0; index++)
+        {
+            if (index == pool)
+                continue;
+
+            var spent = Math.Clamp(now[index] - after[index], 0, -back[pool]);
+            back[index] -= spent;
+            back[pool] += spent;
+        }
+
+        return [.. back.Select(value => Math.Max(value, 0))];
+    }
+
+    private static byte Capped(int value) => (byte)Math.Min(value, byte.MaxValue);
 }

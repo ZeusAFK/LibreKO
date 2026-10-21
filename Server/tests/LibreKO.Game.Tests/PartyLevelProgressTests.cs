@@ -74,7 +74,7 @@ public class PartyLevelProgressTests : GameTestBase
         var joinerSent = new List<Packet>();
         var joiner = CreateMember(sessionManager, 822, joinerSent, experience: 7_777);
         var party = FormParty(sessionManager, leader, member);
-        joiner.PartyIndex = party.Index;
+        joiner.InvitedToParty = party.Index;
 
         await coordinator.HandleAsync(joiner.Client, Accept());
 

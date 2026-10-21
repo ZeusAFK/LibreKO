@@ -84,8 +84,8 @@ public class MerchantSearchService(
             && candidate.ZoneId == session.ZoneId
             && candidate.Room == session.Room);
 
-        if (merchant == null || session.Hp <= 0 || session.Trade.IsTrading || session.Trade.IsMerchanting
-            || session.IsGathering || !magicItemUsageService.CanUseItem(session, OfficialListItem))
+        if (merchant == null || session.IsBusy || session.IsHeld || !session.CanTeleport || session.CarriesManes
+            || !magicItemUsageService.CanUseItem(session, OfficialListItem))
         {
             await session.Client.SendPacket(MerchantSearchPacketWriter.Result(MerchantSearchPacketWriter.Move,
                 MerchantSearchPacketWriter.Refused));

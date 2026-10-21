@@ -1,4 +1,4 @@
-namespace LibreKO.Common.Enums;
+﻿namespace LibreKO.Common.Enums;
 
 public enum ItemKind : byte
 {
@@ -23,6 +23,7 @@ public enum ItemKind : byte
     Necklace = 92,
     Ring = 93,
     Belt = 94,
+    Etc = 95,
     Launcher = 100,
     Staff = 110,
     Jamadhar = 140,

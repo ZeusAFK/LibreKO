@@ -145,6 +145,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 402, accountId: 412);
+        session.Hp = 100;
         session.Class = classId;
         session.Level = 60;
         session.Strength = 100;
@@ -219,6 +220,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 401, accountId: 411);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;
@@ -295,6 +297,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 405, accountId: 415);
+        session.Hp = 100;
         session.ZoneId = 1;
         session.X = 10;
         session.Z = 10;
@@ -349,6 +352,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 406, accountId: 416);
+        session.Hp = 100;
         session.ZoneId = 1;
         session.X = 10;
         session.Z = 10;
@@ -404,6 +408,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4060, accountId: 4160);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;
@@ -462,6 +467,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4061, accountId: 4161);
+        session.Hp = 100;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = firstItemId;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 20;
         session.Inventory[InventoryConstants.InventoryStart].Count = 2;
@@ -594,6 +600,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var actor = sessionManager.CreateSession(actorClient, characterId: 410, accountId: 420);
+        actor.Hp = 100;
         actor.Class = 101;
         actor.ZoneId = 1;
         actor.X = 10;
@@ -656,6 +663,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 412, accountId: 422);
+        session.Hp = 100;
         session.Class = 101;
         var bagSlot = InventoryConstants.BagSlotFor(0);
         session.Inventory[bagSlot].ItemId = itemId;
@@ -718,6 +726,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 460, accountId: 470);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = itemId;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 20;
@@ -776,6 +785,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 461, accountId: 471);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.InventoryStart].ItemId = storedItemId;
         session.Inventory[InventoryConstants.InventoryStart].Durability = 10;
@@ -819,6 +829,7 @@ public class ItemTests : GameTestBase
         client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 462, accountId: 472);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.BagSlotFor(0)].ItemId = bagItemId;
         session.Inventory[InventoryConstants.BagSlotFor(0)].Count = 1;
@@ -1016,6 +1027,7 @@ public class ItemTests : GameTestBase
         client.SendPacket(Arg.Do<Packet>(packet => replies.Add(packet)), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 463, accountId: 473);
+        session.Hp = 100;
         session.Class = 101;
         session.Inventory[InventoryConstants.BagSlotFor(0)].ItemId = MagicBagItemId;
         session.Inventory[InventoryConstants.BagSlotFor(0)].Count = 1;
@@ -1086,6 +1098,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 462, accountId: 472);
+        session.Hp = 100;
         session.Class = 101;
         var bagSlot = InventoryConstants.BagSlotFor(1);
         session.Inventory[bagSlot].ItemId = bagItemId;
@@ -1207,6 +1220,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4140, accountId: 4240);
+        session.Hp = 100;
         session.Inventory[InventoryConstants.LeftHand].ItemId = itemId;
         session.Inventory[InventoryConstants.LeftHand].Durability = 83;
         session.Inventory[InventoryConstants.LeftHand].Count = 1;
@@ -1242,6 +1256,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 4141, accountId: 4241);
+        session.Hp = 100;
         var slot = session.Inventory[InventoryConstants.MagicBagStart + bagPosition];
         slot.ItemId = itemId;
         slot.Count = 5;
@@ -1304,6 +1319,7 @@ public class ItemTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 415, accountId: 425);
+        session.Hp = 100;
         session.Class = 101;
         session.Level = 20;
         session.Strength = 50;
@@ -1380,7 +1396,7 @@ public class ItemTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11
+            NpcType = NpcData.TypeTradeMerchant
         });
 
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
@@ -1457,7 +1473,7 @@ public class ItemTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11
+            NpcType = NpcData.TypeTradeMerchant
         });
 
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
@@ -1494,6 +1510,7 @@ public class ItemTests : GameTestBase
                     Duration = 20,
                     Weight = 15
                 });
+                gameData.ItemSellsByGroup.Returns(ShopList(1, itemId));
             });
 
         var client = Substitute.For<IClient>();
@@ -1523,7 +1540,7 @@ public class ItemTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11
+            NpcType = NpcData.TypeTradeMerchant
         });
 
         var packet = new Packet(GameOpcodes.GS_ITEM_TRADE);
@@ -2138,6 +2155,131 @@ public class ItemTests : GameTestBase
 
         ReadUpgradeReply(sentPackets).Should().Be(((byte)3, (byte)1, (byte)4, originItemId, (byte)0));
         session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(originItemId);
+    }
+
+    [Fact]
+    public async Task HandleUpgradeAsync_OneAccessoryCannotCountAsThreeCopies()
+    {
+        const int originItemId = 310110005;
+        const int upgradedItemId = 310110006;
+        const int accessoryScroll = 379159000;
+
+        static ItemData Earring(int num) => new() { Num = num, Kind = 91, ItemType = 5, ItemClass = 0, Duration = 15 };
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(Earring(originItemId));
+                gameData.GetItem(upgradedItemId).Returns(Earring(upgradedItemId));
+                gameData.GetUpgradeRecipe(originItemId, accessoryScroll).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = upgradedItemId,
+                    RequiredItem = accessoryScroll
+                });
+                gameData.GetUpgradeSetting(5, 5, accessoryScroll, 0).Returns(new ItemUpgradeSettingsData
+                {
+                    ReqItem1 = accessoryScroll,
+                    ItemType = 5,
+                    ItemGrade = 5,
+                    SuccessRate = 10000
+                });
+            });
+
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", originItemId, accessoryScroll);
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client, UpgradeRequest(3, 1, (originItemId, 0), (originItemId, 0), (originItemId, 0), (accessoryScroll, 1)));
+
+        ReadUpgradeReply(sentPackets).Result.Should().Be(UpgradeResultNoMatch);
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(originItemId);
+        session.Inventory[InventoryConstants.InventoryStart + 1].ItemId.Should().Be(accessoryScroll);
+    }
+
+    [Fact]
+    public async Task HandleUpgradeAsync_ThePositionOfOneStackCannotFillEveryMaterialSlot()
+    {
+        const int originItemId = 156210008;
+        const int upgradedItemId = 156210009;
+        const int filler = 389010000;
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId));
+                gameData.GetItem(upgradedItemId).Returns(UpgradeItem(upgradedItemId, duration: 20));
+                gameData.GetUpgradeRecipe(originItemId, HighClassScroll).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = upgradedItemId,
+                    RequiredItem = HighClassScroll
+                });
+                gameData.GetUpgradeSetting(5, 8, HighClassScroll, 0).Returns(new ItemUpgradeSettingsData
+                {
+                    ItemType = 5,
+                    ItemGrade = 8,
+                    SuccessRate = 10000
+                });
+            });
+
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", originItemId, filler, HighClassScroll);
+        session.Inventory[InventoryConstants.InventoryStart + 1].Count = 2;
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(
+            client, UpgradeRequest(2, 1, (originItemId, 0), (filler, 1), (filler, 1), (filler, 1), (HighClassScroll, 2)));
+
+        ReadUpgradeReply(sentPackets).Result.Should().Be(UpgradeResultNoMatch);
+        session.Inventory[InventoryConstants.InventoryStart + 1].Count.Should().Be(2);
+        session.Inventory[InventoryConstants.InventoryStart + 2].ItemId.Should().Be(HighClassScroll);
+    }
+
+    [Fact]
+    public async Task HandleUpgradeAsync_AScrollInTheLastMaterialSlotIsUsedUp()
+    {
+        const int originItemId = 156210008;
+        const int upgradedItemId = 156210009;
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId));
+                gameData.GetItem(upgradedItemId).Returns(UpgradeItem(upgradedItemId, duration: 20));
+                gameData.GetUpgradeRecipe(originItemId, HighClassScroll).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = upgradedItemId,
+                    RequiredItem = HighClassScroll
+                });
+                gameData.GetUpgradeSetting(5, 8, HighClassScroll, 0).Returns(new ItemUpgradeSettingsData
+                {
+                    ItemType = 5,
+                    ItemGrade = 8,
+                    ReqNoah = 150_000,
+                    SuccessRate = 10000
+                });
+            });
+
+        var fillers = Enumerable.Range(0, 8).Select(i => 389010000 + i * 1000).ToArray();
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        var session = CreateUpgradeSession(provider, client, "Rin", [originItemId, .. fillers, HighClassScroll]);
+
+        var coordinator = provider.GetRequiredService<IItemPacketCoordinator>();
+        await coordinator.HandleUpgradeAsync(client, UpgradeRequest(2, 1,
+            [(originItemId, 0), .. fillers.Select((id, i) => (id, (byte)(i + 1))), (HighClassScroll, 9)]));
+
+        ReadUpgradeReply(sentPackets).Result.Should().Be(1);
+        session.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(upgradedItemId);
+        session.Inventory[InventoryConstants.InventoryStart + 9].Should().Match<ItemSlot>(slot => slot.IsEmpty);
     }
 
     [Fact]

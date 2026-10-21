@@ -123,7 +123,9 @@ public class ScriptItemService(
         if (itemData == null)
             return false;
 
-        var slotIndex = session.FindSlotForItem(itemId, gameData, (ushort)Math.Min(count, ushort.MaxValue));
+        var slotIndex = rentalHours > 0
+            ? FirstEmptyBagSlot()
+            : session.FindSlotForItem(itemId, gameData, (ushort)Math.Min(count, ushort.MaxValue));
         if (slotIndex < 0)
         {
             context.FailAction(InventoryFullReason);
@@ -224,8 +226,14 @@ public class ScriptItemService(
 
     public void GoldGain(int _uid, int amount)
     {
-        session.Money = Math.Min(session.Money + amount, int.MaxValue);
-        QueueGoldChange(1, amount);
+        // Worked out wide and capped, so a reward near the cap can neither pass it nor wrap negative.
+        var gained = session.WithLock(s =>
+        {
+            var before = s.Money;
+            s.Money = (int)Math.Clamp((long)s.Money + amount, 0, Protocol.ExchangePacketConstants.CoinMax);
+            return s.Money - before;
+        });
+        QueueGoldChange(1, gained);
     }
 
     public void GoldLose(int _uid, int amount)
@@ -285,6 +293,9 @@ public class ScriptItemService(
                 return false;
         }
 
+        if (!GoldRewardFits(originItems, rewards))
+            return false;
+
         foreach (var (itemId, count) in originItems)
         {
             if (!RobItem(uid, itemId, count))
@@ -306,6 +317,14 @@ public class ScriptItemService(
 
     private const byte UniqueItemType = 4;
 
+    // The net gold must fit under the cap before the exchange takes any item.
+    private bool GoldRewardFits(IEnumerable<(int itemId, int count)> taken, IEnumerable<(int itemId, int count)> given)
+    {
+        var gained = given.Where(entry => entry.itemId == InventoryConstants.ItemGold).Sum(entry => (long)entry.count);
+        var spent = taken.Where(entry => entry.itemId == InventoryConstants.ItemGold).Sum(entry => (long)entry.count);
+        return gained == 0 || session.Money - spent + gained <= Protocol.ExchangePacketConstants.CoinMax;
+    }
+
     public bool ApplyScriptReward(
         IReadOnlyList<(int itemId, int count)> take,
         IReadOnlyList<(int itemId, int count, int rentalHours)> give)
@@ -315,7 +334,7 @@ public class ScriptItemService(
             || give.Any(e => e.itemId is not (InventoryConstants.ItemGold or InventoryConstants.ItemExperience
                 or InventoryConstants.ItemQuestCount or InventoryConstants.ItemLadderPoint) && gameData.GetItem(e.itemId) is null)
             || take.Concat(granted).Any(e => e.itemId <= 0 || e.count <= 0)
-            || !CanInsertRewards(granted))
+            || !CanInsertRewards(give))
             return false;
         foreach (var group in take.GroupBy(e => e.itemId == InventoryConstants.ItemQuestCount
                      ? InventoryConstants.ItemLadderPoint : e.itemId))
@@ -344,7 +363,8 @@ public class ScriptItemService(
             var gained = give.Where(e => Matches(e.itemId)).Sum(e => (long)e.count);
             var spent = take.Where(e => Matches(e.itemId)).Sum(e => (long)e.count);
             var balance = currency == InventoryConstants.ItemGold ? session.Money : session.Loyalty;
-            if (balance - spent + gained > int.MaxValue
+            var cap = currency == InventoryConstants.ItemGold ? Protocol.ExchangePacketConstants.CoinMax : int.MaxValue;
+            if (balance - spent + gained > cap
                 || currency == InventoryConstants.ItemLadderPoint && session.MonthlyLoyalty + gained > int.MaxValue)
                 return false;
         }
@@ -372,6 +392,9 @@ public class ScriptItemService(
             if (!HasQuestOriginRequirement(uid, itemId, count))
                 return false;
         }
+
+        if (!GoldRewardFits(originItems, rewards))
+            return false;
 
         foreach (var (itemId, count) in originItems)
         {
@@ -437,7 +460,7 @@ public class ScriptItemService(
             return false;
         }
 
-        if (FindEmptyInventorySlot(rewardItemId) < 0)
+        if (session.FindSlotForItem(rewardItemId, gameData, (ushort)Math.Min(giveCount, ushort.MaxValue)) < 0)
             return false;
 
         // Consume one ore, grant the reward.
@@ -461,18 +484,14 @@ public class ScriptItemService(
         return true;
     }
 
-    private int FindEmptyInventorySlot(int rewardItemId)
+    private int FirstEmptyBagSlot()
     {
-        var itemData = gameData.GetItem(rewardItemId);
-        var stackable = itemData?.Countable == 1;
-        for (var i = InventoryConstants.InventoryStart;
-             i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax;
-             i++)
+        for (var i = InventoryConstants.InventoryStart; i < InventoryConstants.InventoryStart + InventoryConstants.HaveMax; i++)
         {
-            var slot = session.Inventory[i];
-            if (slot.IsEmpty) return i;
-            if (stackable && slot.ItemId == rewardItemId && slot.Count < MaxItemCount) return i;
+            if (session.Inventory[i].IsEmpty)
+                return i;
         }
+
         return -1;
     }
 
@@ -751,21 +770,23 @@ public class ScriptItemService(
         }
     }
 
-    private bool CanInsertRewards(IEnumerable<(int itemId, int count)> rewards)
+    private bool CanInsertRewards(IEnumerable<(int itemId, int count)> rewards) =>
+        CanInsertRewards(rewards.Select(reward => (reward.itemId, reward.count, 0)));
+
+    private bool CanInsertRewards(IEnumerable<(int itemId, int count, int rentalHours)> rewards)
     {
         var snapshot = session.Inventory
-            .Select(slot => new ItemSlot
+            .Select(slot =>
             {
-                ItemId = slot.ItemId,
-                Count = slot.Count,
-                Durability = slot.Durability,
-                Flag = slot.Flag
+                var copy = new ItemSlot();
+                InventoryJournal.CopyInto(slot, copy);
+                return copy;
             })
             .ToArray();
 
-        foreach (var (itemId, count) in rewards)
+        foreach (var (itemId, count, rentalHours) in rewards)
         {
-            if (TryInsertItem(snapshot, itemId, count, applyChanges: true) < 0)
+            if (TryInsertItem(snapshot, itemId, count, rentalHours, applyChanges: true) < 0)
             {
                 if (count > 0 && gameData.GetItem(itemId) is not null)
                     context.FailAction(InventoryFullReason);
@@ -776,7 +797,7 @@ public class ScriptItemService(
         return true;
     }
 
-    private int TryInsertItem(ItemSlot[] inventory, int itemId, int count, bool applyChanges)
+    private int TryInsertItem(ItemSlot[] inventory, int itemId, int count, int rentalHours, bool applyChanges)
     {
         if ((itemId == InventoryConstants.ItemGold || itemId == InventoryConstants.ItemExperience || itemId == InventoryConstants.ItemQuestCount || itemId == InventoryConstants.ItemLadderPoint) && count > 0)
             return 0;
@@ -785,14 +806,15 @@ public class ScriptItemService(
         if (itemData == null || count <= 0)
             return -1;
 
-        if (itemData.Countable != 0)
+        // A rental takes a slot of its own, as GiveItem gives it.
+        if (itemData.Countable != 0 && rentalHours <= 0)
         {
             for (var index = InventoryConstants.InventoryStart;
                  index < InventoryConstants.InventoryStart + InventoryConstants.HaveMax;
                  index++)
             {
                 var slot = inventory[index];
-                if (slot.ItemId != itemId)
+                if (slot.ItemId != itemId || !slot.IsPlain)
                     continue;
 
                 var newCount = slot.Count + count;
@@ -820,6 +842,7 @@ public class ScriptItemService(
                 slot.Count = (ushort)count;
                 slot.Durability = itemData.Duration;
                 slot.Flag = 0;
+                slot.ExpireInHours(rentalHours, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
             }
 
             return index;

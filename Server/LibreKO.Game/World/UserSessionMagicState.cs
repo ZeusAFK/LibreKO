@@ -151,6 +151,7 @@ internal static class UserSessionMagicState
     }
 
     private const int NeutralPercent = 100;
+    private const int SlowedPercent = 65;
     private const int TripleAcPercent = 300;
     private const short KaulAcBonus = 500;
     private const short AttackRangeArmorAcBonus = 100;
@@ -213,6 +214,7 @@ internal static class UserSessionMagicState
         session.CastReadyTicks = 0;
         session.CastCommitTicks = 0;
         session.CastExpireTicks = 0;
+        session.CastLaunched = false;
         RebuildSpecialStates(session, gameData);
         session.RecalculateStatsWithBuffs(gameData);
         return dropped;
@@ -332,30 +334,42 @@ internal static class UserSessionMagicState
         session.ReflectArmorType = 0;
     }
 
+    public static byte LiveSpeedAmount(UserSession session, long nowTicks)
+    {
+        var manes = ManesActive(session, nowTicks);
+        byte speed = NeutralPercent;
+        foreach (var buff in session.ActiveBuffs.Values)
+        {
+            if (buff.ExpireTicks > nowTicks)
+                speed = SpeedAfter(speed, buff, manes);
+        }
+
+        return speed;
+    }
+
+    private static bool ManesActive(UserSession session, long nowTicks) =>
+        session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && b.ExpireTicks > nowTicks);
+
+    private static byte SpeedAfter(byte speed, ActiveBuff buff, bool manesActive) => buff.BuffType switch
+    {
+        BuffType.Speed when !manesActive => (byte)buff.BonusSpeed,
+        BuffType.FragmentOfManes => (byte)buff.BonusSpeed,
+        BuffType.Speed2 => (byte)Math.Max(1, speed * SlowedPercent / NeutralPercent),
+        BuffType.TripleAcHalfSpeed => (byte)Math.Max(1, speed / 2),
+        _ => speed,
+    };
+
     private static void ApplyBuffTypeFlags(UserSession session, ActiveBuff buff)
     {
         switch (buff.BuffType)
         {
-            case BuffType.Speed:
-                if (!session.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
-                    session.SpeedAmount = (byte)buff.BonusSpeed;
+            case BuffType.Speed or BuffType.FragmentOfManes or BuffType.Speed2 or BuffType.TripleAcHalfSpeed:
+                session.SpeedAmount = SpeedAfter(session.SpeedAmount, buff, ManesActive(session, DateTime.UtcNow.Ticks));
                 break;
             case BuffType.Freeze:
                 session.SpeedAmount = (byte)buff.BonusSpeed;
-                session.CanUseSkills = false;
                 session.BlockMagic = true;
                 session.BlockPhysical = true;
-                break;
-            case BuffType.FragmentOfManes:
-                session.SpeedAmount = (byte)buff.BonusSpeed;
-                break;
-            case BuffType.Speed2:
-                session.SpeedAmount = (byte)(session.SpeedAmount * 65 / 100);
-                if (session.SpeedAmount == 0)
-                    session.SpeedAmount = 1;
-                break;
-            case BuffType.TripleAcHalfSpeed:
-                session.SpeedAmount = (byte)Math.Max(1, session.SpeedAmount / 2);
                 break;
             case BuffType.Damage:
                 if (buff.BonusAttack > 0)

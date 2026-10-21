@@ -75,6 +75,7 @@ public class ChallengePacketCoordinator(
         var targetName = packet.ReadSByteString();
         var target = sessionManager.GetByName(targetName);
         if (target == null
+            || target == session
             || target.Hp <= 0
             || target.ZoneId != session.ZoneId
             || target.Trade.IsRequestingChallenge
@@ -118,6 +119,14 @@ public class ChallengePacketCoordinator(
         challenger.Trade.ChallengeUser = -1;
         challenger.Trade.IsRequestingChallenge = false;
 
+        if (challenger == session || challenger.Hp <= 0 || challenger.ZoneId != session.ZoneId
+            || ChallengeBlockedIn(session.ZoneId) || IsBusy(session) || IsBusy(challenger))
+        {
+            await SendErrorAsync(session);
+            await SendErrorAsync(challenger);
+            return;
+        }
+
         logger.LogInformation("Duel accepted between {Name} and {ChallengerName}", session.Name, challenger.Name);
 
         const byte zoneArena = (byte)ZoneId.Arena;
@@ -151,7 +160,11 @@ public class ChallengePacketCoordinator(
     }
 
     public static bool ChallengeBlockedIn(byte zoneId) =>
-        BattleZoneManager.IsPvpZone(zoneId) || BattleZoneManager.IsBattleZone(zoneId) || zoneId == (byte)ZoneId.Delos;
+        BattleZoneManager.IsPvpZone(zoneId) || BattleZoneManager.IsBattleZone(zoneId)
+        || zoneId is (byte)ZoneId.Delos or (byte)ZoneId.Prison;
+
+    private static bool IsBusy(UserSession session) =>
+        session.IsInParty || session.Trade.IsTrading || session.Trade.IsMerchanting;
 
     private static async Task SendErrorAsync(UserSession session, byte error = ChallengeGenericError)
     {

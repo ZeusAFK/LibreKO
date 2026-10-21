@@ -98,7 +98,7 @@ public class MarketPriceTests : GameTestBase
         merchant.Inventory[stallSlot].Durability = 1000;
         merchant.Trade.MerchantState = MerchantMode.Selling;
         merchant.Trade.MerchantItems[0] = new MerchantItem { ItemId = Sword, Price = 5000, Count = 1, Durability = 1000, OriginalSlot = stallSlot };
-        buyer.Trade.MerchantTargetUserId = merchant.CharacterId;
+        buyer.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
 
         var buy = new Packet(GameOpcodes.GS_MERCHANT);
         buy.WriteInt(Sword);
@@ -122,12 +122,18 @@ public class MarketPriceTests : GameTestBase
         var (merchant, _, _) = Player(provider, 200, "Wanting");
         var (seller, _, _) = Player(provider, 300, "Selling");
         var (_, sent, client) = Player(provider, 100, "Viewer");
-        merchant.Trade.MerchantState = MerchantMode.Buying;
-        merchant.Trade.BuyMerchantItems[0] = new MerchantItem { ItemId = Potion, Price = 70, Count = 10 };
+        merchant.Trade.IsBuyingMerchantPreparing = true;
+        var insert = new Packet(GameOpcodes.GS_MERCHANT);
+        insert.WriteByte(1);
+        insert.WriteInt(Potion);
+        insert.WriteUShort(10);
+        insert.WriteInt(70);
+        insert.ResetOffset();
+        await provider.GetRequiredService<IMerchantBuyingService>().InsertAsync(merchant, insert);
         seller.Inventory[InventoryConstants.SlotMax].ItemId = Potion;
         seller.Inventory[InventoryConstants.SlotMax].Count = 4;
         seller.Inventory[InventoryConstants.SlotMax].Durability = 1;
-        seller.Trade.MerchantTargetUserId = merchant.CharacterId;
+        seller.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
 
         var sell = new Packet(GameOpcodes.GS_MERCHANT);
         sell.WriteByte(0);

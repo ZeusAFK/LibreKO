@@ -36,7 +36,7 @@ public class ItemRemoveService(
             return;
         }
 
-        if (session.IsGathering
+        if (session.IsBusy
             || !itemInventoryRuleService.TryResolveRemoveIndex(type, position, out var absolutePosition, out var affectsEquipment))
         {
             await SendItemRemoveResponseAsync(session, 0);
@@ -44,7 +44,7 @@ public class ItemRemoveService(
         }
 
         var item = session.Inventory[absolutePosition];
-        if (item.ItemId != itemId || item.State == ItemFlag.Sealed)
+        if (item.ItemId != itemId || item.State == ItemFlag.Sealed || item.IsSealedCharacter)
         {
             await SendItemRemoveResponseAsync(session, 0);
             return;

@@ -134,8 +134,16 @@ public sealed class InstanceEntryService(
         var room = rooms.Open(zoneId, set, duration, endsOnBossKill);
         Populate(room);
 
+        var leftBehind = new List<string>();
         foreach (var member in members.ToList())
         {
+            if (member != session && !member.MayBeMovedByOthers)
+            {
+                leftBehind.Add(member.Name);
+                await member.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)member.Nation, StayedBehindNotice));
+                continue;
+            }
+
             rooms.Join(room, member);
             member.InstanceReturn = member.ZoneId == zoneId ? member.InstanceReturn : returnPoint(member);
             await zoneTransition.ChangeZoneAsync(member, zoneId, x, z);
@@ -143,9 +151,15 @@ public sealed class InstanceEntryService(
                 $"The dungeon closes in {GameConstants.InstanceRoomMinutes} minutes."));
         }
 
+        if (leftBehind.Count > 0)
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{string.Join(", ", leftBehind)} could not come along."));
+
         logger.LogInformation("Instance room {Room}: zone {Zone} set {Set} opened by {Name} with {Count} monsters",
             room.Id, zoneId, set, session.Name, room.Npcs.Count);
     }
+
+    private const string StayedBehindNotice = "You stayed behind: you were busy, held or fighting when the dungeon opened.";
 
     private IEnumerable<UserSession> ClanMembers(UserSession session)
     {
@@ -154,7 +168,7 @@ public sealed class InstanceEntryService(
         {
             if (member.CharacterId == session.CharacterId || member.KnightsId != session.KnightsId)
                 continue;
-            if (member.Room != 0 || member.IsWarping || ZoneRules.IsTempleEvent(member.ZoneId))
+            if (member.Room != 0 || !member.MayBeMovedByOthers || ZoneRules.IsTempleEvent(member.ZoneId))
                 continue;
             yield return member;
         }
@@ -176,7 +190,7 @@ public sealed class InstanceEntryService(
                 continue;
 
             var member = sessionManager.GetByCharacterId(memberId);
-            if (member != null && member.ZoneId == session.ZoneId && !member.IsWarping)
+            if (member != null && member.ZoneId == session.ZoneId)
                 yield return member;
         }
     }

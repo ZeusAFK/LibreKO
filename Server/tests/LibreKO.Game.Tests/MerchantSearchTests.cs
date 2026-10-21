@@ -11,6 +11,8 @@ namespace LibreKO.Game.Tests;
 
 public class MerchantSearchTests : GameTestBase
 {
+    private const int FragmentOfManes = 492063;
+    private const int StunRow = 110560;
     private const int OfficialList = 810166000;
     private const byte OfficialListSub = 0x30;
     private const byte Move = 2;
@@ -172,6 +174,35 @@ public class MerchantSearchTests : GameTestBase
         Reply(sent, Move).ReadByte().Should().Be(1);
         Math.Abs(seeker.X - seller.X).Should().BeLessThan(3f);
         Math.Abs(seeker.Z - seller.Z).Should().BeLessThan(3f);
+    }
+
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task MoveIsRefusedToAPlayerWhoMayNotBeMoved(bool noRecall, bool carriesManes, bool stunned)
+    {
+        using var provider = Provider();
+        var (seeker, sent, client) = Player(provider, 100, "Seeker", 800, 400, carriesList: true);
+        var (seller, _, _) = Player(provider, 200, "Seller", 850, 450);
+        Sells(seller, 0, Sword, 5000);
+        seeker.CanTeleport = !noRecall;
+        if (carriesManes)
+            seeker.SetBuff(FragmentOfManes, new ActiveBuff
+            {
+                MagicId = FragmentOfManes, CasterId = seeker.CharacterId, BuffType = BuffType.FragmentOfManes,
+                ExpireTicks = DateTime.UtcNow.AddMinutes(1).Ticks,
+            });
+        if (stunned)
+            seeker.SetBuff(StunRow, new ActiveBuff
+            {
+                MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+            });
+
+        await Send(provider, client, Move, (ushort)200);
+
+        Reply(sent, Move).ReadByte().Should().Be(0);
+        seeker.X.Should().Be(800);
     }
 
     [Fact]

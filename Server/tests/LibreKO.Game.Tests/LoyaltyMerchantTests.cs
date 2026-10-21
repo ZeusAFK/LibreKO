@@ -103,13 +103,16 @@ public class LoyaltyMerchantTests : GameTestBase
     private static (ServiceProvider Provider, UserSession Session, List<Packet> Sent, NpcInstance Npc) Setup()
     {
         var provider = CreateProvider(_ => { }, gameData =>
+        {
             gameData.GetItem(ItemId).Returns(new ItemData
             {
                 Num = ItemId,
                 BuyPrice = Price,
                 Countable = 1,
                 Duration = 1,
-            }));
+            });
+            gameData.ItemSellsByGroup.Returns(ShopList(LoyaltyGroup, ItemId));
+        });
 
         var sent = new List<Packet>();
         var client = Substitute.For<IClient>();
@@ -133,7 +136,7 @@ public class LoyaltyMerchantTests : GameTestBase
             Z = 10,
             MaxHp = 1,
             Hp = 1,
-            NpcType = 11,
+            NpcType = NpcData.TypeTradeMerchant,
         });
         return (provider, session, sent, npc);
     }

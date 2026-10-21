@@ -2,6 +2,7 @@
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -10,8 +11,9 @@ namespace LibreKO.Game.World;
 public interface ICharacterStatePersister
 {
     Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default);
+    Task<bool> SaveAndSealAsync(UserSession session, CancellationToken cancellationToken = default);
     Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null);
     Task SetOnlineStateAsync(int characterId, bool isOnline, CancellationToken cancellationToken = default);
 
     Task SaveQuestStateAsync(UserSession session, CancellationToken cancellationToken = default);
@@ -47,7 +49,13 @@ public class CharacterStatePersister(
         public UserSession Session = null!;
     }
 
-    public async Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default)
+    public Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default) =>
+        SaveAsync(session, seal: false, cancellationToken);
+
+    public Task<bool> SaveAndSealAsync(UserSession session, CancellationToken cancellationToken = default) =>
+        SaveAsync(session, seal: true, cancellationToken);
+
+    private async Task<bool> SaveAsync(UserSession session, bool seal, CancellationToken cancellationToken)
     {
         if (session.IsBot)
             return false;
@@ -55,7 +63,18 @@ public class CharacterStatePersister(
         await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
         try
         {
-            return await SaveUnderGateAsync(session);
+            if (session.SavesSealed)
+                return false;
+
+            try
+            {
+                return await SaveUnderGateAsync(session);
+            }
+            finally
+            {
+                if (seal)
+                    session.SealSaves();
+            }
         }
         finally
         {
@@ -79,11 +98,15 @@ public class CharacterStatePersister(
         var dailyOp = await dailyOpRepository.GetOrCreateByCharacterId(session.CharacterId);
         var account = await accountRepository.GetById(session.AccountId);
 
-        ApplyToCharacter(session, character, userSessionCharacterMapper);
-        userSessionCharacterMapper.ApplyToWarehouse(session, warehouse);
-        userSessionCharacterMapper.ApplyToDailyOps(session, dailyOp);
-        if (account != null)
-            userSessionCharacterMapper.ApplyToAccount(session, account);
+        // One snapshot under the lock, so a sale landing mid-save is saved whole or not at all.
+        session.WithLock(s =>
+        {
+            ApplyToCharacter(s, character, userSessionCharacterMapper);
+            userSessionCharacterMapper.ApplyToWarehouse(s, warehouse);
+            userSessionCharacterMapper.ApplyToDailyOps(s, dailyOp);
+            if (account != null)
+                userSessionCharacterMapper.ApplyToAccount(s, account);
+        });
         await characterRepository.UpdateAsync(character);
         await warehouseRepository.UpdateAsync(warehouse);
         await dailyOpRepository.UpdateAsync(dailyOp);
@@ -94,12 +117,16 @@ public class CharacterStatePersister(
         return true;
     }
 
+    // A change that moves neither the purse nor the bag tells whether it was written through landed.
     public async Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null)
     {
         await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
         try
         {
+            if (session.SavesSealed)
+                return StateCommit.Unchanged;
+
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var mapper = scope.ServiceProvider.GetRequiredService<IUserSessionCharacterMapper>();
@@ -110,17 +137,31 @@ public class CharacterStatePersister(
                 return StateCommit.Failed;
             }
 
+            // The warehouse holds escrowed offers that found no room in the bag.
+            var warehouse = await db.Warehouses.SingleOrDefaultAsync(entry => entry.AccountId == session.AccountId, cancellationToken)
+                ?? db.Warehouses.Add(new Warehouse { AccountId = session.AccountId }).Entity;
+            var stored = (character.Money, character.Items);
             try
             {
                 if (!await change(db))
                     return StateCommit.Unchanged;
 
-                session.WithLock(active => ApplyToCharacter(active, character, mapper));
-                await db.SaveChangesAsync(cancellationToken);
+                session.WithLock(active =>
+                {
+                    ApplyToCharacter(active, character, mapper);
+                    mapper.ApplyToWarehouse(active, warehouse);
+                });
+                await SaveOnceAsync(db, character, stored, landed, cancellationToken);
                 return StateCommit.Saved;
             }
             catch (Exception exception)
             {
+                if (await WasWrittenAsync(character, stored, landed))
+                {
+                    logger.LogWarning(exception, "The commit of {Name} reported a failure but was written; the change stands", session.Name);
+                    return StateCommit.Saved;
+                }
+
                 logger.LogError(exception, "Could not commit {Name}; the change is undone", session.Name);
                 undo();
                 return StateCommit.Failed;
@@ -129,6 +170,51 @@ public class CharacterStatePersister(
         finally
         {
             session.CharacterPersistenceGate.Release();
+        }
+    }
+
+    // A store that retries a save runs it in a transaction and first asks whether a lost answer was a write.
+    private async Task SaveOnceAsync(AppDbContext db, Character character, (int Money, byte[] Items) stored,
+        Func<AppDbContext, Task<bool>>? landed, CancellationToken cancellationToken)
+    {
+        var strategy = db.Database.CreateExecutionStrategy();
+        if (!strategy.RetriesOnFailure)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
+        await strategy.ExecuteInTransactionAsync(
+            token => db.SaveChangesAsync(acceptAllChangesOnSuccess: false, token),
+            _ => WasWrittenAsync(character, stored, landed),
+            cancellationToken);
+        db.ChangeTracker.AcceptAllChanges();
+    }
+
+    // A save can be written and still report a failure; undoing it then would duplicate what it moved.
+    private async Task<bool> WasWrittenAsync(Character written, (int Money, byte[] Items) before, Func<AppDbContext, Task<bool>>? landed)
+    {
+        var moved = written.Money != before.Money || !written.Items.AsSpan().SequenceEqual(before.Items);
+        if (!moved && landed == null)
+            return false;
+
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            if (!moved)
+                return await landed!(db);
+
+            var now = await db.Characters.AsNoTracking()
+                .Where(c => c.Id == written.Id)
+                .Select(c => new { c.Money, c.Items })
+                .FirstOrDefaultAsync();
+            return now != null && now.Money == written.Money && now.Items.AsSpan().SequenceEqual(written.Items);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogError(exception, "Could not check whether character {CharacterId}'s commit was written", written.Id);
+            return false;
         }
     }
 
@@ -208,9 +294,20 @@ public class CharacterStatePersister(
 
     private async Task PersistQuestBlobAsync(UserSession session)
     {
-        using var scope = scopeFactory.CreateScope();
-        var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
-        // Direct single-column UPDATE — no full character row read or rewrite.
-        await characterRepository.UpdateQuestDataAsync(session.CharacterId, session.SerializeQuestData());
+        await session.CharacterPersistenceGate.WaitAsync();
+        try
+        {
+            if (session.SavesSealed)
+                return;
+
+            using var scope = scopeFactory.CreateScope();
+            var characterRepository = scope.ServiceProvider.GetRequiredService<ICharacterRepository>();
+            // Direct single-column UPDATE — no full character row read or rewrite.
+            await characterRepository.UpdateQuestDataAsync(session.CharacterId, session.SerializeQuestData());
+        }
+        finally
+        {
+            session.CharacterPersistenceGate.Release();
+        }
     }
 }

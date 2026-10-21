@@ -43,6 +43,10 @@ public static class UserSessionBinaryState
             var uniqueAt = uniqueOffset + index * BytesPerUniqueId;
             if (uniqueAt + BytesPerUniqueId <= data.Length)
                 slots[index].UniqueId = BitConverter.ToInt32(data, uniqueAt);
+
+            // Servers before the trade escrow could save a count in a slot with no item.
+            if (slots[index].IsEmpty)
+                slots[index].Clear();
         }
     }
 

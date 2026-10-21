@@ -6,6 +6,9 @@ using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 
@@ -20,6 +23,7 @@ public class GenderChangeTests : GameTestBase
     private const byte NoItem = 2;
     private const byte NewFace = 5;
     private const int NewHair = 0x04_10_20_30;
+    private const int RestyledHair = 0x01_02_03_04;
 
     [Theory]
     [InlineData(101, new byte[] { 1 })]
@@ -45,7 +49,76 @@ public class GenderChangeTests : GameTestBase
     public void OnlyAClassWithASecondRaceCanChange(short classId, bool canChange) =>
         GenderChangeRules.CanChange(classId).Should().Be(canChange);
 
-    private ServiceProvider Provider() => CreateProvider(
+    [Fact]
+    public async Task AChangeWhoseSaveFailsKeepsTheItemAndTheLook()
+    {
+        var faults = new RaceFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (session, _, client) = await Player(provider, 208, (byte)CharacterRace.ElMoradMale, carriesItem: true);
+
+        await Ask(provider, client, (byte)CharacterRace.ElMoradFemale);
+
+        session.Race.Should().Be((byte)CharacterRace.ElMoradMale, "the item and the new look are saved together or not at all");
+        session.Face.Should().Be(1);
+        session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(GenderChangeItem);
+    }
+
+    [Fact]
+    public async Task AnItemThatLeavesTheBagMidChangeChangesNothing()
+    {
+        UserSession? changer = null;
+        var sale = new DuringWarehouseRead { Meanwhile = () => changer!.Inventory[InventoryConstants.SlotMax].Clear() };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(sale)));
+        IClient client;
+        (changer, _, client) = await Player(provider, 208, (byte)CharacterRace.ElMoradMale, carriesItem: true);
+
+        await Ask(provider, client, (byte)CharacterRace.ElMoradFemale);
+
+        changer.Race.Should().Be((byte)CharacterRace.ElMoradMale, "the item went to a buyer, so it paid for no change");
+        await using var scope = provider.CreateAsyncScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Characters.AsNoTracking().SingleAsync(c => c.Name == "Changer"))
+            .Race.Should().Be((byte)CharacterRace.ElMoradMale);
+    }
+
+    [Fact]
+    public async Task ALookChangedWhileAFailedChangeWaitsIsKept()
+    {
+        UserSession? changer = null;
+        var restyle = new DuringWarehouseRead { Meanwhile = () => changer!.Hair = RestyledHair };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(restyle, new RaceFaults())));
+        IClient client;
+        (changer, _, client) = await Player(provider, 208, (byte)CharacterRace.ElMoradMale, carriesItem: true);
+
+        await Ask(provider, client, (byte)CharacterRace.ElMoradFemale);
+
+        changer.Race.Should().Be((byte)CharacterRace.ElMoradMale);
+        changer.Hair.Should().Be(RestyledHair, "a failed change puts back the look as it found it");
+    }
+
+    private sealed class RaceFaults : SaveChangesInterceptor
+    {
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            eventData.Context?.ChangeTracker.Entries<Character>().Any(entry => entry.Property(nameof(Character.Race)).IsModified) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private sealed class DuringWarehouseRead : IQueryExpressionInterceptor
+    {
+        public Action Meanwhile { get; init; } = () => { };
+
+        public System.Linq.Expressions.Expression QueryCompilationStarting(
+            System.Linq.Expressions.Expression queryExpression, QueryExpressionEventData eventData)
+        {
+            if (queryExpression is System.Linq.Expressions.MethodCallExpression { Arguments: [EntityQueryRootExpression root, ..] }
+                && root.EntityType.ClrType == typeof(Warehouse))
+                Meanwhile();
+            return queryExpression;
+        }
+    }
+
+    private ServiceProvider Provider(Action<IServiceCollection>? configureServices = null) => CreateProvider(
         db =>
         {
             db.Accounts.Add(new Account { Login = "gender", Password = "pw", Nation = AccountNation.ElMorad, Authority = AccountAuthority.Normal });
@@ -70,7 +143,7 @@ public class GenderChangeTests : GameTestBase
         gameData => gameData.GetItem(GenderChangeItem).Returns(new ItemData
         {
             Num = GenderChangeItem, Name = "Gender Change", Kind = 255, Slot = 15, Duration = 1, ReqLevelMax = 100,
-        }));
+        }), configureServices: configureServices);
 
     private static async Task<(UserSession Session, List<Packet> Sent, IClient Client)> Player(
         ServiceProvider provider, short classId, byte race, bool carriesItem)

@@ -25,18 +25,10 @@ public static class TempleEventHelpers
             await LeavePreviousPartyIfAnyAsync(sessionManager, combatNotificationService, session);
         }
 
-        var leader = sessions[0];
-        var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
-        leader.PartyIndex = party.Index;
-        leader.IsPartyLeader = true;
-
-        for (var i = 1; i < sessions.Count && i < PartyGroup.MaxMembers; i++)
-        {
-            var member = sessions[i];
-            party.MemberIds[i] = (short)member.CharacterId;
-            member.PartyIndex = party.Index;
-            member.IsPartyLeader = false;
-        }
+        var party = SeatParty(sessionManager, sessions);
+        if (party == null)
+            return -1;
+        var leader = sessions.First(session => (short)session.CharacterId == party.LeaderId);
 
         for (var i = 0; i < PartyGroup.MaxMembers; i++)
         {
@@ -70,6 +62,35 @@ public static class TempleEventHelpers
         return party.Index;
     }
 
+    private static PartyGroup? SeatParty(SessionManager sessionManager, List<UserSession> sessions)
+    {
+        PartyGroup? party = null;
+        foreach (var session in sessions)
+        {
+            if (party == null)
+            {
+                var formed = sessionManager.Parties.CreateParty((short)session.CharacterId);
+                if (!session.TryEnterParty(formed.Index))
+                {
+                    sessionManager.Parties.DeleteParty(formed.Index);
+                    continue;
+                }
+
+                party = formed;
+                session.IsPartyLeader = true;
+            }
+            else if (session.TryEnterParty(party.Index))
+            {
+                if (party.TryJoin((short)session.CharacterId))
+                    session.IsPartyLeader = false;
+                else
+                    session.TryLeaveParty(party.Index);
+            }
+        }
+
+        return party;
+    }
+
     public static PartyPacketWriter.MemberState MemberStateOf(UserSession session) => new(
         session.CharacterId,
         session.Name,
@@ -88,40 +109,32 @@ public static class TempleEventHelpers
         if (!session.IsInParty)
             return;
 
-        var party = sessionManager.Parties.GetParty(session.PartyIndex);
-        session.PartyIndex = -1;
-        session.IsPartyLeader = false;
+        var index = session.PartyIndex;
+        var party = sessionManager.Parties.GetParty(index);
+        if (!session.TryLeaveParty(index))
+            return;
 
+        session.IsPartyLeader = false;
         if (party == null)
             return;
 
         if (party.MemberCount <= 2 || party.LeaderId == (short)session.CharacterId)
         {
-            var deletePacket = PartyPacketWriter.Disband();
-            await combatNotificationService.SendToPartyAsync(party, deletePacket);
-            for (var i = 0; i < PartyGroup.MaxMembers; i++)
-            {
-                if (party.MemberIds[i] < 0)
-                    continue;
+            var members = sessionManager.Parties.DeleteParty(party.Index);
+            if (members == null)
+                return;
 
-                var m = sessionManager.GetByCharacterId(party.MemberIds[i]);
-                if (m != null)
-                {
-                    m.PartyIndex = -1;
-                    m.IsPartyLeader = false;
-                }
-            }
-            sessionManager.Parties.DeleteParty(party.Index);
-        }
-        else
-        {
-            var pos = party.FindMember((short)session.CharacterId);
-            if (pos >= 0)
+            await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
+            foreach (var memberId in members)
             {
-                party.MemberIds[pos] = -1;
-                var removePkt = PartyPacketWriter.MemberLeft(session.CharacterId);
-                await combatNotificationService.SendToPartyAsync(party, removePkt);
+                if (sessionManager.GetByCharacterId(memberId) is { } m && m.TryLeaveParty(party.Index))
+                    m.IsPartyLeader = false;
             }
+        }
+        else if (party.TryLeave((short)session.CharacterId))
+        {
+            var removePkt = PartyPacketWriter.MemberLeft(session.CharacterId);
+            await combatNotificationService.SendToPartyAsync(party, removePkt);
         }
     }
 
@@ -134,26 +147,16 @@ public static class TempleEventHelpers
             return;
 
         var party = sessionManager.Parties.GetParty(partyIndex);
-        if (party == null)
+        var members = sessionManager.Parties.DeleteParty(partyIndex);
+        if (party == null || members == null)
             return;
 
-        var deletePacket = PartyPacketWriter.Disband();
-        await combatNotificationService.SendToPartyAsync(party, deletePacket);
-
-        for (var i = 0; i < PartyGroup.MaxMembers; i++)
+        await combatNotificationService.SendToPartyAsync(party, PartyPacketWriter.Disband());
+        foreach (var memberId in members)
         {
-            if (party.MemberIds[i] < 0)
-                continue;
-
-            var member = sessionManager.GetByCharacterId(party.MemberIds[i]);
-            if (member != null)
-            {
-                member.PartyIndex = -1;
+            if (sessionManager.GetByCharacterId(memberId) is { } member && member.TryLeaveParty(partyIndex))
                 member.IsPartyLeader = false;
-            }
         }
-
-        sessionManager.Parties.DeleteParty(partyIndex);
     }
 
     public static async Task<bool> TryGiveItemAsync(

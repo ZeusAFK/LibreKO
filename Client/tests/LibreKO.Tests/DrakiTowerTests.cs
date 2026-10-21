@@ -134,6 +134,7 @@ public class DrakiTowerTests
     [InlineData(DrakiEnterResult.NoLimit, 40069)]
     [InlineData(DrakiEnterResult.TowerFull, 40076)]
     [InlineData(DrakiEnterResult.LevelTooLow, 40077)]
+    [InlineData(DrakiEnterResult.CannotEnterNow, 40077)]
     [InlineData(DrakiEnterResult.SilentRefusal, 40090)]
     public void EnterRefusalsUseTheirTexts(DrakiEnterResult result, int text) =>
         Assert.Equal(text, DrakiTower.EnterText(result)?.Id);

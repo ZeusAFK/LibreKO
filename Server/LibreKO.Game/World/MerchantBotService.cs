@@ -79,13 +79,15 @@ public class MerchantBotService : IMerchantBotService
         for (int i = 0; i < gmSession.Trade.MerchantItems.Length; i++)
         {
             var src = gmSession.Trade.MerchantItems[i];
-            if (src != null && !src.IsEmpty)
+            if (src != null && !src.IsEmpty && src.UniqueId == 0)
             {
                 hasItems = true;
                 var bagSlot = InventoryConstants.SlotMax + i;
                 bot.Inventory[bagSlot].ItemId = src.ItemId;
                 bot.Inventory[bagSlot].Count = src.Count;
                 bot.Inventory[bagSlot].Durability = src.Durability;
+                bot.Inventory[bagSlot].Flag = src.Flag;
+                bot.Inventory[bagSlot].ExpiresAt = src.ExpiresAt;
 
                 bot.Trade.MerchantItems[i] = new MerchantItem
                 {
@@ -94,6 +96,8 @@ public class MerchantBotService : IMerchantBotService
                     Price = src.Price,
                     Durability = src.Durability,
                     OriginalSlot = (byte)bagSlot,
+                    Flag = src.Flag,
+                    ExpiresAt = src.ExpiresAt,
                 };
             }
         }
@@ -172,6 +176,8 @@ public class MerchantBotService : IMerchantBotService
                         Count = (ushort)it.Count,
                         Price = it.Price,
                         Durability = it.Durability,
+                        Flag = it.Flag,
+                        ExpiresAt = it.ExpiresAt,
                     });
                 }
             }
@@ -323,6 +329,8 @@ public class MerchantBotService : IMerchantBotService
                                 bot.Inventory[bagSlot].ItemId = it.ItemId;
                                 bot.Inventory[bagSlot].Count = it.Count;
                                 bot.Inventory[bagSlot].Durability = it.Durability;
+                                bot.Inventory[bagSlot].Flag = it.Flag;
+                                bot.Inventory[bagSlot].ExpiresAt = it.ExpiresAt;
 
                                 bot.Trade.MerchantItems[it.Slot] = new MerchantItem
                                 {
@@ -331,6 +339,8 @@ public class MerchantBotService : IMerchantBotService
                                     Price = it.Price,
                                     Durability = it.Durability,
                                     OriginalSlot = (byte)bagSlot,
+                                    Flag = it.Flag,
+                                    ExpiresAt = it.ExpiresAt,
                                 };
                             }
                         }
@@ -491,6 +501,8 @@ public class MerchantBotService : IMerchantBotService
         public ushort Count { get; set; }
         public int Price { get; set; }
         public short Durability { get; set; }
+        public byte Flag { get; set; }
+        public long ExpiresAt { get; set; }
     }
 
     private class StoredBotVisual

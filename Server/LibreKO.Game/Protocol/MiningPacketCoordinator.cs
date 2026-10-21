@@ -149,7 +149,7 @@ public class MiningPacketCoordinator(
         if (session.Hp <= 0)
             return;
 
-        if (session.Trade.IsTrading || session.Trade.IsMerchanting)
+        if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing)
         {
             await SendResultAsync(session, StartOpcode(type), ResultError);
             return;
@@ -192,7 +192,7 @@ public class MiningPacketCoordinator(
         if (!IsActive(session, type) || session.Hp <= 0)
             return;
 
-        if (session.Trade.IsTrading || session.Trade.IsMerchanting)
+        if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing)
         {
             await FailAsync(session, type, ResultError);
             return;
@@ -428,9 +428,11 @@ public class MiningPacketCoordinator(
         await userNotificationService.SendStatUpdateAsync(session);
     }
 
+    public const int GamblerNpcId = 29083;
+
     private async Task BettingGameAsync(UserSession session)
     {
-        if (session.Hp <= 0)
+        if (session.IsBusy || !NpcPresence.IsAt(sessionManager, session, GamblerNpcId))
             return;
 
         ushort result;

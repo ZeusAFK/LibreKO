@@ -94,6 +94,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         session.AttendanceClaimedDays = character.AttendanceClaimedDays;
         session.AttendanceClaimedBonus = character.AttendanceClaimedBonus;
         session.AttendanceCheckedOn = character.AttendanceCheckedOn;
+        session.GenieRewardClaimedOn = character.GenieRewardClaimedOn;
         session.SealedExperience = character.SealedExperience;
         session.ExpSealOn = character.ExpSealOn;
 
@@ -141,13 +142,14 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         character.Intelligence = session.Intelligence;
         character.Magic = session.Magic;
         character.StatPoints = session.StatPoints;
-        character.Money = session.Money;
+        character.Money = session.SavedMoney;
         character.Experience = session.Experience;
-        character.Items = session.SerializeItems();
+        character.Items = session.SavedItems;
         character.SkillData = session.SkillData;
         character.SkillPointData = (byte[])session.SkillPoints.Clone();
         character.Bind = session.Quest.BindPoint;
         character.Class = session.Class;
+        character.Race = session.Race;
         character.Hair = session.Hair;
         character.Face = session.Face;
         character.Loyalty = session.Loyalty;
@@ -173,6 +175,7 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
         character.AttendanceClaimedDays = session.AttendanceClaimedDays;
         character.AttendanceClaimedBonus = session.AttendanceClaimedBonus;
         character.AttendanceCheckedOn = session.AttendanceCheckedOn;
+        character.GenieRewardClaimedOn = session.GenieRewardClaimedOn;
         character.SealedExperience = session.SealedExperience;
         character.ExpSealOn = session.ExpSealOn;
 
@@ -203,8 +206,8 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
 
     public void ApplyToWarehouse(UserSession session, Warehouse warehouse)
     {
-        warehouse.Items = session.SerializeWarehouse();
-        warehouse.Money = session.WarehouseMoney;
+        warehouse.Items = session.SavedWarehouse;
+        warehouse.Money = session.SavedWarehouseMoney;
     }
 
     public void ApplyToAccount(UserSession session, Account account)

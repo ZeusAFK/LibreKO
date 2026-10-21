@@ -1,3 +1,4 @@
+﻿using LibreKO.Common.Domain.Services;
 using FluentAssertions;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
@@ -74,6 +75,39 @@ public class LoginTests : ServerTest
         loginPacket.WriteShort((short)Settings.Version);
         var loginPacketHex = Convert.ToHexString(PacketProvider.WrapPacket(loginPacket));
         responseHex.Should().Be(loginPacketHex);
+    }
+
+    [Fact]
+    public async Task LS_LOGIN_AfterFiveMissesIsRefusedEvenWithThePasswordAndSaysWhy()
+    {
+        await StartServerAsync();
+        var (_, stream) = await ConnectAsync();
+
+        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
+            (await LoginResultAsync(stream, "user", "wrong_password")).Should().Be(LoginResult.InvalidPassword);
+
+        (await LoginResultAsync(stream, "user", "password")).Should().Be(LoginResult.TooManyAttempts,
+            "a name that keeps missing from one address waits out the window, and the player is told so rather than that the password is wrong");
+    }
+
+    [Fact]
+    public async Task LS_LOGIN_ANameLongerThanAnyAccountIsNotFound()
+    {
+        await StartServerAsync();
+        var (_, stream) = await ConnectAsync();
+
+        (await LoginResultAsync(stream, new string('x', Account.MaxLoginLength + 1), "password")).Should().Be(LoginResult.IdNotFound);
+    }
+
+    private async Task<LoginResult> LoginResultAsync(System.Net.Sockets.NetworkStream stream, string userName, string password)
+    {
+        var loginPacket = new Packet(LoginOpcodes.LS_LOGIN);
+        loginPacket.WriteString(userName);
+        loginPacket.WriteString(password);
+        var response = await WriteHexAsync(stream, Convert.ToHexString(PacketProvider.WrapPacket(loginPacket, asClient: true)));
+        var responsePacket = await PacketProvider.ReadFromStream(new MemoryStream(Convert.FromHexString(response)), CancellationToken.None);
+        responsePacket.ReadShort();
+        return (LoginResult)responsePacket.ReadByte();
     }
 
     [Theory]

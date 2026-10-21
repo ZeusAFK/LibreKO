@@ -1,4 +1,4 @@
-using LibreKO.Common.Enums;
+﻿using LibreKO.Common.Enums;
 using LibreKO.Game.Protocol.Writers;
 using Microsoft.Extensions.Logging;
 
@@ -22,7 +22,7 @@ public sealed class NpcLifecycleService(
 
     public async Task DespawnAsync(NpcInstance npc)
     {
-        if (npc.IsDead)
+        if (npc.IsDead || !npc.TryBeginDeath())
             return;
 
         npc.WithLock(target =>

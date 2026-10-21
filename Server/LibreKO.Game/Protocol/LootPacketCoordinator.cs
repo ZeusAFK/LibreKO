@@ -32,7 +32,7 @@ public class LootPacketCoordinator(
     public async Task HandleItemDropAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || packet.RemainingBytes < 7)
+        if (session == null || session.IsBusy || packet.RemainingBytes < 7)
             return;
 
         var pos = packet.ReadByte();
@@ -50,22 +50,28 @@ public class LootPacketCoordinator(
         var dropped = session.WithLock(s =>
         {
             var slot = s.Inventory[absPos];
-            if (slot.ItemId != itemId || slot.Count < count)
-                return false;
+            if (slot.ItemId != itemId || slot.Count < count || !ExchangeTransferService.MayChangeHands(itemData, slot)
+                || !ExchangeTransferService.IsTradableItem(itemData, itemId, pos))
+                return null;
+            var loot = new LootItem
+            {
+                ItemId = itemId, Count = count, Durability = slot.Durability, Flag = slot.Flag,
+                ExpiresAt = slot.ExpiresAt, UniqueId = slot.UniqueId,
+            };
             slot.Count -= count;
             if (slot.Count == 0)
                 slot.Clear();
             var coefficient = gameDataService.GetCoefficient(s.Class);
             if (coefficient != null)
                 s.RecalculateStats(coefficient, gameDataService);
-            return true;
+            return loot;
         });
 
-        if (!dropped)
+        if (dropped == null)
             return;
 
-        var bundle = sessionManager.Regions.CreateBundle(session.X, session.Z, session.Y);
-        bundle.Items.Add(new LootItem { ItemId = itemId, Count = count });
+        var bundle = sessionManager.Regions.CreateBundle(session.ZoneId, session.Room, session.X, session.Z, session.Y);
+        bundle.Items.Add(dropped);
         logger.LogDebug("{Name} dropped item {ItemId} x{Count}", session.Name, itemId, count);
 
         var result = ItemDropPacketWriter
@@ -90,7 +96,7 @@ public class LootPacketCoordinator(
             return;
         }
 
-        if (bundle.DistanceSquaredTo(session.X, session.Z) > LootBundle.MaxLootRange)
+        if (!bundle.IsBeside(session, LootBundle.MaxLootRange))
             return;
 
         if (!bundle.CanLoot(session.CharacterId, session.IsInParty ? session.PartyIndex : -1, DateTime.UtcNow.Ticks))
@@ -111,12 +117,19 @@ public class LootPacketCoordinator(
     public async Task HandleItemGetAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || packet.RemainingBytes < 10)
+        if (session == null || packet.RemainingBytes < 10)
             return;
 
         var bundleId = packet.ReadInt();
         var itemId = packet.ReadInt();
         var slotId = packet.ReadUShort();
+        // A busy player's bag and purse may be counted on by a trade or a stall, so nothing lands in them.
+        if (session.IsBusy)
+        {
+            await SendItemGetErrorAsync(session, bundleId);
+            return;
+        }
+
         var bundle = sessionManager.Regions.GetBundle(bundleId);
         if (bundle == null)
         {
@@ -124,7 +137,7 @@ public class LootPacketCoordinator(
             return;
         }
 
-        if (bundle.DistanceSquaredTo(session.X, session.Z) > LootBundle.MaxLootRange)
+        if (!bundle.IsBeside(session, LootBundle.MaxLootRange))
         {
             await SendItemGetErrorAsync(session, bundleId);
             return;
@@ -176,42 +189,44 @@ public class LootPacketCoordinator(
             await SendItemGetErrorAsync(session, bundleId);
             return;
         }
-        var peekedCount = snapshot[slotId].Count;
+        var seen = snapshot[slotId];
+        var delivery = Delivery(seen, itemData);
 
-        var slotIndex = session.WithLock(s => s.FindSlotForItem(itemId, gameDataService, peekedCount));
-        if (slotIndex < 0)
+        var picked = session.WithLock(s =>
         {
-            var noRoom = ItemGetPacketWriter.NoRoom(bundleId);
-            await session.Client.SendPacket(noRoom);
+            if (s.IsBusy)
+                return (Outcome: Pickup.Gone, Slot: -1, Count: (ushort)0, Money: 0);
+            var slotIndex = ItemPlacement.FindForDelivery(s.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, delivery);
+            if (slotIndex < 0)
+                return (Outcome: Pickup.NoRoom, Slot: slotIndex, Count: (ushort)0, Money: 0);
+            if (!sessionManager.Regions.TryClaimBundleItem(bundleId, slotId, seen))
+                return (Outcome: Pickup.Gone, Slot: slotIndex, Count: (ushort)0, Money: 0);
+
+            var dst = s.Inventory[slotIndex];
+            ItemPlacement.Put(dst, delivery);
+            var coefficient = gameDataService.GetCoefficient(s.Class);
+            if (coefficient != null)
+                s.RecalculateStats(coefficient, gameDataService);
+            return (Outcome: Pickup.Taken, Slot: slotIndex, Count: dst.Count, Money: s.Money);
+        });
+
+        if (picked.Outcome == Pickup.NoRoom)
+        {
+            await session.Client.SendPacket(ItemGetPacketWriter.NoRoom(bundleId));
             return;
         }
 
-        if (!sessionManager.Regions.TryClaimBundleSlot(bundleId, slotId, itemId, out var claimed) || claimed == null)
+        if (picked.Outcome == Pickup.Gone)
         {
             await SendItemGetErrorAsync(session, bundleId);
             return;
         }
 
-        logger.LogDebug("{Name} picked up item {ItemId} x{Count}", session.Name, itemId, claimed.Count);
-
-        var picked = session.WithLock(s =>
-        {
-            var dst = s.Inventory[slotIndex];
-            dst.ItemId = itemId;
-            dst.Count += claimed.Count;
-            if (dst.Count > 9999)
-                dst.Count = 9999;
-            if (dst.Durability == 0)
-                dst.Durability = itemData.Duration;
-            var coefficient = gameDataService.GetCoefficient(s.Class);
-            if (coefficient != null)
-                s.RecalculateStats(coefficient, gameDataService);
-            return (Count: dst.Count, Money: s.Money);
-        });
+        logger.LogDebug("{Name} picked up item {ItemId} x{Count}", session.Name, itemId, seen.Count);
 
         var success = ItemGetPacketWriter.Looted(
             bundleId,
-            (byte)(slotIndex - InventoryConstants.SlotMax),
+            (byte)(picked.Slot - InventoryConstants.SlotMax),
             itemId,
             picked.Count,
             picked.Money,
@@ -222,6 +237,19 @@ public class LootPacketCoordinator(
         await userNotificationService.SendWeightChangeAsync(session);
         await collectionRaceService.HandleItemGainAsync(session, itemId);
     }
+
+    private enum Pickup { Taken, NoRoom, Gone }
+
+    private static ExchangeItem Delivery(LootItem loot, ItemData itemData) => new()
+    {
+        ItemId = loot.ItemId,
+        Count = loot.Count,
+        Durability = loot.Durability ?? itemData.Duration,
+        Flag = loot.Flag,
+        ExpiresAt = loot.ExpiresAt,
+        UniqueId = loot.UniqueId,
+        Countable = itemData.Countable != 0,
+    };
 
     private async Task TellPartyAsync(UserSession looter, int bundleId, int itemId, ushort slotId)
     {
@@ -258,7 +286,7 @@ public class LootPacketCoordinator(
         foreach (var member in members)
         {
             if (member.Hp <= 0 || member.ZoneId != zoneId
-                || bundle.DistanceSquaredTo(member.X, member.Z) > PartyCoinRange * PartyCoinRange)
+                || !bundle.IsBeside(member, PartyCoinRange * PartyCoinRange))
                 continue;
 
             var share = (int)((long)coins * member.Level / levelSum);

@@ -14,9 +14,12 @@ public class ClanBankTests : GameTestBase
 {
     private const short Wolves = 71;
     private const int StoredItem = 156_210_000;
+    private const int OwnersOnly = 389_020_000;
+    private const byte UntradeableRace = 20;
     private const byte Member = 3;
     private const byte Chief = 1;
     private const short AliveHp = 100;
+    private const long RentalEnds = 4_102_444_800;
     private const byte PageSize = 24;
 
     [Fact]
@@ -50,14 +53,19 @@ public class ClanBankTests : GameTestBase
         bank.Slots()[0].ItemId.Should().Be(StoredItem);
     }
 
-    [Fact]
-    public async Task AnUntradableItemIsNamedNotStorable()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AnUntradableItemIsNamedNotStorable(bool timed)
     {
         var bank = Bank(Wolves, Member);
         var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
         bag.ItemId = StoredItem;
         bag.Count = 1;
-        bag.Flag = (byte)ItemFlag.Bound;
+        if (timed)
+            bag.ExpiresAt = RentalEnds;
+        else
+            bag.Flag = (byte)ItemFlag.Bound;
 
         await bank.Send(WarehouseSubOpcode.Input, packet =>
         {
@@ -71,6 +79,59 @@ public class ClanBankTests : GameTestBase
 
         bank.LastResult(WarehouseSubOpcode.Input).Should().Be((byte)ClanWarehouseResult.NotStorable);
         bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(StoredItem);
+    }
+
+    [Theory]
+    [InlineData(UntradeableRace)]
+    [InlineData(70)]
+    [InlineData(71)]
+    public async Task AnItemThatCanNeverBeTradedIsNamedNotStorable(byte race)
+    {
+        var bank = Bank(Wolves, Member, race);
+        var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
+        bag.ItemId = OwnersOnly;
+        bag.Count = 1;
+
+        await bank.Send(WarehouseSubOpcode.Input, packet =>
+        {
+            packet.WriteInt(0);
+            packet.WriteInt(OwnersOnly);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteInt(1);
+        });
+
+        bank.LastResult(WarehouseSubOpcode.Input).Should().Be((byte)ClanWarehouseResult.NotStorable);
+        bank.Slots()[0].IsEmpty.Should().BeTrue("another member could take it out on a different character");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OnlyAMemberWhoIsNotTradingStoresAnItem(bool trading)
+    {
+        var bank = Bank(Wolves, Member);
+        var bag = bank.Session.Inventory[InventoryConstants.SlotMax];
+        bag.ItemId = StoredItem;
+        bag.Count = 1;
+        bag.Durability = 50;
+        if (trading)
+            bank.Session.Trade.ExchangeUser = 9_999;
+
+        await bank.Send(WarehouseSubOpcode.Input, packet =>
+        {
+            packet.WriteInt(0);
+            packet.WriteInt(StoredItem);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteByte(0);
+            packet.WriteInt(1);
+        });
+
+        bank.LastResult(WarehouseSubOpcode.Input).Should().Be((byte)(trading ? ClanWarehouseResult.Failed : ClanWarehouseResult.Succeeded));
+        bank.Session.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(trading ? StoredItem : 0);
+        bank.Slots()[0].ItemId.Should().Be(trading ? 0 : StoredItem);
     }
 
     [Fact]
@@ -95,15 +156,18 @@ public class ClanBankTests : GameTestBase
         bank.Slots()[1].IsEmpty.Should().BeTrue();
     }
 
-    private static BankHarness Bank(short clan, byte fame)
+    private static BankHarness Bank(short clan, byte fame, byte ownersOnlyRace = UntradeableRace)
     {
         var provider = CreateProvider(db =>
         {
             if (clan <= 0) return;
             db.Knights.Add(new KnightsEntity { Id = clan, Name = "Wolves", Chief = "Alpha", Nation = 1 });
             db.SaveChanges();
-        }, data => data.GetItem(StoredItem)
-            .Returns(new ItemData { Num = StoredItem, Countable = 0, Duration = 50 }));
+        }, data =>
+        {
+            data.GetItem(StoredItem).Returns(new ItemData { Num = StoredItem, Countable = 0, Duration = 50 });
+            data.GetItem(OwnersOnly).Returns(new ItemData { Num = OwnersOnly, Race = ownersOnlyRace, Duration = 50 });
+        });
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         var sent = new List<Packet>();

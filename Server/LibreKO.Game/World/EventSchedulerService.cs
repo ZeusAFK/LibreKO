@@ -182,8 +182,11 @@ public class EventSchedulerService(
                 if (BattleZoneManager.IsBattleZone(session.ZoneId) &&
                     (byte)session.Nation == winner)
                 {
-                    session.Loyalty += loyaltyReward;
-                    session.MonthlyLoyalty += loyaltyReward;
+                    session.WithLock(s =>
+                    {
+                        s.Loyalty = LoyaltyService.Gained(s.Loyalty, loyaltyReward);
+                        s.MonthlyLoyalty = LoyaltyService.Gained(s.MonthlyLoyalty, loyaltyReward);
+                    });
 
                     var loyaltyPkt = LoyaltyChangePacketWriter.Totals(
                         session.Loyalty, session.MonthlyLoyalty);
@@ -337,7 +340,9 @@ public class EventSchedulerService(
     {
         List<int> participants;
         lock (runsLock)
-            participants = run.Participants.ToList();
+            participants = run.Participants
+                .Where(id => sessionManager.GetByCharacterId(id) is not { ZoneId: (byte)ZoneId.Prison })
+                .ToList();
 
         logger.LogInformation("Warping {Count} participants to zone {Zone} for {Contest}",
             participants.Count, run.Zone, run.Contest);
@@ -463,7 +468,7 @@ public class EventSchedulerService(
         lock (runsLock)
         {
             var run = contest == TempleEvent.None ? PickSignUp(session) : runs.GetValueOrDefault(contest);
-            if (run is not { JoinOpen: true })
+            if (run is not { JoinOpen: true } || session.ZoneId == (byte)ZoneId.Prison)
                 return TempleJoinResult.NotOpen;
             if (run.Participants.Contains(session.CharacterId))
                 return TempleJoinResult.AlreadyJoined;

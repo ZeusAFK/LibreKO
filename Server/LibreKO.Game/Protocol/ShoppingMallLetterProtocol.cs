@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol;
 
@@ -13,6 +13,9 @@ internal static class ShoppingMallLetterProtocol
     public const byte LetterRead = 5;
     public const byte LetterSend = 6;
     public const byte LetterDelete = 7;
+
+    public const byte LetterStatusNew = 1;
+    public const byte LetterStatusRead = 2;
 
     public const int LetterSendCost = 1000;
     public const int LetterSendItemCost = 10000;

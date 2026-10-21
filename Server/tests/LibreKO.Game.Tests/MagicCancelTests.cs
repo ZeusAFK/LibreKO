@@ -187,6 +187,7 @@ public class MagicCancelTests : GameTestBase
 
     private static Packet ArrowMissed(int skillId, UserSession caster)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Fail);
         packet.WriteInt(skillId);
@@ -380,6 +381,7 @@ public class MagicCancelTests : GameTestBase
         var caster = sessions.CreateSession(client, characterId: 710, accountId: 810);
         caster.Name = "Archer";
         caster.Class = 102;
+        caster.Magic = ListedSpellDamageCharisma;
         caster.Level = 60;
         caster.Nation = AccountNation.Karus;
         caster.ZoneId = 21;
@@ -395,6 +397,7 @@ public class MagicCancelTests : GameTestBase
 
     private static Packet Magic(MagicProcessOpcode sub, int skillId, UserSession caster, int targetId)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)sub);
         packet.WriteInt(skillId);

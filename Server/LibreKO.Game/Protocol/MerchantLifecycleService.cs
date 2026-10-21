@@ -21,6 +21,7 @@ public class MerchantLifecycleService(
     SessionManager sessionManager,
     IMerchantBotService merchantBotService,
     ISlaveMerchantService slaveMerchants,
+    IMerchantBuyingService merchantBuyingService,
     ILogger<MerchantLifecycleService> logger) : IMerchantLifecycleService
 {
     private const short OpenAccepted = 1;
@@ -36,7 +37,7 @@ public class MerchantLifecycleService(
         {
             openResult = OpenWhileDead;
         }
-        else if (session.Trade.IsTrading)
+        else if (session.Trade.IsTrading || session.IsGathering)
         {
             openResult = OpenWhileTrading;
         }
@@ -66,6 +67,14 @@ public class MerchantLifecycleService(
 
     public async Task CloseAsync(UserSession session, MerchantInOut? merchantInOutType)
     {
+        // A slave merchant's stall is closed only by the slave merchant service.
+        if (session is SlaveMerchantBotSession)
+            return;
+
+        // A buying stall closes through its own path, which hands back the gold it holds.
+        if (session.Trade.IsBuyingMerchant || session.Trade.IsBuyingMerchantPreparing || session.Trade.BuyMerchantGold > 0)
+            await merchantBuyingService.CloseAsync(session, broadcast: merchantInOutType.HasValue);
+
         if (!session.Trade.IsMerchanting && !session.Trade.IsSellingMerchantPreparing && !HasMerchantItems(session))
             return;
 
@@ -76,6 +85,7 @@ public class MerchantLifecycleService(
         session.Trade.IsSellingMerchantPreparing = false;
         session.Trade.MerchantTargetUserId = -1;
         session.Trade.MerchantAdvert = string.Empty;
+        sessionManager.ForgetStall(session);
 
         if (!merchantInOutType.HasValue)
             return;
@@ -90,7 +100,9 @@ public class MerchantLifecycleService(
         var toSlave = packet.RemainingBytes > 0 && packet.ReadByte() != 0;
         var staged = session.Trade.MerchantItems.Count(item => item is { IsEmpty: false });
         var refusal =
-            advertMessage.Length > MerchantPacketConstants.MaxAdvertLength ? $"advert is {advertMessage.Length} characters"
+            session.Hp <= 0 || session.Trade.IsTrading || session.IsGathering ? "dead, trading or gathering"
+            : !session.Trade.IsSellingMerchantPreparing || session.Trade.IsMerchanting ? "no stall is being set up"
+            : advertMessage.Length > MerchantPacketConstants.MaxAdvertLength ? $"advert is {advertMessage.Length} characters"
             : staged == 0 ? "no items staged"
             : null;
 
@@ -146,6 +158,7 @@ public class MerchantLifecycleService(
     {
         var merchantId = packet.ReadInt();
         var merchant = sessionManager.GetByCharacterId(merchantId);
+        var generation = merchant?.Trade.StallGeneration ?? 0;
         bool buying = sub is MerchantSubOpcode.BuyingStallRequest or MerchantSubOpcode.BuyingStallOpen;
 
         var refusal =
@@ -174,7 +187,7 @@ public class MerchantLifecycleService(
 
         ReleaseViewedStall(session);
         merchant!.Trade.MerchantViewerId = session.CharacterId;
-        session.Trade.MerchantTargetUserId = merchant.CharacterId;
+        session.Trade.LookAt(merchant.CharacterId, generation);
 
         await session.Client.SendPacket(windowStep
             ? MerchantPacketWriter.StallWindowOpen(

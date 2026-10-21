@@ -5,6 +5,7 @@ public interface IBountyRequests
     void List();
     void Post(string target, int reward);
     void Claim(int bountyId);
+    void Withdraw(int bountyId);
 }
 
 public sealed class BountyRequests : IBountyRequests
@@ -33,6 +34,14 @@ public sealed class BountyRequests : IBountyRequests
     {
         var p = new Packet(GameOpcodes.GS_BOUNTY);
         p.WriteByte((byte)BountySubOpcode.Claim);
+        p.WriteInt(bountyId);
+        sink.Send(p);
+    }
+
+    public void Withdraw(int bountyId)
+    {
+        var p = new Packet(GameOpcodes.GS_BOUNTY);
+        p.WriteByte((byte)BountySubOpcode.Withdraw);
         p.WriteInt(bountyId);
         sink.Send(p);
     }

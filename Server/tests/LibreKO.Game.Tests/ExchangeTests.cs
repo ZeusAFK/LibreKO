@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -19,6 +19,7 @@ public class ExchangeTests : GameTestBase
     private const byte OfferedSlot = 3;
     private const byte ExchangeAdd = 3;
     private const byte ExchangeAgree = 2;
+    private const float FarAway = 500f;
     private const byte RaceUntradeable = 20;
 
     [Theory]
@@ -93,6 +94,32 @@ public class ExchangeTests : GameTestBase
         asker.Trade.ExchangeItemList.Should().BeEmpty();
     }
 
+    [Fact]
+    public async Task AnAcceptTheServerRefusesClosesTheAcceptersWindow()
+    {
+        using var provider = CreateProvider(_ => { }, StockOneTradableItem);
+        var (_, partner, _, partnerClient) = OpenTrade(provider);
+        partner.X += FarAway;
+
+        var agree = new Packet(GameOpcodes.GS_EXCHANGE);
+        agree.WriteByte(ExchangeAgree);
+        agree.WriteByte(1);
+        agree.ResetOffset();
+        await provider.GetRequiredService<IExchangePacketCoordinator>().HandleAsync(partnerClient, agree);
+
+        partner.Trade.IsTrading.Should().BeFalse();
+        partnerClient.ReceivedCalls()
+            .Where(call => call.GetMethodInfo().Name == nameof(IClient.SendPacket))
+            .Select(call => (Packet)call.GetArguments()[0]!)
+            .Should().Contain(packet => IsCancel(packet), "the client opened its window on Accept, and only a cancel closes it");
+    }
+
+    private static bool IsCancel(Packet packet)
+    {
+        packet.ResetOffset();
+        return packet.GetOpcode() == (byte)GameOpcodes.GS_EXCHANGE && packet.ReadByte() == ExchangePacketConstants.ExchangeCancel;
+    }
+
     private static void StockOneTradableItem(IGameDataService gameData)
         => gameData.GetItem(TradedItemId).Returns(new ItemData { Num = TradedItemId, Weight = 10 });
 
@@ -120,6 +147,7 @@ public class ExchangeTests : GameTestBase
         asker.Trade.ExchangeUser = partner.CharacterId;
         asker.Trade.AskedForExchange = true;
         partner.Trade.ExchangeUser = asker.CharacterId;
+        asker.Trade.ExchangeAccepted = partner.Trade.ExchangeAccepted = true;
 
         return (asker, partner, askerClient, partnerClient);
     }

@@ -4,15 +4,21 @@ namespace LibreKO.Features.Windows;
 
 internal sealed class BountyFeature : IFeature, IClosableWindow
 {
+    internal const string PostRefused = "The bounty was not posted. Check the name, the reward, your gold and how many bounties you already have open.";
+    internal const string ClaimRefused = "The bounty could not be claimed.";
+    internal const string WithdrawRefused = "The bounty could not be withdrawn: someone may have earned it, or your purse is full.";
+
     private readonly IWorldContext context;
     private readonly BountySession bounty;
     private readonly IBountyRequests requests;
+    private readonly SelfSession self;
 
-    public BountyFeature(IWorldContext context, BountySession bounty, IBountyRequests requests)
+    public BountyFeature(IWorldContext context, BountySession bounty, IBountyRequests requests, SelfSession self)
     {
         this.context = context;
         this.bounty = bounty;
         this.requests = requests;
+        this.self = self;
     }
 
     private CanvasLayer layer = null!;
@@ -20,6 +26,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
     private VBoxContainer listBox = null!;
     private LineEdit targetEdit = null!;
     private LineEdit rewardEdit = null!;
+    private Label status = null!;
     private bool shown;
 
     public bool IsOpen => shown;
@@ -51,6 +58,10 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         postBtn.Pressed += OnPostPressed;
         form.AddChild(postBtn);
 
+        status = UiTheme.Text("", 12, UiTheme.TextLo);
+        status.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+        root.AddChild(status);
+
         root.AddChild(UiTheme.SectionTitle("Open Bounties"));
         var scroll = new ScrollContainer { CustomMinimumSize = new Vector2(380, 300), HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled };
         root.AddChild(scroll);
@@ -61,6 +72,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         bounty.BountyListEvent += OnList;
         bounty.BountyPostEvent += OnPost;
         bounty.BountyClaimEvent += OnClaim;
+        bounty.BountyWithdrawEvent += OnWithdraw;
     }
 
     public void Dispose()
@@ -68,6 +80,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         bounty.BountyListEvent -= OnList;
         bounty.BountyPostEvent -= OnPost;
         bounty.BountyClaimEvent -= OnClaim;
+        bounty.BountyWithdrawEvent -= OnWithdraw;
     }
 
     internal void Toggle()
@@ -111,9 +124,18 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
             hb.AddChild(UiTheme.Text($"{b.Reward:N0}g", 12, UiTheme.Gold));
 
             int id = b.Id;
-            var btn = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
-            btn.Pressed += () => requests.Claim(id);
-            hb.AddChild(btn);
+            if (b.Standing == BountyStanding.Own)
+            {
+                var withdraw = new Button { Text = "Withdraw", FocusMode = Control.FocusModeEnum.None };
+                withdraw.Pressed += () => requests.Withdraw(id);
+                hb.AddChild(withdraw);
+            }
+            else if (b.Standing == BountyStanding.Earned)
+            {
+                var claim = new Button { Text = "Claim", FocusMode = Control.FocusModeEnum.None };
+                claim.Pressed += () => requests.Claim(id);
+                hb.AddChild(claim);
+            }
 
             listBox.AddChild(row);
         }
@@ -126,6 +148,7 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
 
     private void OnPost(bool ok)
     {
+        status.Text = ok ? "" : PostRefused;
         if (ok)
         {
             targetEdit.Text = "";
@@ -133,8 +156,14 @@ internal sealed class BountyFeature : IFeature, IClosableWindow
         }
     }
 
-    private void OnClaim(int bountyId, bool ok)
+    private void OnClaim(BountyOutcome outcome)
     {
-        if (ok) requests.List();
+        status.Text = outcome.Succeeded ? "" : ClaimRefused;
+        if (outcome.Succeeded) requests.List();
+    }
+
+    private void OnWithdraw(BountyOutcome outcome)
+    {
+        status.Text = outcome.Succeeded ? "" : WithdrawRefused;
     }
 }

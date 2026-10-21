@@ -10,7 +10,7 @@ namespace LibreKO.Game.Protocol;
 
 public interface IMagicMovementEffectService
 {
-    Task ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data);
+    Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data);
 }
 
 public class MagicMovementEffectService(
@@ -20,19 +20,19 @@ public class MagicMovementEffectService(
     ISoccerService soccerService,
     ILogger<MagicMovementEffectService> logger) : IMagicMovementEffectService
 {
-    public async Task ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    public async Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType8Table, magic, skillId, out var type8Data))
         {
             await caster.Client.SendPacket(MagicProcessPacketWriter.CreateFail(skillId, caster.CharacterId));
-            return;
+            return false;
         }
 
         var warpType = (MagicWarpType)type8Data.WarpType;
-        var moved = warpType switch
+        bool? moved = warpType switch
         {
             MagicWarpType.BindPoint => await WarpToBindPointAsync(caster, magic),
-            MagicWarpType.SummonInZone => await SummonToCasterAsync(caster, targetId),
+            MagicWarpType.SummonInZone => await SummonToCasterAsync(caster, magic, targetId),
             MagicWarpType.MoveToTarget => await MoveToTargetAsync(caster, magic, type8Data, targetId),
             MagicWarpType.Blink => await BlinkAsync(caster, type8Data, data),
             MagicWarpType.Rush => await RushAsync(caster, magic, targetId, data),
@@ -41,10 +41,10 @@ public class MagicMovementEffectService(
             _ => Unhandled(warpType, skillId, caster),
         };
 
-        if (!moved)
+        if (moved == false)
         {
             await caster.Client.SendPacket(MagicProcessPacketWriter.CreateFail(skillId, caster.CharacterId));
-            return;
+            return false;
         }
 
         await sessionManager.Regions.SendToRegion(
@@ -56,18 +56,22 @@ public class MagicMovementEffectService(
                 targetId,
                 data),
             excludeSender: false);
+        return moved == true;
     }
 
-    private bool Unhandled(MagicWarpType warpType, int skillId, UserSession caster)
+    private bool? Unhandled(MagicWarpType warpType, int skillId, UserSession caster)
     {
         logger.LogDebug(
             "Warp type {WarpType} has no destination rule: skill={SkillId} caster={Name}",
             warpType, skillId, caster.Name);
-        return true;
+        return null;
     }
 
     private async Task<bool> WarpToBindPointAsync(UserSession caster, MagicData magic)
     {
+        if (!caster.CanTeleport)
+            return false;
+
         if ((SkillMoral)magic.Moral != SkillMoral.PartyAll)
             return await SendHomeAsync(caster);
 
@@ -82,7 +86,8 @@ public class MagicMovementEffectService(
                 continue;
 
             var member = sessionManager.GetByCharacterId(memberId);
-            if (member == null || member.Hp <= 0)
+            if (member == null || member.Hp <= 0
+                || (member == caster ? !member.CanTeleport || member.CarriesManes : !member.MayBeMovedByOthers))
                 continue;
 
             warped |= await SendHomeAsync(member);
@@ -112,28 +117,38 @@ public class MagicMovementEffectService(
         return true;
     }
 
-    private async Task<bool> SummonToCasterAsync(UserSession caster, int targetId)
+    private async Task<bool> SummonToCasterAsync(UserSession caster, MagicData magic, int targetId)
     {
         var target = sessionManager.GetByCharacterId(targetId);
         if (target == null
             || target.CharacterId == caster.CharacterId
-            || target.Hp <= 0
+            || !target.MayBeMovedByOthers
             || target.ZoneId != caster.ZoneId
-            || target.ActiveBuffs.Values.Any(b => b.BuffType == BuffType.FragmentOfManes && !b.IsExpired))
+            || target.Room != caster.Room
+            || !MaySummon(caster, target, (SkillMoral)magic.Moral))
             return false;
 
         await worldMovementService.WarpAsync(target, (ushort)caster.GetPosX, (ushort)caster.GetPosZ);
         return true;
     }
 
+    private static bool MaySummon(UserSession caster, UserSession target, SkillMoral moral) => moral switch
+    {
+        SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,
+        SkillMoral.Clan or SkillMoral.ClanAll => caster.KnightsId > 0 && target.KnightsId == caster.KnightsId,
+        _ => !PvpRules.IsHostile(caster, target),
+    };
+
     private async Task<bool> MoveToTargetAsync(
         UserSession caster, MagicData magic, MagicType8Data type8Data, int targetId)
     {
         var target = sessionManager.GetByCharacterId(targetId);
         if (target == null
+            || !caster.CanTeleport
             || target.CharacterId == caster.CharacterId
             || target.Hp <= 0
-            || target.ZoneId != caster.ZoneId)
+            || target.ZoneId != caster.ZoneId
+            || target.Room != caster.Room)
             return false;
 
         if ((SkillMoral)magic.Moral < SkillMoral.Enemy && PvpRules.IsEnemy(caster, target))

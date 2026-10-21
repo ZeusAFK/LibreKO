@@ -25,6 +25,7 @@ public class WorldObjectEventService(
     private const byte ObjectEventSucceeded = 1;
 
     private const float MaxObjectRangeSq = 100.0f;
+    private const float ObjectNpcPlacementSq = 1.0f;
     private const float MaxKeyGateRangeSq = 1600.0f;
 
     private const byte ObjectBind = 0;
@@ -75,7 +76,7 @@ public class WorldObjectEventService(
 
                     case ObjectGate:
                     {
-                        var gateNpc = sessionManager.Regions.GetNpc(npcId);
+                        var gateNpc = ObjectNpcOf(session, objectEvent, npcId);
                         if (gateNpc != null && (byte)gateNpc.Nation == (byte)session.Nation)
                         {
                             gateNpc.GateOpen = gateNpc.GateOpen != 0 ? 0 : 1;
@@ -97,7 +98,7 @@ public class WorldObjectEventService(
                         var gateNpc = sessionManager.Regions.GetNpcByProtoId(session.ZoneId, objectEvent.ControlNpcId);
                         if (gateNpc != null)
                         {
-                            if (sessionManager.Regions.GetNpc(npcId) is { } leverNpc && leverNpc.UniqueId != gateNpc.UniqueId)
+                            if (ObjectNpcOf(session, objectEvent, npcId) is { } leverNpc && leverNpc.UniqueId != gateNpc.UniqueId)
                             {
                                 leverNpc.GateOpen = leverNpc.GateOpen != 0 ? 0 : 1;
                                 await BroadcastGateFlagAsync(leverNpc, (byte)objectEvent.Type);
@@ -131,6 +132,19 @@ public class WorldObjectEventService(
 
         await client.SendPacket(MiscPacketWriter.ObjectEventResult(
             objectEvent != null ? (byte)objectEvent.Type : (byte)0, ObjectEventFailed));
+    }
+
+    private NpcInstance? ObjectNpcOf(UserSession session, ObjectEvent objectEvent, int npcId)
+    {
+        if (sessionManager.Regions.GetNpc(npcId) is not { } npc
+            || npc.ZoneId != session.ZoneId
+            || npc.ObjectType != NpcInstance.MapObjectType
+            || npc.ObjectEventType != objectEvent.Type)
+            return null;
+
+        var dx = npc.SpawnX - objectEvent.PosX;
+        var dz = npc.SpawnZ - objectEvent.PosZ;
+        return dx * dx + dz * dz <= ObjectNpcPlacementSq ? npc : null;
     }
 
     private bool MayWorkDelosLever(UserSession session)

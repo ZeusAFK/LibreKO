@@ -28,10 +28,18 @@ public class SlaveMerchantTests : GameTestBase
     private const int ScrollPrice = 2000;
     private const int StackSlot = InventoryConstants.InventoryStart;
     private const int CertificateBagPosition = 3;
+    private const byte SweptTo = (byte)ZoneId.ElMoradCamp1;
+    private const byte MonsterType = 7;
     private const int BuyerPurse = 1_000_000;
     private const int LinkedSerial = 77;
     private const int AltId = 2003;
     private const int InstanceRoom = 4;
+    private const long RentalEnds = 4_102_444_800;
+    private const ushort Kept = 3;
+    private const ushort Owned = 4;
+    private const ushort PickedUp = 3;
+    private const ushort Stock = 5;
+    private const ushort Bought = 2;
 
     [Fact]
     public async Task ACertificateAddsItsHoursAndIsUsedUp()
@@ -48,6 +56,50 @@ public class SlaveMerchantTests : GameTestBase
         reply.ReadUShort().Should().Be(SlaveMerchantService.OneDayHours);
         (await HoursOf(provider, OwnerId)).Should().Be(SlaveMerchantService.OneDayHours);
         (await StoredItems(provider, OwnerId)).Should().Equal(owner.SerializeItems());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ABusyOwnerRedeemsNoCertificate(bool atAnOpenStall)
+    {
+        using var provider = Provider();
+        var (owner, sent) = Player(provider, OwnerId, "Trader");
+        GiveCertificate(owner, SlaveMerchantService.OneDayCertificate);
+        if (atAnOpenStall)
+            owner.Trade.MerchantState = MerchantMode.Selling;
+        else
+            owner.Trade.ExchangeUser = BuyerId;
+
+        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, RedeemRequest());
+
+        owner.Inventory[InventoryConstants.InventoryStart + CertificateBagPosition].ItemId.Should().Be(SlaveMerchantService.OneDayCertificate);
+        (await HoursOf(provider, OwnerId)).Should().Be(0);
+        Last(sent, SlaveMerchantSub.Redeem).ReadByte().Should().Be((byte)SlaveMerchantRedeemResult.Failed, "the client is told the certificate was not used");
+    }
+
+    [Fact]
+    public async Task APlayerSettingUpAStallRedeemsACertificate()
+    {
+        using var provider = Provider();
+        var (owner, sent) = Player(provider, OwnerId, "Trader");
+        GiveCertificate(owner, SlaveMerchantService.OneDayCertificate);
+        owner.Trade.IsSellingMerchantPreparing = true;
+
+        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, RedeemRequest());
+
+        (await HoursOf(provider, OwnerId)).Should().Be(SlaveMerchantService.OneDayHours, "the stall panel itself asks for a certificate");
+        Last(sent, SlaveMerchantSub.Redeem).ReadByte().Should().Be((byte)SlaveMerchantRedeemResult.Added);
+    }
+
+    private static Packet RedeemRequest()
+    {
+        var redeem = new Packet(GameOpcodes.GS_SLAVE_MERCHANT);
+        redeem.WriteByte((byte)SlaveMerchantSub.Redeem);
+        redeem.WriteByte(CertificateBagPosition);
+        redeem.WriteInt(SlaveMerchantService.OneDayCertificate);
+        redeem.ResetOffset();
+        return redeem;
     }
 
     [Fact]
@@ -174,6 +226,64 @@ public class SlaveMerchantTests : GameTestBase
     }
 
     [Fact]
+    public async Task ZoneSweepsDeathsAndStallClosesLeaveASlaveSelling()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Sweeper");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 10);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var zone = slave.ZoneId;
+
+        await provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(slave, SweptTo, 0f, 0f);
+        await provider.GetRequiredService<INpcAiDeathService>().HandlePlayerKilledByNpcAsync(slave, new NpcInstance { NpcType = MonsterType });
+        await provider.GetRequiredService<ICombatLifecycleService>().HandlePlayerDeathAsync(slave, killer: null);
+        await provider.GetRequiredService<IMerchantLifecycleService>().CloseAsync(slave, MerchantInOut.StallClosed);
+
+        slave.ZoneId.Should().Be(zone, "an event sweep would close the stall and lose what it holds");
+        slave.IsWarping.Should().BeFalse();
+        slave.KillerNpcType.Should().Be(0, "a monster cannot kill a slave");
+        slave.Trade.IsMerchanting.Should().BeTrue();
+        slave.Trade.MerchantItems[0].Count.Should().Be(4);
+        slave.Deaths.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AHandOverNeedsAStallBeingSetUp()
+    {
+        using var provider = Provider();
+        var (owner, sent) = Player(provider, OwnerId, "Rusher");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 10);
+        owner.Trade.MerchantState = MerchantMode.Selling;
+
+        await Insert(provider, owner, toSlave: true);
+
+        Slaves(provider).Should().BeEmpty("an open stall's items are already on sale");
+        owner.Inventory[StackSlot].Count.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task ABusyOwnerCollectsNothing()
+    {
+        using var provider = Provider();
+        var (owner, sent) = Player(provider, OwnerId, "Juggler");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 10);
+        await Insert(provider, owner, toSlave: true);
+        owner.Trade.ExchangeUser = BuyerId;
+        var collect = new Packet(GameOpcodes.GS_SLAVE_MERCHANT);
+        collect.WriteByte((byte)SlaveMerchantSub.Collect);
+        collect.ResetOffset();
+
+        await provider.GetRequiredService<ISlaveMerchantPacketCoordinator>().HandleAsync(owner.Client, collect);
+
+        Slaves(provider).Should().ContainSingle("a trade or a stall counts on the bag staying as it is");
+        Last(sent, SlaveMerchantSub.Collect).ReadByte().Should().Be((byte)SlaveMerchantCollectResult.Failed);
+    }
+
+    [Fact]
     public async Task SalesPayTheSlaveAndCollectingPaysTheOwnerAndBringsTheRestBack()
     {
         using var provider = Provider();
@@ -206,6 +316,26 @@ public class SlaveMerchantTests : GameTestBase
         collected.ReadByte().Should().Be(0);
         (await StoredMoney(provider, OwnerId)).Should().Be(owner.Money);
         (await StoredItems(provider, OwnerId)).Should().Equal(owner.SerializeItems());
+    }
+
+    [Fact]
+    public async Task ATimedItemCollectedFromASlaveDoesNotJoinAPermanentStack()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 5);
+        Stage(owner, Scroll, StackSlot, count: 5, stock: 5);
+        owner.Inventory[StackSlot].ExpiresAt = RentalEnds;
+        await Insert(provider, owner, toSlave: true);
+        owner.Inventory[StackSlot].ItemId = Scroll;
+        owner.Inventory[StackSlot].Count = Kept;
+        owner.Inventory[StackSlot].Durability = 1;
+
+        await Service(provider).CollectAsync(owner);
+
+        owner.Inventory[StackSlot].Count.Should().Be(Kept);
+        owner.Inventory[StackSlot].ExpiresAt.Should().Be(0);
+        owner.Inventory.Single(slot => slot.ItemId == Scroll && slot.ExpiresAt == RentalEnds).Count.Should().Be(5);
     }
 
     [Fact]
@@ -258,6 +388,65 @@ public class SlaveMerchantTests : GameTestBase
     }
 
     [Fact]
+    public async Task AFailedSaleKeepsWhatTheBuyerPickedUpMeanwhile()
+    {
+        var faults = new SaveFaults();
+        using var provider = Provider(faults);
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 5);
+        Stage(owner, Scroll, StackSlot, count: 5, stock: 5);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var (buyer, _) = Player(provider, BuyerId, "Buyer");
+        var stack = buyer.Inventory[InventoryConstants.SlotMax];
+        (stack.ItemId, stack.Count, stack.Durability) = (Scroll, Owned, 1);
+        var pickedUp = false;
+        faults.Fails = _ =>
+        {
+            if (!pickedUp)
+                stack.Count += PickedUp;
+            pickedUp = true;
+            return true;
+        };
+
+        await Buy(provider, slave, count: 2);
+
+        faults.Fails = _ => false;
+        stack.Count.Should().Be(Owned + PickedUp, "the undo takes back the scrolls bought and keeps the ones picked up");
+        slave.Trade.MerchantItems[0].Count.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task AFailedSaleWhoseGoodsLeftTheBuyersBagStandsForBoth()
+    {
+        var faults = new SaveFaults();
+        using var provider = Provider(faults);
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, Stock);
+        Stage(owner, Scroll, StackSlot, count: Stock, stock: Stock);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var (buyer, _) = Player(provider, BuyerId, "Buyer");
+        faults.Fails = _ =>
+        {
+            foreach (var slot in buyer.Inventory.Where(slot => slot.ItemId == Scroll))
+            {
+                InventoryJournal.CopyInto(slot, buyer.Warehouse[0]);
+                slot.Clear();
+            }
+
+            return true;
+        };
+
+        await Buy(provider, slave, count: Bought);
+
+        faults.Fails = _ => false;
+        buyer.Warehouse[0].Count.Should().Be(Bought);
+        slave.Trade.MerchantItems[0].Count.Should().Be(Stock - Bought, "the scrolls are still the buyer's, so the sale stands for the slave too");
+        buyer.Money.Should().Be(BuyerPurse - Bought * ScrollPrice);
+    }
+
+    [Fact]
     public async Task SalesAndACollectRunningTogetherNeverCreateOrLoseCoinsOrItems()
     {
         const ushort stock = 10;
@@ -275,7 +464,7 @@ public class SlaveMerchantTests : GameTestBase
             foreach (var buyer in buyers)
             {
                 buyer.Money = BuyerPurse;
-                buyer.Trade.MerchantTargetUserId = slave.CharacterId;
+                buyer.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
             }
 
             var steps = buyers.Select(buyer => (Func<Task>)(() => BuyAs(provider, buyer, Scroll, 1))).ToList();
@@ -314,7 +503,7 @@ public class SlaveMerchantTests : GameTestBase
         await provider.GetRequiredService<IMerchantLifecycleService>().RequestStallAsync(owner, open, MerchantSubOpcode.SellingStallRequest);
         owner.Trade.MerchantTargetUserId.Should().Be(-1);
 
-        owner.Trade.MerchantTargetUserId = slave.CharacterId;
+        owner.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
         await BuyAs(provider, owner, Scroll, 1);
 
         owner.Money.Should().Be(1_000_000);
@@ -341,7 +530,7 @@ public class SlaveMerchantTests : GameTestBase
         await provider.GetRequiredService<IMerchantLifecycleService>().RequestStallAsync(alt, open, MerchantSubOpcode.SellingStallRequest);
         alt.Trade.MerchantTargetUserId.Should().Be(-1);
 
-        alt.Trade.MerchantTargetUserId = slave.CharacterId;
+        alt.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
         await BuyAs(provider, alt, Scroll, 1);
 
         alt.Money.Should().Be(BuyerPurse);
@@ -744,6 +933,26 @@ public class SlaveMerchantTests : GameTestBase
     }
 
     [Fact]
+    public async Task ATimedItemASlaveKeptFromAnOlderRecordIsNotSold()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, Scroll, StackSlot, count: 4, stock: 4);
+        await Insert(provider, owner, toSlave: true);
+        var slave = Slave(provider);
+        var entry = slave.Trade.MerchantItems[0];
+        entry.ExpiresAt = RentalEnds;
+        slave.Inventory[entry.OriginalSlot].ExpiresAt = RentalEnds;
+
+        await Buy(provider, slave, count: 1);
+
+        provider.GetRequiredService<SessionManager>().GetByCharacterId(BuyerId)!.Money
+            .Should().Be(BuyerPurse, "a timed item cannot change hands, whenever it was listed");
+        entry.Count.Should().Be(4);
+    }
+
+    [Fact]
     public async Task DeletingTheOwnerTakesTheSlaveItsGoodsAndItsHoursWithIt()
     {
         using var provider = Provider();
@@ -859,9 +1068,10 @@ public class SlaveMerchantTests : GameTestBase
         var (buyer, _) = Player(provider, BuyerId, "Buyer");
         Stage(seller, InventoryConstants.CypherRing, StackSlot, count: 1, stock: 1);
         seller.Inventory[StackSlot].UniqueId = LinkedSerial;
+        seller.Trade.MerchantItems[0].UniqueId = LinkedSerial;
         seller.Trade.MerchantState = MerchantMode.Selling;
         buyer.Money = BuyerPurse;
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await BuyAs(provider, buyer, InventoryConstants.CypherRing, 1);
 
@@ -869,6 +1079,22 @@ public class SlaveMerchantTests : GameTestBase
         bought.UniqueId.Should().Be(LinkedSerial);
         seller.Inventory[StackSlot].IsEmpty.Should().BeTrue();
         seller.Money.Should().Be(ScrollPrice);
+    }
+
+    [Fact]
+    public async Task ARingHandedToASlaveSellsWithItsSerial()
+    {
+        using var provider = Provider();
+        var (owner, _) = Player(provider, OwnerId, "Trader");
+        await Service(provider).GiveHoursAsync(owner.Name, 3);
+        Stage(owner, InventoryConstants.CypherRing, StackSlot, count: 1, stock: 1);
+        owner.Inventory[StackSlot].UniqueId = LinkedSerial;
+        await Insert(provider, owner, toSlave: true);
+
+        await Buy(provider, Slave(provider), 1);
+
+        var buyer = provider.GetRequiredService<SessionManager>().GetByCharacterId(BuyerId)!;
+        buyer.Inventory.Single(slot => slot.ItemId == InventoryConstants.CypherRing).UniqueId.Should().Be(LinkedSerial);
     }
 
     [Fact]
@@ -881,7 +1107,7 @@ public class SlaveMerchantTests : GameTestBase
         seller.Trade.MerchantState = MerchantMode.Selling;
         seller.Inventory[StackSlot].Count = 1;
         buyer.Money = BuyerPurse;
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
 
         await BuyAs(provider, buyer, Scroll, 2);
 
@@ -1029,7 +1255,7 @@ public class SlaveMerchantTests : GameTestBase
         if (buyer == null)
             (buyer, sent) = Player(provider, BuyerId, "Buyer");
         buyer.Money = BuyerPurse;
-        buyer.Trade.MerchantTargetUserId = slave.CharacterId;
+        buyer.Trade.LookAt(slave.CharacterId, slave.Trade.StallGeneration);
         await BuyAs(provider, buyer, slave.Trade.MerchantItems[0].ItemId, count);
         return sent;
     }

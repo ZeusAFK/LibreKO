@@ -10,15 +10,17 @@ public interface IExchangeLifecycleService
 {
     Task RequestAsync(UserSession session, Packet packet);
     Task AgreeAsync(UserSession session, Packet packet);
-    Task CancelAsync(UserSession session, bool isOnDeath = false);
+    Task CancelAsync(UserSession session, bool isOnDeath = false, bool notifySelf = true);
+    Task SettleReturnAsync(UserSession session, ExchangeReturn? returned);
 }
 
 public class ExchangeLifecycleService(SessionManager sessionManager,
+    IUserNotificationService userNotificationService,
     ILogger<ExchangeLifecycleService> logger) : IExchangeLifecycleService
 {
     public async Task RequestAsync(UserSession session, Packet packet)
     {
-        if (session.Hp <= 0 || session.Trade.IsMerchanting)
+        if (CannotStartTrade(session))
         {
             await SendCancelAsync(session);
             return;
@@ -34,9 +36,8 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
         var target = sessionManager.GetByCharacterId(destId);
         if (target == null
             || target.Trade.IsTrading
-            || target.Trade.IsMerchanting
+            || CannotStartTrade(target)
             || target.ZoneId != session.ZoneId
-            || target.Hp <= 0
             || target.CharacterId == session.CharacterId
             || target.AccountId == session.AccountId
             || !ExchangePacketConstants.IsWithinTradeRange(session, target)
@@ -58,56 +59,123 @@ public class ExchangeLifecycleService(SessionManager sessionManager,
 
     public async Task AgreeAsync(UserSession session, Packet packet)
     {
-        if (!session.Trade.IsTrading || session.Hp <= 0 || session.Trade.IsMerchanting
-            || session.Trade.AskedForExchange)
+        if (!session.Trade.IsTrading || session.Trade.AskedForExchange)
             return;
 
         var agreed = packet.ReadByte();
         var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
         if (target == null)
         {
-            session.Trade.ExchangeUser = -1;
+            await SettleReturnAsync(session, session.WithLock(s => s.InitExchange(false)));
             return;
         }
 
+        ExchangeReturn? returnedSession = null, returnedTarget = null;
+        var refusedAccept = false;
         if (agreed == 0
-            || target.Hp <= 0
-            || target.Trade.IsMerchanting
+            || CannotStartTrade(session)
+            || CannotStartTrade(target)
             || target.CharacterId == session.CharacterId
             || target.AccountId == session.AccountId
             || !ExchangePacketConstants.IsWithinTradeRange(session, target)
             || (target.Nation != session.Nation
                 && !ZoneRules.Allows(session.ZoneId, ZoneFlags.TradeOtherNation)))
         {
-            session.Trade.ExchangeUser = -1;
-            target.Trade.ExchangeUser = -1;
+            returnedSession = session.WithLock(s => s.InitExchange(false));
+            returnedTarget = target.WithLock(t => t.Trade.ExchangeUser == session.CharacterId ? t.InitExchange(false) : null);
+            refusedAccept = agreed != 0;
             agreed = 0;
         }
         else
         {
-            session.InitExchange(true);
-            target.InitExchange(true);
+            var paired = false;
+            UserSession.WithBoth(session, target, (s, t) =>
+            {
+                paired = s.Trade.ExchangeUser == t.CharacterId && t.Trade.ExchangeUser == s.CharacterId;
+                if (!paired)
+                    return;
+                returnedSession = s.InitExchange(true);
+                returnedTarget = t.InitExchange(true);
+            });
+            if (!paired)
+            {
+                var stale = session.WithLock(s => s.Trade.IsTrading ? s.InitExchange(false) : null);
+                await SendCancelAsync(session);
+                await SettleReturnAsync(session, stale);
+                return;
+            }
         }
 
         await target.Client.SendPacket(ExchangePacketWriter.Result(
             ExchangePacketConstants.ExchangeAgree, agreed));
+        if (refusedAccept)
+            await SendCancelAsync(session);
+        await SettleReturnAsync(session, returnedSession);
+        await SettleReturnAsync(target, returnedTarget);
     }
 
-    public async Task CancelAsync(UserSession session, bool isOnDeath = false)
+    // notifySelf is false only for the player's own cancel; that client has closed its window already.
+    public async Task CancelAsync(UserSession session, bool isOnDeath = false, bool notifySelf = true)
     {
-        if (!session.Trade.IsTrading || (!isOnDeath && session.Hp <= 0))
+        if (!isOnDeath && session.Hp <= 0)
             return;
 
-        var target = sessionManager.GetByCharacterId(session.Trade.ExchangeUser);
-        session.InitExchange(false);
-        logger.LogInformation("Trade cancelled for {Name}", session.Name);
-
-        if (target != null)
+        // Checking and ending the trade is one locked step, so a decision that completes it is never also cancelled.
+        var partnerId = -1;
+        var returnedSession = session.WithLock(s =>
         {
-            target.InitExchange(false);
-            await SendCancelAsync(target);
+            if (!s.Trade.IsTrading)
+                return null;
+            partnerId = s.Trade.ExchangeUser;
+            return s.InitExchange(false);
+        });
+        if (returnedSession == null)
+            return;
+
+        logger.LogInformation("Trade cancelled for {Name}", session.Name);
+        if (notifySelf)
+            await SendCancelAsync(session);
+
+        var target = sessionManager.GetByCharacterId(partnerId);
+        var returnedTarget = target?.WithLock(t =>
+            t.Trade.ExchangeUser == session.CharacterId ? t.InitExchange(false) : null);
+        if (returnedTarget != null)
+            await SendCancelAsync(target!);
+
+        await SettleReturnAsync(session, returnedSession);
+        if (target != null)
+            await SettleReturnAsync(target, returnedTarget);
+    }
+
+    // Runs after the client knows the trade is over, to tell it where each offer really went.
+    public async Task SettleReturnAsync(UserSession session, ExchangeReturn? returned)
+    {
+        if (returned == null)
+            return;
+
+        returned.LogLosses(logger, session.Name);
+        foreach (var index in returned.BagSlots.Distinct())
+        {
+            var (itemId, count, durability) = session.WithLock(s =>
+                (s.Inventory[index].ItemId, s.Inventory[index].Count, s.Inventory[index].Durability));
+            await userNotificationService.SendStackChangeAsync(session, (byte)index, itemId, count, durability);
+        }
+
+        if (returned.ItemsToWarehouse > 0)
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{returned.ItemsToWarehouse} offered item(s) did not fit in your bag and went to your warehouse."));
+
+        if (returned.GoldToWarehouse > 0)
+        {
+            await userNotificationService.SendGoldLossAsync(session, returned.GoldToWarehouse);
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{returned.GoldToWarehouse:N0} coins did not fit in your purse and went to your warehouse."));
         }
     }
+
+    // A trade never overlaps death, a stall, its setup or gathering.
+    private static bool CannotStartTrade(UserSession session) =>
+        session.Hp <= 0 || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.IsGathering;
 
     private static async Task SendCancelAsync(UserSession session)
     {

@@ -257,11 +257,33 @@ public class DrakiTowerTests : GameTestBase
         packet.WriteInt(0);
         packet.WriteByte(1);
 
+        AtTheRift(session);
         await service.HandleEnterAsync(session, packet);
 
         var reply = sent[session].Single();
         reply.ReadByte().Should().Be((byte)TempleSubOpcode.DrakiEnter);
         reply.ReadByte().Should().Be((byte)DrakiEnterResult.WrongZone);
+    }
+
+    [Theory]
+    [InlineData(false, false, DrakiEnterResult.CannotEnterNow)]
+    [InlineData(true, true, DrakiEnterResult.AlreadyInInstance)]
+    public async Task HandleEnterAsync_SaysWhyItRefuses(bool atTheRift, bool inARoom, DrakiEnterResult expected)
+    {
+        var session = CreatePlayer(zone: (byte)ZoneId.ElMoradCamp1);
+        if (inARoom)
+            session.Room = 1;
+        var packet = new Packet((byte)GameOpcodes.GS_EVENT);
+        packet.WriteInt(0);
+        packet.WriteByte(1);
+
+        if (atTheRift)
+            AtTheRift(session);
+        await service.HandleEnterAsync(session, packet);
+
+        var reply = sent[session].Single();
+        reply.ReadByte().Should().Be((byte)TempleSubOpcode.DrakiEnter);
+        reply.ReadByte().Should().Be((byte)expected, "a player away from the rift is not told they are in an instance");
     }
 
     [Fact]
@@ -274,6 +296,7 @@ public class DrakiTowerTests : GameTestBase
         packet.WriteInt(0);
         packet.WriteByte(5);
 
+        AtTheRift(session);
         await service.HandleEnterAsync(session, packet);
 
         var reply = sent[session].Single();
@@ -295,6 +318,7 @@ public class DrakiTowerTests : GameTestBase
         packet.WriteInt(0);
         packet.WriteByte(1);
 
+        AtTheRift(session);
         await service.HandleEnterAsync(session, packet);
 
         var reply = sent[session].Single();
@@ -316,6 +340,7 @@ public class DrakiTowerTests : GameTestBase
         packet.WriteInt(DrakiTowerRules.CertificateOfDrakiItem);
         packet.WriteByte(1);
 
+        AtTheRift(session);
         await service.HandleEnterAsync(session, packet);
 
         await itemUsage.Received(1).TryConsumeItemAsync(session, 810595000);
@@ -332,6 +357,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         session.DrakiStage.Should().Be(3);
@@ -347,6 +373,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var room = rooms.Get((ushort)session.Room)!;
@@ -368,6 +395,7 @@ public class DrakiTowerTests : GameTestBase
         packet.WriteInt(0);
         packet.WriteByte(1);
 
+        AtTheRift(session);
         await service.HandleEnterAsync(session, packet);
 
         session.DrakiEntranceLimit.Should().Be(2);
@@ -400,6 +428,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var state = service.GetRoomState((ushort)session.Room)!;
@@ -423,6 +452,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         session.ZoneId = (byte)ZoneId.DrakiTower;
@@ -453,6 +483,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var room = rooms.Get((ushort)session.Room)!;
@@ -503,6 +534,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var room = rooms.Get((ushort)session.Room)!;
@@ -551,6 +583,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var state = service.GetRoomState((ushort)session.Room)!;
@@ -574,6 +607,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var state = service.GetRoomState((ushort)session.Room)!;
@@ -597,6 +631,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var room = rooms.Get((ushort)session.Room)!;
@@ -634,6 +669,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var roomId = (ushort)session.Room;
@@ -654,6 +690,7 @@ public class DrakiTowerTests : GameTestBase
         var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
         enterPacket.WriteInt(0);
         enterPacket.WriteByte(1);
+        AtTheRift(session);
         await service.HandleEnterAsync(session, enterPacket);
 
         var room = rooms.Get((ushort)session.Room)!;
@@ -696,4 +733,48 @@ public class DrakiTowerTests : GameTestBase
         updatedCharacter.DrakiEntranceLimit.Should().Be(0);
         updatedCharacter.DrakiEntranceLimitResetDate.Should().Be(DateTime.UtcNow.Date);
     }
+
+    [Fact]
+    public async Task HandleEnterAsync_AwayFromTheRift_EntersNothing()
+    {
+        var session = CreatePlayer(zone: (byte)ZoneId.ElMoradCamp1);
+        session.DrakiEntranceLimit = 0;
+        session.DrakiEntranceLimitResetDate = DateTime.UtcNow.Date;
+        itemUsage.CanUseItem(session, DrakiTowerRules.CertificateOfDrakiItem).Returns(true);
+        itemUsage.TryConsumeItemAsync(session, DrakiTowerRules.CertificateOfDrakiItem).Returns(true);
+        var packet = new Packet((byte)GameOpcodes.GS_EVENT);
+        packet.WriteInt(DrakiTowerRules.CertificateOfDrakiItem);
+        packet.WriteByte(1);
+
+        await service.HandleEnterAsync(session, packet);
+
+        session.Room.Should().Be(0, "the board's Enter is pressed at the Draki Rift");
+        await itemUsage.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
+    }
+
+    [Fact]
+    public async Task HandleEnterAsync_ABusyPlayerAtTheRift_EntersNothing()
+    {
+        var session = CreatePlayer(zone: (byte)ZoneId.ElMoradCamp1);
+        session.DrakiEntranceLimit = 0;
+        session.DrakiEntranceLimitResetDate = DateTime.UtcNow.Date;
+        AtTheRift(session);
+        session.Trade.ExchangeUser = session.CharacterId + 1;
+        itemUsage.CanUseItem(session, DrakiTowerRules.CertificateOfDrakiItem).Returns(true);
+        itemUsage.TryConsumeItemAsync(session, DrakiTowerRules.CertificateOfDrakiItem).Returns(true);
+        var packet = new Packet((byte)GameOpcodes.GS_EVENT);
+        packet.WriteInt(DrakiTowerRules.CertificateOfDrakiItem);
+        packet.WriteByte(1);
+
+        await service.HandleEnterAsync(session, packet);
+
+        session.Room.Should().Be(0, "a player in a trade is not taken into the tower");
+        await itemUsage.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
+    }
+
+    private void AtTheRift(UserSession session) =>
+        session.Quest.EventNpcUniqueId = sessionManager.Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = DrakiTowerRules.DrakiRiftNpcId, ZoneId = session.ZoneId, X = session.X, Z = session.Z, Hp = 1, MaxHp = 1,
+        }).UniqueId;
 }

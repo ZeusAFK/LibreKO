@@ -31,7 +31,7 @@ public class MerchantBuyingService(
     {
         var result =
             session.Hp <= 0 ? BuyingMerchantResult.WhileDead
-            : session.Trade.IsTrading ? BuyingMerchantResult.WhileMerchanting
+            : session.Trade.IsTrading || session.IsGathering ? BuyingMerchantResult.WhileMerchanting
             : session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing ? BuyingMerchantResult.WhileMerchanting
             : !IsBuyingMerchantZone(session) ? BuyingMerchantResult.NotAllowedHere
             : session.Level < MerchantPacketConstants.MinimumBuyingMerchantLevel ? BuyingMerchantResult.UnderLevelled
@@ -56,6 +56,7 @@ public class MerchantBuyingService(
 
         if (session.Hp <= 0
             || session.Trade.IsTrading
+            || session.IsGathering
             || session.Trade.IsMerchanting
             || !session.Trade.IsBuyingMerchantPreparing
             || wantedCount == 0
@@ -93,11 +94,22 @@ public class MerchantBuyingService(
             };
         }
 
-        if (totalCost > session.Money)
+        // The whole list is paid for up front, so no sale can pay out more than the owner had.
+        var held = session.WithLock(s =>
+        {
+            if (totalCost > s.Money)
+                return false;
+            s.Money -= (int)totalCost;
+            s.Trade.BuyMerchantGold += (int)totalCost;
+            return true;
+        });
+        if (!held)
         {
             await RefuseInsertAsync(session, BuyingMerchantResult.SellerFundsTooLow);
             return;
         }
+
+        await userNotificationService.SendGoldLossAsync(session, (int)totalCost);
 
         for (var i = 0; i < wanted.Length; i++)
             session.Trade.BuyMerchantItems[i] = wanted[i] ?? new MerchantItem();
@@ -120,6 +132,7 @@ public class MerchantBuyingService(
     {
         var merchantId = packet.ReadInt();
         var merchant = sessionManager.GetByCharacterId(merchantId);
+        var generation = merchant?.Trade.StallGeneration ?? 0;
 
         if (merchant == null
             || merchant.CharacterId == session.CharacterId
@@ -132,7 +145,7 @@ public class MerchantBuyingService(
             return;
         }
 
-        session.Trade.MerchantTargetUserId = merchant.CharacterId;
+        session.Trade.LookAt(merchant.CharacterId, generation);
 
         var wanted = new List<MerchantPacketWriter.StallItem?>(MerchantPacketConstants.StallSlots);
         foreach (var item in merchant.Trade.BuyMerchantItems)
@@ -160,64 +173,89 @@ public class MerchantBuyingService(
             return;
         }
 
-        var wantedItem = merchant!.Trade.BuyMerchantItems[wantedSlot];
-        var sellerItem = session.Inventory[InventoryConstants.SlotMax + sellerSlot];
-        var unitPrice = wantedItem.Price;
-        var price = (int)((long)unitPrice * stackSize);
-
-        var merchantSlot = merchant.FindSlotForItem(wantedItem.ItemId, gameDataService, stackSize);
-        if (merchantSlot < 0)
+        // Checked again under both locks, so two sellers cannot both fill the last wanted item.
+        var sellerIndex = InventoryConstants.SlotMax + sellerSlot;
+        Sale? sale = null;
+        UserSession.WithBoth(session, merchant!, (seller, buyer) =>
         {
-            await session.Client.SendPacket(
-                MerchantPacketWriter.BuyPurchaseResult(BuyingMerchantResult.InventoryFull));
+            refusal = Refusal(seller, buyer, sellerSlot, wantedSlot, stackSize);
+            if (refusal != BuyingMerchantResult.Accepted)
+                return;
+
+            var wantedItem = buyer.Trade.BuyMerchantItems[wantedSlot];
+            var sellerItem = seller.Inventory[sellerIndex];
+            var goods = new ExchangeItem
+            {
+                ItemId = sellerItem.ItemId,
+                Durability = sellerItem.Durability,
+                Count = stackSize,
+                Flag = sellerItem.Flag,
+                ExpiresAt = sellerItem.ExpiresAt,
+                UniqueId = sellerItem.UniqueId,
+                Countable = gameDataService.GetItem(wantedItem.ItemId)?.Countable is not (null or 0),
+            };
+            var merchantSlot = ItemPlacement.FindForDelivery(
+                buyer.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, goods);
+            if (merchantSlot < 0)
+            {
+                refusal = BuyingMerchantResult.InventoryFull;
+                return;
+            }
+
+            var price = (int)((long)wantedItem.Price * stackSize);
+            var merchantItem = buyer.Inventory[merchantSlot];
+            var merchantItemIsNew = merchantItem.IsEmpty;
+            ItemPlacement.Put(merchantItem, goods);
+
+            buyer.Trade.BuyMerchantGold -= price;
+            seller.Money += price;
+
+            if (sellerItem.Count == stackSize)
+                sellerItem.Clear();
+            else
+                sellerItem.Count -= stackSize;
+
+            wantedItem.Count -= stackSize;
+            if (wantedItem.Count == 0)
+                buyer.Trade.BuyMerchantItems[wantedSlot] = new MerchantItem();
+
+            sale = new Sale(goods.ItemId, wantedItem.Price, price, merchantSlot, merchantItemIsNew,
+                merchantItem.Count, merchantItem.Durability, sellerItem.ItemId, sellerItem.Count, sellerItem.Durability,
+                buyer.Trade.BuyMerchantItems[wantedSlot].Count);
+        });
+
+        if (sale is not { } done)
+        {
+            logger.LogDebug("Sale to buying merchant refused for {Name}: {Result}", session.Name, refusal);
+            await session.Client.SendPacket(MerchantPacketWriter.BuyPurchaseResult(refusal));
             return;
         }
 
-        var merchantItem = merchant.Inventory[merchantSlot];
-        var merchantItemIsNew = merchantItem.IsEmpty;
-
-        merchant.Money -= price;
-        session.Money += price;
-
-        merchantItem.ItemId = wantedItem.ItemId;
-        merchantItem.Durability = sellerItem.Durability;
-        merchantItem.Count += stackSize;
-
-        sellerItem.Count -= stackSize;
-        wantedItem.Count -= stackSize;
-
-        if (sellerItem.Count == 0)
-            sellerItem.Clear();
-        if (wantedItem.Count == 0)
-            merchant.Trade.BuyMerchantItems[wantedSlot] = new MerchantItem();
-
         logger.LogInformation("{SellerName} sold item {ItemId} x{Count} to buying merchant {MerchantName} for {Price} gold",
-            session.Name, merchantItem.ItemId, stackSize, merchant.Name, price);
+            session.Name, done.ItemId, stackSize, merchant!.Name, done.Price);
 
         session.RecalculateStatsWithBuffs(gameDataService);
         merchant.RecalculateStatsWithBuffs(gameDataService);
 
         await userNotificationService.SendStackChangeAsync(
-            session, (byte)(InventoryConstants.SlotMax + sellerSlot),
-            sellerItem.ItemId, sellerItem.Count, sellerItem.Durability);
+            session, (byte)sellerIndex, done.SellerItemId, done.SellerCount, done.SellerDurability);
         await userNotificationService.SendStackChangeAsync(
-            merchant, (byte)merchantSlot,
-            merchantItem.ItemId, merchantItem.Count, merchantItem.Durability, merchantItemIsNew);
+            merchant, (byte)done.MerchantSlot, done.ItemId, done.MerchantCount, done.MerchantDurability, done.MerchantItemIsNew);
 
         await session.Client.SendPacket(MerchantPacketWriter.WantedItemSold(
-            wantedSlot, merchant.Trade.BuyMerchantItems[wantedSlot].Count, sellerSlot, sellerItem.Count));
+            wantedSlot, done.WantedLeft, sellerSlot, done.SellerCount));
         await session.Client.SendPacket(
             MerchantPacketWriter.BuyPurchaseResult(BuyingMerchantResult.Accepted));
 
         await merchant.Client.SendPacket(MerchantPacketWriter.WantedItemBought(
-            wantedSlot, merchant.Trade.BuyMerchantItems[wantedSlot].Count, session.Name));
+            wantedSlot, done.WantedLeft, session.Name));
 
-        await userNotificationService.SendGoldGainAsync(session, price);
-        await userNotificationService.SendGoldLossAsync(merchant, price);
+        // The owner's purse already showed this gold leaving when the stall opened.
+        await userNotificationService.SendGoldGainAsync(session, done.Price);
         await userNotificationService.SendWeightChangeAsync(session);
         await userNotificationService.SendWeightChangeAsync(merchant);
-        await marketPriceService.RecordAsync(merchant, session, merchantItem.ItemId, unitPrice, stackSize);
-        await dailyRankService.CountMerchantSaleAsync(session, price);
+        await marketPriceService.RecordAsync(merchant, session, done.ItemId, done.UnitPrice, stackSize);
+        await dailyRankService.CountMerchantSaleAsync(session, done.Price);
 
         if (merchant.Trade.BuyMerchantItems.All(entry => entry == null || entry.IsEmpty))
             await CloseAsync(merchant, broadcast: true);
@@ -226,9 +264,14 @@ public class MerchantBuyingService(
                 merchant, MerchantPacketWriter.BuyingStallInserted(merchant.CharacterId, WantedItemIds(merchant)));
     }
 
+    private readonly record struct Sale(
+        int ItemId, int UnitPrice, int Price, int MerchantSlot, bool MerchantItemIsNew,
+        ushort MerchantCount, short MerchantDurability, int SellerItemId, ushort SellerCount, short SellerDurability,
+        ushort WantedLeft);
+
     public async Task CloseAsync(UserSession session, bool broadcast)
     {
-        if (!session.Trade.IsBuyingMerchant && !session.Trade.IsBuyingMerchantPreparing)
+        if (!session.Trade.IsBuyingMerchant && !session.Trade.IsBuyingMerchantPreparing && session.Trade.BuyMerchantGold == 0)
             return;
 
         ClearWanted(session);
@@ -236,6 +279,21 @@ public class MerchantBuyingService(
         if (session.Trade.IsBuyingMerchant)
             session.Trade.MerchantState = MerchantMode.None;
         session.Trade.MerchantTargetUserId = -1;
+        sessionManager.ForgetStall(session);
+
+        var refund = session.ReleaseBuyMerchantGold();
+        if (refund.ToPurse > 0)
+            await userNotificationService.SendGoldGainAsync(session, refund.ToPurse);
+        if (refund.ToWarehouse > 0)
+        {
+            logger.LogInformation("The buying stall of {Name} put {Gold} gold into the warehouse: the purse was full",
+                session.Name, refund.ToWarehouse);
+            await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation,
+                $"{refund.ToWarehouse:N0} coins did not fit in your purse and went to your warehouse."));
+        }
+        if (refund.Lost > 0)
+            logger.LogError("The buying stall of {Name} held {Gold} gold that fit in neither the purse nor the warehouse",
+                session.Name, refund.Lost);
 
         if (!broadcast)
             return;
@@ -247,13 +305,14 @@ public class MerchantBuyingService(
     private BuyingMerchantResult Refusal(
         UserSession session, UserSession? merchant, byte sellerSlot, byte wantedSlot, ushort stackSize)
     {
-        if (merchant == null || !merchant.Trade.IsBuyingMerchant || merchant.CharacterId == session.CharacterId)
+        if (merchant == null || !merchant.Trade.IsBuyingMerchant || merchant.CharacterId == session.CharacterId
+            || session.Trade.ViewedStallGeneration != merchant.Trade.StallGeneration)
             return BuyingMerchantResult.WrongStallSetup;
 
         if (session.Hp <= 0)
             return BuyingMerchantResult.WhileDead;
 
-        if (session.Trade.IsTrading || session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing)
+        if (session.IsBusy)
             return BuyingMerchantResult.WhileMerchanting;
 
         if (!ExchangePacketConstants.IsWithinTradeRange(session, merchant))
@@ -272,7 +331,7 @@ public class MerchantBuyingService(
         if (sellerItem.IsEmpty || sellerItem.ItemId != wantedItem.ItemId || sellerItem.Count < stackSize)
             return BuyingMerchantResult.NoSuchItemWanted;
 
-        if (!sellerItem.IsTradable || gameDataService.GetItem(sellerItem.ItemId)?.IsUntradeable == true)
+        if (gameDataService.GetItem(sellerItem.ItemId) is not { } sold || !ExchangeTransferService.MayChangeHands(sold, sellerItem))
             return BuyingMerchantResult.ItemNotSellable;
 
         if (IsNoTradeItem(sellerItem.ItemId))
@@ -289,7 +348,7 @@ public class MerchantBuyingService(
             return BuyingMerchantResult.NeedsRepair;
 
         var price = (long)wantedItem.Price * stackSize;
-        if (!IsSanePrice(price) || price > merchant.Money)
+        if (!IsSanePrice(price) || price > merchant.Trade.BuyMerchantGold)
             return BuyingMerchantResult.BuyerFundsTooLow;
 
         if (!CanReceive(session, price))

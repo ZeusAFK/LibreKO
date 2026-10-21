@@ -1,3 +1,5 @@
+﻿using System.Collections.Concurrent;
+
 namespace LibreKO.Game.World;
 
 public class PartyGroup
@@ -12,6 +14,10 @@ public class PartyGroup
     public short CommandLeaderId { get; set; } = -1;
 
     public byte BoardType { get; set; }
+
+    private readonly Lock sync = new();
+
+    public bool IsDisbanded { get; private set; }
 
     public bool IsCommandLeader(short charId)
         => charId == CommanderId;
@@ -51,30 +57,72 @@ public class PartyGroup
             if (MemberIds[i] == memberId) return i;
         return -1;
     }
+
+    // A player joins once, into a free slot of a party that still stands.
+    public bool TryJoin(short memberId)
+    {
+        lock (sync)
+        {
+            var slot = FindEmptySlot();
+            if (IsDisbanded || slot < 0 || FindMember(memberId) >= 0)
+                return false;
+
+            MemberIds[slot] = memberId;
+            return true;
+        }
+    }
+
+    public bool TryLeave(short memberId)
+    {
+        lock (sync)
+        {
+            var slot = FindMember(memberId);
+            if (slot < 0)
+                return false;
+
+            MemberIds[slot] = -1;
+            return true;
+        }
+    }
+
+    public bool TryPromote(short leaderId, short newLeaderId)
+    {
+        lock (sync)
+        {
+            var slot = FindMember(newLeaderId);
+            if (IsDisbanded || LeaderId != leaderId || slot <= 0)
+                return false;
+
+            (MemberIds[0], MemberIds[slot]) = (MemberIds[slot], MemberIds[0]);
+            return true;
+        }
+    }
+
+    internal short[] Disband()
+    {
+        lock (sync)
+        {
+            IsDisbanded = true;
+            return [.. MemberIds.Where(memberId => memberId >= 0)];
+        }
+    }
 }
 
 public class PartyManager
 {
-    private readonly Dictionary<int, PartyGroup> parties = [];
-    private int nextIndex = 1;
+    private readonly ConcurrentDictionary<int, PartyGroup> parties = new();
+    private int lastIndex;
 
-    public PartyGroup? GetParty(int index)
-    {
-        parties.TryGetValue(index, out var party);
-        return party;
-    }
+    public PartyGroup? GetParty(int index) => parties.TryGetValue(index, out var party) ? party : null;
 
     public PartyGroup CreateParty(short leaderId)
     {
-        var party = new PartyGroup(nextIndex);
+        var party = new PartyGroup(Interlocked.Increment(ref lastIndex));
         party.MemberIds[0] = leaderId;
-        parties[nextIndex] = party;
-        nextIndex++;
+        parties[party.Index] = party;
         return party;
     }
 
-    public void DeleteParty(int index)
-    {
-        parties.Remove(index);
-    }
+    // The members at the moment the party came down, or null when it was already gone; no one joins after.
+    public short[]? DeleteParty(int index) => parties.TryRemove(index, out var party) ? party.Disband() : null;
 }

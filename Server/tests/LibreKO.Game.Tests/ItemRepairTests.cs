@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
@@ -17,6 +18,8 @@ public class ItemRepairTests : GameTestBase
     private const int SaleTypeNormal = 0;
     private const int SaleTypeNoRepair = 2;
     private const byte BagPosition = 2;
+    private const byte PowerUpStoreKind = (byte)ItemKind.PowerUpStore;
+    private const byte OtherZone = 2;
 
     [Fact]
     public async Task AMerchantRepairsAWornItem()
@@ -37,6 +40,34 @@ public class ItemRepairTests : GameTestBase
         var (provider, session, _, npc) = Setup(NpcData.TypeRepairMerchant, SaleTypeNoRepair);
         using (provider)
         {
+            await provider.GetRequiredService<IItemPacketCoordinator>().HandleRepairAsync(session.Client, Repair(npc));
+
+            session.Inventory[InventoryConstants.InventoryStart].Durability.Should().Be(WornDurability);
+            session.Money.Should().Be(1_000_000);
+        }
+    }
+
+    [Fact]
+    public async Task AChargeItemCannotBeRepairedToRefillItsCharges()
+    {
+        var (provider, session, sent, npc) = Setup(NpcData.TypeTradeMerchant, SaleTypeNormal, kind: PowerUpStoreKind);
+        using (provider)
+        {
+            await provider.GetRequiredService<IItemPacketCoordinator>().HandleRepairAsync(session.Client, Repair(npc));
+
+            session.Inventory[InventoryConstants.InventoryStart].Durability.Should().Be(WornDurability);
+            session.Money.Should().Be(1_000_000);
+            sent.Should().Contain(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_ITEM_REPAIR);
+        }
+    }
+
+    [Fact]
+    public async Task AMerchantInAnotherZoneDoesNotRepair()
+    {
+        var (provider, session, _, npc) = Setup(NpcData.TypeTradeMerchant, SaleTypeNormal);
+        using (provider)
+        {
+            session.ZoneId = OtherZone;
             await provider.GetRequiredService<IItemPacketCoordinator>().HandleRepairAsync(session.Client, Repair(npc));
 
             session.Inventory[InventoryConstants.InventoryStart].Durability.Should().Be(WornDurability);
@@ -67,12 +98,14 @@ public class ItemRepairTests : GameTestBase
         return packet;
     }
 
-    private static (ServiceProvider Provider, UserSession Session, List<Packet> Sent, NpcInstance Npc) Setup(byte npcType, int saleType)
+    private static (ServiceProvider Provider, UserSession Session, List<Packet> Sent, NpcInstance Npc) Setup(
+        byte npcType, int saleType, byte kind = 0)
     {
         var provider = CreateProvider(_ => { }, gameData =>
             gameData.GetItem(SwordId).Returns(new ItemData
             {
                 Num = SwordId,
+                Kind = kind,
                 BuyPrice = BuyPrice,
                 Duration = MaxDurability,
                 SellPrice = saleType,

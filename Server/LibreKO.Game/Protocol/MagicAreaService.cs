@@ -12,19 +12,19 @@ public class MagicAreaService(
     IGameDataService gameDataService,
     ICombatLifecycleService combatLifecycleService)
 {
-    public async Task ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    public async Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType7Table, magic, skillId, out var type7Data))
         {
             await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         var targetChange = (MagicAreaTargetChange)type7Data.TargetChange;
         if (targetChange is not (MagicAreaTargetChange.Provoke or MagicAreaTargetChange.Sleep))
         {
             await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         foreach (var npc in GatherTargets(caster, type7Data, targetId, data))
@@ -57,6 +57,7 @@ public class MagicAreaService(
                 targetId,
                 data),
             excludeSender: false);
+        return true;
     }
 
     private List<NpcInstance> GatherTargets(

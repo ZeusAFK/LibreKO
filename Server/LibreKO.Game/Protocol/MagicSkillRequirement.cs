@@ -17,11 +17,22 @@ public static class MagicSkillRequirement
     private const int FirstNationBuffLine = 1;
     private const int LastNationBuffLine = 5;
     private const int TreesPerClass = 10;
+    private const int SkillIdsPerClass = 1000;
+    private const int RamLook = 30040;
+    private const int ClassPrefixesPerNation = 100;
 
     public const int NoNationRole = 0;
     public const int NationRoleFirstBand = 1;
 
     private static readonly HashSet<int> CommandForms = [20007, 20008, 31501, 31502, 31503, 31504, 31505, 31506, 31507];
+
+    private static readonly HashSet<int> CorpseGestures = [490049, 490065, 490066, 490067];
+    private static readonly HashSet<int> CoinHeals = [490076, 490084];
+    private static readonly HashSet<int> CommanderOrders = [492065, 492066, 492067, 492068, 492072, 492073];
+    private static readonly HashSet<int> CommanderShouts = [130013, 130014, 230013, 230014];
+    private static readonly HashSet<int> RamStrikes = [120011, 220011];
+    private static readonly HashSet<int> LadderMoves = [120021, 120022, 220021, 220022];
+    private static readonly HashSet<int> LadderLooks = [30060, 30061];
 
     public static int MasteryTreeOf(int skillTree)
     {
@@ -65,12 +76,38 @@ public static class MagicSkillRequirement
     public static bool IsClassPassive(MagicData magic) =>
         magic.PrimaryType == MagicSkillType.None && IsClassTree(magic.Skill);
 
-    private static bool IsClassTree(int skillTree)
+    public static short ClassOf(int skillId) => (short)(skillId / SkillIdsPerClass);
+
+    public static bool IsClassSkill(int skillId) => IsPlayerClass(ClassOf(skillId));
+
+    public static bool IsCastableBy(MagicData magic, int classId, int transformId, AccountNation nation)
     {
-        var classId = (short)(skillTree / TreesPerClass);
-        return ClassIdHelper.GetNation(classId) is AccountNation.Karus or AccountNation.ElMorad
-            && ClassIdHelper.GetSubtype(classId) is >= (int)ClassSubtype.WarriorBeginner and <= (int)ClassSubtype.KurianMastered;
+        var prefix = ClassOf(magic.Id);
+        if (IsPlayerClass(prefix))
+            return prefix == classId;
+
+        if (magic.UseItem != 0 || ChaosRules.IsEventSkillTree(magic.Skill))
+            return true;
+
+        if (RamStrikes.Contains(magic.Id))
+            return transformId == RamLook && IsOfNation(prefix, nation);
+
+        if (LadderMoves.Contains(magic.Id))
+            return LadderLooks.Contains(transformId) && IsOfNation(prefix, nation);
+
+        if (CommanderShouts.Contains(magic.Id))
+            return IsOfNation(prefix, nation);
+
+        return CorpseGestures.Contains(magic.Id) || CoinHeals.Contains(magic.Id) || CommanderOrders.Contains(magic.Id);
     }
+
+    private static bool IsOfNation(short prefix, AccountNation nation) => prefix / ClassPrefixesPerNation == (int)nation;
+
+    private static bool IsClassTree(int skillTree) => IsPlayerClass((short)(skillTree / TreesPerClass));
+
+    private static bool IsPlayerClass(short classId) =>
+        ClassIdHelper.GetNation(classId) is AccountNation.Karus or AccountNation.ElMorad
+        && ClassIdHelper.GetSubtype(classId) is >= (int)ClassSubtype.WarriorBeginner and <= (int)ClassSubtype.KurianMastered;
 
     public static string Describe(MagicData magic)
     {

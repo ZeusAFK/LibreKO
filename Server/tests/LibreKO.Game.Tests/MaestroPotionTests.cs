@@ -23,6 +23,7 @@ public class MaestroPotionTests : GameTestBase
     private const int ManaRestored = 1920;
     private const int EnoughCoins = 1_000_000;
     private const int UnderTheFloor = 99_999;
+    private const int StunRow = 110560;
 
     private static ServiceProvider Provider() => CreateProvider(
         _ => { },
@@ -91,6 +92,21 @@ public class MaestroPotionTests : GameTestBase
         player.Hp.Should().Be(1000 + HealthRestored);
         player.Money.Should().Be(EnoughCoins - HealthPrice, "each use costs the potion's price in Noah");
         player.Inventory[InventoryConstants.InventoryStart].ItemId.Should().Be(HealthPotion, "the potion is never used up");
+    }
+
+    [Fact]
+    public async Task AStunnedPlayerMayStillBuyAHeal()
+    {
+        using var provider = Provider();
+        var (player, client) = Player(provider, EnoughCoins, HealthPotion);
+        player.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+        });
+
+        await Drink(provider, client, player, HealthSkill);
+
+        player.Hp.Should().Be(1000 + HealthRestored, "the client lets a stunned player use a coin heal");
     }
 
     [Fact]

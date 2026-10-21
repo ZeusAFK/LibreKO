@@ -8,7 +8,9 @@ using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
 
@@ -20,16 +22,36 @@ public class MailServiceTests : GameTestBase
     private const int BobId = 2;
     private const int Apple = 810418000;
     private const int Sword = 110110001;
+    private const long RentalEnds = 4_102_444_800;
+    private const int SealedCharacter = 4242;
+    private const ushort Held = 3;
+    private const ushort Sent = 5;
+    private const int SealedAccount = 3;
+    private const string SealedName = "Sealed";
+    private const int GoneId = 5;
+    private const int GoneAccount = 5;
+    private const string GoneName = "Gone";
+    private const int Purse = 1_000;
+    private const int MailedGold = 100;
+    private const long LongExpired = 1;
+    private const int MailedPoints = 50;
+    private static readonly TimeSpan SweepGrace = TimeSpan.FromMilliseconds(300);
 
-    private static ServiceProvider Provider() => CreateProvider(
+    private static ServiceProvider Provider(Action<IServiceCollection>? configureServices = null, Action<Common.Domain.Services.IGameDataService>? gameData = null) => CreateProvider(
         db => db.Characters.AddRange(
             new Character { Id = AliceId, AccountId = 1, Name = "Alice" },
             new Character { Id = BobId, AccountId = 2, Name = "Bob" }),
-        gameData =>
+        data =>
         {
-            gameData.GetItem(Apple).Returns(new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 });
-            gameData.GetItem(Sword).Returns(new ItemData { Num = Sword, Name = "Sword", Countable = 0, Duration = 5000, Weight = 1 });
-        });
+            data.GetItem(Apple).Returns(new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 });
+            data.GetItem(Sword).Returns(new ItemData { Num = Sword, Name = "Sword", Countable = 0, Duration = 5000, Weight = 1 });
+            data.GetItem(InventoryConstants.CypherRing).Returns(new ItemData
+            {
+                Num = InventoryConstants.CypherRing, Name = "Cypher Ring", Countable = 0, Duration = 1, Weight = 1,
+            });
+            gameData?.Invoke(data);
+        },
+        configureServices: configureServices);
 
     private static void FillBagLeaving(UserSession session, int freeSlots)
     {
@@ -117,6 +139,81 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task AMailedItemArrivesAsItWasSent()
+    {
+        using var provider = Provider();
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var sword = alice.Inventory[InventoryConstants.InventoryStart];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        sword.Durability = 0;
+        sword.Flag = (byte)ItemFlag.NotBound;
+        var ring = alice.Inventory[InventoryConstants.InventoryStart + 1];
+        ring.ItemId = InventoryConstants.CypherRing;
+        ring.Count = 1;
+        ring.UniqueId = SealedCharacter;
+        var mail = provider.GetRequiredService<IMailService>();
+
+        await mail.SendAsync(alice, "Bob", "Kit", "For you.", 0,
+        [
+            new MailItemPick((byte)InventoryConstants.InventoryStart, 1),
+            new MailItemPick((byte)(InventoryConstants.InventoryStart + 1), 1),
+        ]);
+        EmptyBag(bob);
+        await mail.ClaimAsync(bob, await FirstMailIdAsync(mail, bob, bobSent));
+
+        var bag = bob.Inventory.Skip(InventoryConstants.InventoryStart).Take(InventoryConstants.HaveMax).ToList();
+        var got = bag.Single(slot => slot.ItemId == Sword);
+        got.Durability.Should().Be(0, "the post does not repair a broken sword");
+        got.Flag.Should().Be((byte)ItemFlag.NotBound);
+        bag.Single(slot => slot.ItemId == InventoryConstants.CypherRing).UniqueId.Should().Be(SealedCharacter);
+    }
+
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(70, false)]
+    [InlineData(71, false)]
+    [InlineData(73, false)]
+    public async Task ATimedOrTradeLockedItemIsNotMailed(byte race, bool timed)
+    {
+        using var provider = Provider(gameData: data =>
+            data.GetItem(Sword).Returns(new ItemData { Num = Sword, Countable = 0, Duration = 100, Race = race }));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        Online(provider, BobId, "Bob");
+        var sword = alice.Inventory[InventoryConstants.InventoryStart];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        if (timed)
+            sword.ExpiresAt = RentalEnds;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", 0,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, 1)]);
+
+        sword.ItemId.Should().Be(Sword, "mail hands an item to another player, as a trade does");
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ATimedStackMailedByTheServerDoesNotJoinAPermanentOne()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Apples", "Fresh.",
+            [new MailAttachmentDraft(MailAttachmentKind.Item, Apple, Sent, ExpiresAt: RentalEnds)]);
+        EmptyBag(bob);
+        var own = bob.Inventory[InventoryConstants.InventoryStart];
+        own.ItemId = Apple;
+        own.Count = Held;
+
+        await mail.ClaimAsync(bob, await FirstMailIdAsync(mail, bob, bobSent));
+
+        own.Count.Should().Be(Held);
+        bob.Inventory.Single(slot => slot.ItemId == Apple && slot.ExpiresAt == RentalEnds).Count.Should().Be(Sent);
+    }
+
+    [Fact]
     public async Task SendAsync_RefusesUnknownRecipient_SelfAndMissingGold()
     {
         using var provider = Provider();
@@ -197,6 +294,224 @@ public class MailServiceTests : GameTestBase
         MailPacket(bobSent, MailPacketWriter.SubDelete).ReadByte().Should().Be(MailPacketWriter.Succeeded);
         await mail.SendInboxAsync(bob);
         MailPacket(bobSent, MailPacketWriter.SubList).ReadUShort().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AClaimSavesTheBagWithTheMail()
+    {
+        using var provider = Provider();
+        var (bob, _) = Online(provider, BobId, "Bob");
+        bob.Money = Purse;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Gift", "A gift.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, Held, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, MailedGold),
+        ]);
+
+        await mail.ClaimAsync(bob, await StoredMailIdAsync(provider));
+
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var stored = await db.Characters.AsNoTracking().SingleAsync(c => c.Id == BobId);
+        stored.Money.Should().Be(Purse + MailedGold, "a crash after the claim must not leave the mail claimable with the gold unsaved");
+        stored.Items.Should().Equal(bob.SerializeItems());
+        (await db.Mails.AsNoTracking().SingleAsync()).ClaimedAt.Should().NotBeNull();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ExperienceAndNationalPointsArePaidOnlyOnceTheClaimIsSaved(bool saveFails)
+    {
+        var faults = new ClaimSaveFaults { Armed = false };
+        var progression = Substitute.For<IPlayerProgressionService>();
+        var loyalty = Substitute.For<ILoyaltyService>();
+        using var provider = Provider(services =>
+        {
+            services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults));
+            services.AddSingleton(progression);
+            services.AddSingleton(loyalty);
+        });
+        var (bob, _) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Gift", "A gift.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Experience, 0, MailedGold),
+            new MailAttachmentDraft(MailAttachmentKind.NationalPoints, 0, MailedPoints),
+        ]);
+        faults.Armed = saveFails;
+
+        await mail.ClaimAsync(bob, await StoredMailIdAsync(provider));
+
+        await progression.Received(saveFails ? 0 : 1).AwardExperienceAsync(bob, MailedGold);
+        await loyalty.Received(saveFails ? 0 : 1).ChangeAsync(bob, MailedPoints);
+    }
+
+    [Fact]
+    public async Task AClaimWhoseSaveFailsKeepsTheMailAndLeavesTheBagAndPurse()
+    {
+        var faults = new ClaimSaveFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        bob.Money = Purse;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Gift", "A gift.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, Held, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, MailedGold),
+        ]);
+        faults.Armed = true;
+
+        await mail.ClaimAsync(bob, await StoredMailIdAsync(provider));
+
+        CountInBag(bob, Apple).Should().Be(0);
+        bob.Money.Should().Be(Purse);
+        MailPacket(bobSent, MailPacketWriter.SubClaim).ReadByte().Should().Be(MailPacketWriter.Failed);
+        using var scope = provider.CreateScope();
+        (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.AsNoTracking().SingleAsync()).ClaimedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ClaimAsync_IsRefusedWhileTrading()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your items.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, 1_000),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+        bob.Trade.ExchangeUser = 9_999;
+
+        await mail.ClaimAsync(bob, mailId);
+
+        bob.Money.Should().Be(0);
+        CountInBag(bob, Apple).Should().Be(0);
+        bob.Trade.ExchangeUser = -1;
+        await mail.ClaimAsync(bob, mailId);
+        bob.Money.Should().Be(1_000, "the attachments wait in the mail until the trade is over");
+        CountInBag(bob, Apple).Should().Be(4);
+    }
+
+    [Fact]
+    public async Task ClaimAsync_GoldStopsAtTheCoinCap_AndTheRestWaitsForTheNextClaim()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        bob.Money = ExchangePacketConstants.CoinMax - 100;
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Refund", "Your gold.",
+            [new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, 1_000)]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        bob.Money.Should().Be(ExchangePacketConstants.CoinMax, "a claim never pushes the purse past the cap");
+        ClaimMessage(bobSent).Should().Be("An attachment is still waiting. Make room in your purse and claim again.");
+
+        bob.Money = 0;
+        await mail.ClaimAsync(bob, mailId);
+
+        bob.Money.Should().Be(900, "the part that did not fit stays in the mail");
+    }
+
+    [Fact]
+    public async Task ClaimAttachmentAsync_NamesOnlyTheRoomTheChosenAttachmentNeeds()
+    {
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        bob.Money = ExchangePacketConstants.CoinMax;
+        FillBagLeaving(bob, 0);
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your things.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Gold, InventoryConstants.ItemGold, 1_000),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAttachmentAsync(bob, mailId, 1);
+
+        ClaimMessage(bobSent).Should().Be("Not enough room in your inventory.", "only the apples were asked for");
+
+        EmptyBag(bob);
+        await mail.ClaimAttachmentAsync(bob, mailId, 1);
+
+        ClaimMessage(bobSent).Should().Be("Attachment claimed.", "the gold was not asked for, so there is nothing to make room for");
+    }
+
+    [Fact]
+    public async Task ClaimAttachmentAsync_SaysWhenTheAttachmentCouldNotBeDelivered()
+    {
+        const int retiredItem = 123_456_789;
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your things.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, retiredItem, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAttachmentAsync(bob, mailId, 0);
+
+        ClaimMessage(bobSent).Should().Be("An attachment could not be delivered.");
+    }
+
+    [Theory]
+    [InlineData(true, "Attachment claimed. An attachment could not be delivered.")]
+    [InlineData(false, "Not enough room in your inventory. An attachment could not be delivered.")]
+    public async Task ClaimAsync_NamesADroppedAttachmentNextToWhatHappenedToTheRest(bool room, string expected)
+    {
+        const int retiredItem = 123_456_789;
+        using var provider = Provider();
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        if (!room)
+            FillBagLeaving(bob, 0);
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your things.",
+        [
+            new MailAttachmentDraft(MailAttachmentKind.Item, retiredItem, 1),
+            new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4),
+        ]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        ClaimMessage(bobSent).Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task ClaimAsync_ReadsEachItemOnce_SoAReloadMidClaimCannotLoseIt()
+    {
+        var apple = new ItemData { Num = Apple, Name = "Apples of Moradon", Countable = 1, Duration = 1, Weight = 1 };
+        using var provider = CreateProvider(
+            db => db.Characters.AddRange(
+                new Character { Id = AliceId, AccountId = 1, Name = "Alice" },
+                new Character { Id = BobId, AccountId = 2, Name = "Bob" }),
+            // The first read finds the apples; the item table is reloaded without them right after.
+            gameData => gameData.GetItem(Apple).Returns(apple, (ItemData?)null));
+        var (bob, bobSent) = Online(provider, BobId, "Bob");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendSystemMailAsync(BobId, "Store", "Your apples.", [new MailAttachmentDraft(MailAttachmentKind.Item, Apple, 4)]);
+        var mailId = await FirstMailIdAsync(mail, bob, bobSent);
+
+        await mail.ClaimAsync(bob, mailId);
+
+        CountInBag(bob, Apple).Should().Be(4, "the claim acts on the one read it made");
+        ClaimMessage(bobSent).Should().Be("Attachment claimed.");
+    }
+
+    private static string ClaimMessage(List<Packet> sent)
+    {
+        var claim = MailPacket(sent, MailPacketWriter.SubClaim);
+        claim.ReadByte();
+        claim.ReadInt();
+        return claim.ReadSByteString();
     }
 
     [Fact]
@@ -422,4 +737,215 @@ public class MailServiceTests : GameTestBase
 
     private static int UnreadPackets(List<Packet> sent) =>
         sent.Count(p => p.GetOpcode() == (byte)GameOpcodes.GS_MAIL && p.GetData()[0] == MailPacketWriter.SubUnread);
+
+    [Fact]
+    public async Task AMailToASealedCharacterIsRefusedAndTheRingStays()
+    {
+        using var provider = Provider();
+        await AddCharacterAsync(provider, new Character { Id = SealedCharacter, AccountId = SealedAccount, Name = SealedName, Sealed = true });
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var ring = alice.Inventory[InventoryConstants.InventoryStart];
+        ring.ItemId = InventoryConstants.CypherRing;
+        ring.Count = 1;
+        ring.UniqueId = SealedCharacter;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, SealedName, "Your ring", "", 0,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, 1)]);
+
+        ring.ItemId.Should().Be(InventoryConstants.CypherRing, "a sealed character could never log in to take back the ring that unseals it");
+        ring.UniqueId.Should().Be(SealedCharacter);
+        (await MailCountAsync(provider)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AMailToADeletedCharacterIsRefused()
+    {
+        using var provider = Provider();
+        await AddCharacterAsync(provider, new Character { Id = GoneId, AccountId = GoneAccount, Name = GoneName, DeletionTime = DateTime.UtcNow });
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        apples.ItemId = Apple;
+        apples.Count = Sent;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, GoneName, "Apples", "", MailedGold,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, Held)]);
+
+        apples.Count.Should().Be(Sent, "no one will ever read it");
+        alice.Money.Should().Be(Purse);
+        (await MailCountAsync(provider)).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AMailWhoseSaveFailsKeepsTheItemsAndTheGold()
+    {
+        var faults = new MailSaveFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        apples.ItemId = Apple;
+        apples.Count = Sent;
+        var sword = alice.Inventory[InventoryConstants.InventoryStart + 1];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        sword.Flag = (byte)ItemFlag.NotBound;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", MailedGold,
+        [
+            new MailItemPick((byte)InventoryConstants.InventoryStart, Held),
+            new MailItemPick((byte)(InventoryConstants.InventoryStart + 1), 1),
+        ]);
+
+        apples.Count.Should().Be(Sent, "the mail and the bag are saved together or not at all");
+        sword.ItemId.Should().Be(Sword);
+        sword.Flag.Should().Be((byte)ItemFlag.NotBound);
+        alice.Money.Should().Be(Purse);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AMailWhoseSaveFailsSendsWhatNoLongerFitsToTheWarehouse()
+    {
+        var faults = new MailSaveFaults();
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var sword = alice.Inventory[InventoryConstants.InventoryStart];
+        sword.ItemId = Sword;
+        sword.Count = 1;
+        sword.Flag = (byte)ItemFlag.NotBound;
+        faults.Meanwhile = () =>
+        {
+            FillBagLeaving(alice, 0);
+            alice.Money = ExchangePacketConstants.CoinMax;
+        };
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Kit", "", MailedGold,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, 1)]);
+
+        alice.Warehouse.Should().Contain(slot => slot.ItemId == Sword && slot.Flag == (byte)ItemFlag.NotBound,
+            "the bag filled while the save ran, and the sword must not vanish");
+        alice.WarehouseMoney.Should().Be(MailedGold);
+    }
+
+    [Fact]
+    public async Task AMailWrittenButReportedAsFailedIsNotGivenBack()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added));
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        alice.Money = Purse;
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        apples.ItemId = Apple;
+        apples.Count = Sent;
+        faults.Armed = true;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Apples", "", MailedGold,
+            [new MailItemPick((byte)InventoryConstants.InventoryStart, Held)]);
+
+        apples.Count.Should().Be(Sent - Held, "the mail was written, so giving the apples back would duplicate them");
+        alice.Money.Should().Be(Purse - MailedGold);
+        (await MailCountAsync(provider)).Should().Be(1);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ATextMailWrittenButReportedAsFailedIsReportedAsSent()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added));
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var stored = await db.Characters.SingleAsync(c => c.Id == AliceId);
+            (stored.Money, stored.Items) = (alice.Money, alice.SavedItems);
+            await db.SaveChangesAsync();
+        }
+
+        faults.Armed = true;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Hello", "Only words", 0, []);
+
+        (await MailCountAsync(provider)).Should().Be(1);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(1,
+            "a mail that moves neither gold nor items is looked for in the store, so a retry would not send it twice");
+    }
+
+    [Fact]
+    public async Task TheExpirySweepWaitsForThePlayersLock()
+    {
+        using var provider = Provider();
+        var (alice, _) = Online(provider, AliceId, "Alice");
+        var rented = alice.Inventory[InventoryConstants.InventoryStart];
+        rented.ItemId = Sword;
+        rented.Count = 1;
+        rented.ExpiresAt = LongExpired;
+        var expiry = new ItemExpiryService(provider.GetRequiredService<SessionManager>(), NullLogger<ItemExpiryService>.Instance);
+        using var inside = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = Task.Run(() => alice.WithLock(_ =>
+        {
+            inside.Set();
+            release.Wait();
+        }));
+        inside.Wait();
+
+        var sweep = Task.Run(() => expiry.ProcessTickAsync(DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
+        await Task.WhenAny(sweep, Task.Delay(SweepGrace));
+        var whileHeld = rented.ItemId;
+        release.Set();
+        await holder;
+        await sweep;
+
+        whileHeld.Should().Be(Sword, "a handler holding the lock has checked the item and is about to take it");
+        rented.IsEmpty.Should().BeTrue();
+    }
+
+    private static async Task AddCharacterAsync(ServiceProvider provider, Character character)
+    {
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Characters.Add(character);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task<int> MailCountAsync(ServiceProvider provider)
+    {
+        using var scope = provider.CreateScope();
+        return await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.CountAsync();
+    }
+
+    private static async Task<int> StoredMailIdAsync(ServiceProvider provider)
+    {
+        using var scope = provider.CreateScope();
+        return (await scope.ServiceProvider.GetRequiredService<AppDbContext>().Mails.AsNoTracking().SingleAsync()).Id;
+    }
+
+    private sealed class ClaimSaveFaults : SaveChangesInterceptor
+    {
+        public bool Armed { get; set; }
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default) =>
+            Armed && eventData.Context?.ChangeTracker.Entries<MailAttachment>().Any(entry => entry.State == EntityState.Modified) == true
+                ? throw new DbUpdateException("the database went away")
+                : base.SavingChangesAsync(eventData, result, cancellationToken);
+    }
+
+    private sealed class MailSaveFaults : SaveChangesInterceptor
+    {
+        public Action Meanwhile { get; set; } = () => { };
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            if (eventData.Context?.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added) != true)
+                return base.SavingChangesAsync(eventData, result, cancellationToken);
+
+            Meanwhile();
+            throw new DbUpdateException("the database went away");
+        }
+    }
 }

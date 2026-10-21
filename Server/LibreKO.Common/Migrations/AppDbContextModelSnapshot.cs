@@ -193,6 +193,56 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("AuctionResults", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.Bounty", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("PostedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("PosterCharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PosterName")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("varchar(21)");
+
+                    b.Property<int>("Reward")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TargetCharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TargetName")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("varchar(21)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetCharacterId");
+
+                    b.ToTable("Bounties");
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.BountyHunter", b =>
+                {
+                    b.Property<int>("BountyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("int");
+
+                    b.HasKey("BountyId", "CharacterId");
+
+                    b.ToTable("BountyHunters");
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Character", b =>
                 {
                     b.Property<int>("Id")
@@ -281,6 +331,9 @@ namespace LibreKO.Common.Migrations
 
                     b.Property<double>("GenieRemainingSeconds")
                         .HasColumnType("double");
+
+                    b.Property<DateTime?>("GenieRewardClaimedOn")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("Hair")
                         .HasColumnType("int");
@@ -3928,6 +3981,12 @@ namespace LibreKO.Common.Migrations
                     b.Property<short>("Durability")
                         .HasColumnType("smallint");
 
+                    b.Property<long>("ExpiresAt")
+                        .HasColumnType("bigint");
+
+                    b.Property<byte>("Flag")
+                        .HasColumnType("tinyint unsigned");
+
                     b.Property<int>("ItemId")
                         .HasColumnType("int");
 
@@ -3935,6 +3994,9 @@ namespace LibreKO.Common.Migrations
                         .HasColumnType("tinyint unsigned");
 
                     b.Property<int>("MailId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UniqueId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -3968,6 +4030,14 @@ namespace LibreKO.Common.Migrations
                     b.Property<short>("Durability")
                         .HasColumnType("smallint")
                         .HasColumnName("sDurability");
+
+                    b.Property<long>("ExpiresAt")
+                        .HasColumnType("bigint")
+                        .HasColumnName("nExpiresAt");
+
+                    b.Property<byte>("Flag")
+                        .HasColumnType("tinyint unsigned")
+                        .HasColumnName("bFlag");
 
                     b.Property<int>("ItemId")
                         .HasColumnType("int")

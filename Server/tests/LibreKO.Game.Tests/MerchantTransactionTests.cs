@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -98,31 +98,28 @@ public class MerchantTransactionTests : GameTestBase
     }
 
     [Fact]
-    public async Task SaleIsRefusedWhenTheStallOwnerSpentTheGoldAfterOpening()
+    public async Task ASaleIsPaidFromTheGoldTheStallTookWhenItOpened()
     {
         using var provider = Provider();
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
         var owner = Player(sessionManager, 8406, 9406, money: 10_000, out _);
-        owner.Trade.MerchantState = MerchantMode.Buying;
-        owner.Trade.BuyMerchantItems[0] = new MerchantItem
-        {
-            ItemId = StackableItem, Count = 5, Price = 1_000,
-        };
-        owner.Money = 500;
+        owner.Trade.IsBuyingMerchantPreparing = true;
+        await Insert(provider, owner, wanted: (StackableItem, 5, 1_000));
+        owner.Money = 0;
 
         var seller = Player(sessionManager, 8407, 9407, money: 0, out var sellerSent);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         seller.Inventory[InventoryConstants.SlotMax].ItemId = StackableItem;
         seller.Inventory[InventoryConstants.SlotMax].Count = 5;
 
         await Sell(provider, seller, sellerSlot: 0, wantedSlot: 0, count: 1);
 
-        seller.Money.Should().Be(0, "the owner can no longer pay");
-        owner.Money.Should().Be(500);
-        seller.Inventory[InventoryConstants.SlotMax].Count.Should().Be(5);
+        seller.Money.Should().Be(1_000, "the stall already holds the gold for its list");
+        owner.Money.Should().Be(0, "whatever the owner spent afterwards was never the stall's");
+        seller.Inventory[InventoryConstants.SlotMax].Count.Should().Be(4);
         Reply(sellerSent, MerchantSubOpcode.BuyBuy)
-            .Should().Be((byte)BuyingMerchantResult.BuyerFundsTooLow);
+            .Should().Be((byte)BuyingMerchantResult.Accepted);
     }
 
     [Fact]
@@ -131,22 +128,20 @@ public class MerchantTransactionTests : GameTestBase
         using var provider = Provider();
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
-        var owner = Player(sessionManager, 8408, 9408, money: 1_000_000, out _);
-        owner.Trade.MerchantState = MerchantMode.Buying;
-        owner.Trade.BuyMerchantItems[0] = new MerchantItem
-        {
-            ItemId = StackableItem, Count = 5, Price = 1_000_000,
-        };
+        var owner = Player(sessionManager, 8408, 9408, money: 5_000_000, out _);
+        owner.Trade.IsBuyingMerchantPreparing = true;
+        await Insert(provider, owner, wanted: (StackableItem, 5, 1_000_000));
+        var ownerGold = owner.Money;
 
         var seller = Player(sessionManager, 8409, 9409, money: CoinMax, out var sellerSent);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         seller.Inventory[InventoryConstants.SlotMax].ItemId = StackableItem;
         seller.Inventory[InventoryConstants.SlotMax].Count = 5;
 
         await Sell(provider, seller, sellerSlot: 0, wantedSlot: 0, count: 1);
 
         seller.Money.Should().Be(CoinMax, "gold must never wrap past the cap");
-        owner.Money.Should().Be(1_000_000);
+        owner.Money.Should().Be(ownerGold);
         Reply(sellerSent, MerchantSubOpcode.BuyBuy)
             .Should().Be((byte)BuyingMerchantResult.OverMaxLimit);
     }
@@ -168,7 +163,7 @@ public class MerchantTransactionTests : GameTestBase
         merchant.Inventory[InventoryConstants.SlotMax].Count = 1;
 
         var buyer = Player(sessionManager, 8411, 9411, money: 5_000_000, out _);
-        buyer.Trade.MerchantTargetUserId = merchant.CharacterId;
+        buyer.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
 
         var packet = new Packet(GameOpcodes.GS_MERCHANT);
         packet.WriteByte((byte)MerchantSubOpcode.ItemBuy);
@@ -255,7 +250,7 @@ public class MerchantTransactionTests : GameTestBase
 
         var merchant = SellingStall(sessionManager, 8412, 9412, price: 1_000, stock: 1);
         var buyer = Player(sessionManager, 8413, 9413, money: 500_000, out var buyerSent);
-        buyer.Trade.MerchantTargetUserId = merchant.CharacterId;
+        buyer.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
         FillBags(buyer, 700000000);
 
         await Buy(provider, buyer, count: 1);
@@ -274,7 +269,7 @@ public class MerchantTransactionTests : GameTestBase
 
         var merchant = SellingStall(sessionManager, 8414, 9414, price: 1_000, stock: 3);
         var buyer = Player(sessionManager, 8415, 9415, money: 500_000, out _);
-        buyer.Trade.MerchantTargetUserId = merchant.CharacterId;
+        buyer.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
         FillBags(buyer, 700000000);
         buyer.Inventory[InventoryConstants.SlotMax + 5].ItemId = StackableItem;
         buyer.Inventory[InventoryConstants.SlotMax + 5].Count = 2;
@@ -293,22 +288,20 @@ public class MerchantTransactionTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
         var owner = Player(sessionManager, 8416, 9416, money: 1_000_000, out _);
-        owner.Trade.MerchantState = MerchantMode.Buying;
-        owner.Trade.BuyMerchantItems[0] = new MerchantItem
-        {
-            ItemId = StackableItem, Count = 5, Price = 1_000,
-        };
+        owner.Trade.IsBuyingMerchantPreparing = true;
+        await Insert(provider, owner, wanted: (StackableItem, 5, 1_000));
+        var ownerGold = owner.Money;
         FillBags(owner, 700000000);
 
         var seller = Player(sessionManager, 8417, 9417, money: 0, out var sellerSent);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         seller.Inventory[InventoryConstants.SlotMax].ItemId = StackableItem;
         seller.Inventory[InventoryConstants.SlotMax].Count = 5;
 
         await Sell(provider, seller, sellerSlot: 0, wantedSlot: 0, count: 1);
 
         seller.Money.Should().Be(0);
-        owner.Money.Should().Be(1_000_000);
+        owner.Money.Should().Be(ownerGold);
         seller.Inventory[InventoryConstants.SlotMax].Count.Should().Be(5);
         Reply(sellerSent, MerchantSubOpcode.BuyBuy)
             .Should().Be((byte)BuyingMerchantResult.InventoryFull);
@@ -322,16 +315,14 @@ public class MerchantTransactionTests : GameTestBase
         var sessionManager = provider.GetRequiredService<SessionManager>();
 
         var owner = Player(sessionManager, 8418, 9418, money: 1_000_000, out var ownerSent);
-        owner.Trade.MerchantState = MerchantMode.Buying;
-        owner.Trade.BuyMerchantItems[0] = new MerchantItem
-        {
-            ItemId = StackableItem, Count = 5, Price = 1_000,
-        };
+        owner.Trade.IsBuyingMerchantPreparing = true;
+        await Insert(provider, owner, wanted: (StackableItem, 5, 1_000));
+        ownerSent.Clear();
         FillBags(owner, 700000000);
         owner.Inventory[InventoryConstants.SlotMax + backHalfSlot].Clear();
 
         var seller = Player(sessionManager, 8419, 9419, money: 0, out var sellerSent);
-        seller.Trade.MerchantTargetUserId = owner.CharacterId;
+        seller.Trade.LookAt(owner.CharacterId, owner.Trade.StallGeneration);
         seller.Inventory[InventoryConstants.SlotMax + backHalfSlot].ItemId = StackableItem;
         seller.Inventory[InventoryConstants.SlotMax + backHalfSlot].Count = 5;
 
@@ -357,7 +348,7 @@ public class MerchantTransactionTests : GameTestBase
             OriginalSlot = InventoryConstants.SlotMax,
         };
         var buyer = Player(manager, 8451, 9451, money: 10000, out var buyerSent);
-        buyer.Trade.MerchantTargetUserId = seller.CharacterId;
+        buyer.Trade.LookAt(seller.CharacterId, seller.Trade.StallGeneration);
         FillBags(buyer, 700000000);
         buyer.Inventory[InventoryConstants.SlotMax + 20].ItemId = StackableItem;
         buyer.Inventory[InventoryConstants.SlotMax + 20].Count = 7;
@@ -379,7 +370,7 @@ public class MerchantTransactionTests : GameTestBase
 
         var merchant = SellingStall(sessionManager, 8452, 9452, price: 1_000, stock: 3);
         var buyer = Player(sessionManager, 8453, 9453, money: 500_000, out var buyerSent);
-        buyer.Trade.MerchantTargetUserId = merchant.CharacterId;
+        buyer.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
 
         await Buy(provider, buyer, count: 2);
 

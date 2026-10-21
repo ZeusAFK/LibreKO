@@ -1,4 +1,4 @@
-using LibreKO.Common.Infrastructure.Network;
+﻿using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.Protocol.Writers;
 
@@ -6,8 +6,11 @@ public sealed class BountyPacketWriter
 {
     public const byte Failed = 0;
     public const byte Succeeded = 1;
+    public const byte StandingOpen = 0;
+    public const byte StandingOwn = 1;
+    public const byte StandingEarned = 2;
 
-    public readonly record struct Entry(int BountyId, string Target, string Poster, int Reward);
+    public readonly record struct Entry(int BountyId, string Target, string Poster, int Reward, byte Standing);
 
     public static Packet BountyList(byte sub, IReadOnlyCollection<Entry> bounties)
     {
@@ -20,6 +23,7 @@ public sealed class BountyPacketWriter
             packet.WriteSByteString(bounty.Target);
             packet.WriteSByteString(bounty.Poster);
             packet.WriteInt(bounty.Reward);
+            packet.WriteByte(bounty.Standing);
         }
 
         return packet;

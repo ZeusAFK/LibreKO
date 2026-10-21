@@ -15,6 +15,7 @@ public class TargetStateTests : GameTestBase
     private const int SwiftSkill = 107725;
     private const int SlowSkill = 109756;
     private const byte Zone = 21;
+    private const float FarAcrossTheZone = 1500f;
 
     private static (UserSession Session, IClient Client, List<Packet> Sent) Join(SessionManager sessions, int id, byte zone = Zone)
     {
@@ -86,6 +87,32 @@ public class TargetStateTests : GameTestBase
 
         var effects = Read(sent.Single(p => p.GetOpcode() == (byte)GameOpcodes.GS_TARGET_STATE), npc.UniqueId);
         effects.Should().ContainSingle().Which.Skill.Should().Be(SlowSkill);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task APlayerOutOfSightAnswersNothing(bool stealthedEnemy)
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (viewer, viewerClient, sent) = Join(sessions, 807);
+        var (target, _, _) = Join(sessions, 808);
+        if (stealthedEnemy)
+        {
+            target.Nation = viewer.Nation == AccountNation.Karus ? AccountNation.ElMorad : AccountNation.Karus;
+            target.Invisibility = InvisibilityType.DispelOnMove;
+        }
+        else
+        {
+            sessions.Regions.RemoveFromRegion(target);
+            target.X = viewer.X + FarAcrossTheZone;
+            sessions.Regions.AddToRegion(target);
+        }
+
+        await Ask(provider, viewerClient, target.CharacterId);
+
+        sent.Should().NotContain(p => p.GetOpcode() == (byte)GameOpcodes.GS_TARGET_STATE, "the zone is no radar");
     }
 
     [Fact]

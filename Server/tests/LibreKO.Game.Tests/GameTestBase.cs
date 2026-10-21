@@ -68,6 +68,9 @@ public abstract class GameTestBase
         return mapManager;
     }
 
+    private static readonly Lazy<IReadOnlySet<int>> NonActionMagic =
+        new(() => new LibreKO.Common.Infrastructure.Persistence.Seed.Entities.MagicNonActionSeed().GetSeedData().Select(row => row.Id).ToHashSet());
+
     protected static ServiceProvider CreateProvider(
         Action<AppDbContext> seed,
         Action<IGameDataService>? configureGameData = null,
@@ -94,6 +97,7 @@ public abstract class GameTestBase
         services.AddScoped<ISheriffReportRepository, SheriffReportRepository>();
         services.AddSingleton<IHostEnvironment>(TestHostEnvironmentFactory.Create());
         services.AddScoped<IPreGameService, PreGameService>();
+        services.AddSingleton<LoginThrottle>();
         services.AddScoped<IGameSessionInitializer, GameSessionInitializer>();
         services.AddSingleton<SessionManager>();
         services.AddSingleton<CharacterPacketMapper>();
@@ -124,6 +128,7 @@ public abstract class GameTestBase
         services.AddSingleton<INereidMonumentService, NereidMonumentService>();
         services.AddSingleton<IExpSealService, ExpSealService>();
         services.AddSingleton<ICharacterSealService, CharacterSealService>();
+        services.AddSingleton<SealGates>();
         services.AddSingleton<ClanMatchService>();
         services.AddSingleton<IClanMatchService>(sp => sp.GetRequiredService<ClanMatchService>());
         services.AddSingleton<VanguardService>();
@@ -241,6 +246,7 @@ public abstract class GameTestBase
 
         var gameData = Substitute.For<IGameDataService>();
         gameData.KingSystemTable.Returns(new Dictionary<byte, KingSystemData>());
+        gameData.NonActionMagic.Returns(NonActionMagic.Value);
         configureGameData?.Invoke(gameData);
         services.AddSingleton(gameData);
         configureServices?.Invoke(services);
@@ -271,6 +277,56 @@ public abstract class GameTestBase
         repository.GetServers().Returns(Task.FromResult(new List<LibreKO.Common.Domain.Entities.Server>()));
         return repository;
     }
+
+    protected const byte ListedSpellDamageCharisma = 186;
+
+    private const short WarehouseKeeperId = 12001;
+
+    protected static void StandAtWarehouseKeeper(ServiceProvider provider, IClient client)
+    {
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var session = sessions.GetByClientId(client.Id)!;
+        var keeper = sessions.Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = WarehouseKeeperId, Name = "Inn Hostess", NpcType = NpcData.TypeWarehouse, ZoneId = session.ZoneId,
+            X = session.X, Z = session.Z, SpawnX = session.X, SpawnZ = session.Z, Hp = 1, MaxHp = 1,
+        });
+        session.Quest.EventNpcUniqueId = keeper.UniqueId;
+    }
+
+    protected static NpcInstance StandAt(ServiceProvider provider, UserSession session, int npcId, byte npcType = 0)
+    {
+        var npc = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = npcId, NpcType = npcType, Name = "Merchant", ZoneId = session.ZoneId,
+            X = session.X, Z = session.Z, SpawnX = session.X, SpawnZ = session.Z, Hp = 1, MaxHp = 1,
+        });
+        session.Quest.EventNpcUniqueId = npc.UniqueId;
+        return npc;
+    }
+
+    protected static void TakeTheClassOf(UserSession caster, int skillId)
+    {
+        if (MagicSkillRequirement.IsClassSkill(skillId))
+            caster.Class = MagicSkillRequirement.ClassOf(skillId);
+    }
+
+    protected static void HoldReagent(ServiceProvider provider, UserSession holder, int itemId, ushort count = 1)
+    {
+        provider.GetRequiredService<IGameDataService>().GetItem(itemId).Returns(new ItemData { Num = itemId, Countable = 1 });
+        var slot = holder.Inventory[InventoryConstants.InventoryStart];
+        slot.ItemId = itemId;
+        slot.Count = count;
+        slot.Durability = 1;
+    }
+
+    protected static ILookup<int, ItemSellData> ShopList(int sellingGroup, params int[] itemIds) =>
+        itemIds
+            .Select((itemId, index) => new ItemSellData
+            {
+                SellingGroup = sellingGroup, Line = 0, Index = (byte)index, ItemId = itemId,
+            })
+            .ToLookup(sold => sold.SellingGroup);
 
     protected static CoefficientData CreateBasicCoefficient(short classId)
     {
@@ -578,6 +634,35 @@ public abstract class GameTestBase
     }
 
     protected sealed record CharacterInfoEntry(string Name, (int ItemId, short Durability)[] Equipment);
+
+    // Writes the save, then reports it as failed, as a lost answer from the database would.
+    protected sealed class FailsAfterWriting(Func<DbContext, bool> applies) : SaveChangesInterceptor
+    {
+        private bool pending;
+
+        public bool Armed { get; set; }
+        public Action<DbContext> Meanwhile { get; init; } = _ => { };
+
+        public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
+            DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+        {
+            pending = Armed && eventData.Context is { } context && applies(context);
+            return base.SavingChangesAsync(eventData, result, cancellationToken);
+        }
+
+        public override ValueTask<int> SavedChangesAsync(
+            SaveChangesCompletedEventData eventData, int result, CancellationToken cancellationToken = default)
+        {
+            if (!pending)
+                return base.SavedChangesAsync(eventData, result, cancellationToken);
+
+            pending = false;
+            Armed = false;
+            if (eventData.Context is { } context)
+                Meanwhile(context);
+            throw new DbUpdateException("the answer was lost");
+        }
+    }
 }
 
 internal static class TestHostEnvironmentFactory

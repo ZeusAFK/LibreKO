@@ -16,6 +16,12 @@ public class MagicWarpTests : GameTestBase
 {
     private const int EscapeId = 209035;
     private const int SummonFriendId = 209004;
+    private const int FragmentOfManes = 492063;
+    private const int RetrieveClanMemberId = 490042;
+    private const int RetrieveClanMemberScroll = 389042000;
+    private const short Wolves = 71;
+    private const short Hounds = 72;
+    private const int OtherRoom = 3;
     private const int DescentId = 205650;
     private const short DescentRadius = 60;
     private const int WildAdventId = 208770;
@@ -23,6 +29,8 @@ public class MagicWarpTests : GameTestBase
     private const short BlinkRadius = 20;
     private const byte Moradon = 21;
     private const short BindEventIndex = 7;
+    private const int StunRow = 110560;
+    private const int HeldSeconds = 2;
 
     [Fact]
     public async Task EscapeSendsTheCasterToTheirBindPoint()
@@ -108,6 +116,232 @@ public class MagicWarpTests : GameTestBase
         friend.X.Should().BeApproximately(512, 0.5f, "escape takes the party, not only the caster");
     }
 
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task EscapeLeavesABusyPartyMemberWhereTheyAre(bool trading, bool selling, bool mining)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        if (trading)
+            friend.Trade.ExchangeUser = caster.CharacterId;
+        if (selling)
+            friend.Trade.MerchantState = MerchantMode.Selling;
+        friend.IsMining = mining;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        var busy = trading || selling || mining;
+        friend.X.Should().BeApproximately(busy ? 800 : 512, 0.5f, "a trade, a stall or gathering counts on the player staying put");
+        caster.X.Should().BeApproximately(512, 0.5f);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task EscapeLeavesAPartyMemberWhoMayNotBeRecalled(bool noRecall, bool carriesManes)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        friend.CanTeleport = !noRecall;
+        if (carriesManes)
+            friend.SetBuff(FragmentOfManes, new ActiveBuff
+            {
+                MagicId = FragmentOfManes, CasterId = friend.CharacterId, BuffType = BuffType.FragmentOfManes,
+                ExpireTicks = DateTime.UtcNow.AddMinutes(1).Ticks,
+            });
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        friend.X.Should().BeApproximately(800, 0.5f);
+        caster.X.Should().BeApproximately(512, 0.5f);
+    }
+
+    [Fact]
+    public async Task EscapeIsRefusedUnderNoRecall()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (_, caster, client) = CreateCaster(provider);
+        var startX = caster.X;
+        caster.CanTeleport = false;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        caster.X.Should().BeApproximately(startX, 0.5f);
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task SummonFriendLeavesAMemberUnderNoRecallOrMidWarp(bool noRecall, bool warping)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        caster.X = 250;
+        caster.Z = 260;
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        friend.CanTeleport = !noRecall;
+        friend.IsWarping = warping;
+
+        await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
+
+        friend.X.Should().BeApproximately(700, 0.5f);
+    }
+
+    public enum Hold { Stunned, Frozen, Fighting }
+
+    [Theory]
+    [InlineData(Hold.Stunned)]
+    [InlineData(Hold.Frozen)]
+    [InlineData(Hold.Fighting)]
+    public async Task SummonFriendLeavesAHeldOrFightingMemberWhereTheyAre(Hold hold)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        caster.X = 250;
+        caster.Z = 260;
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        HoldDown(friend, hold);
+
+        await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
+
+        friend.X.Should().BeApproximately(700, 0.5f, "no one is pulled out of a stun, a freeze or a fight");
+    }
+
+    [Theory]
+    [InlineData(Hold.Stunned)]
+    [InlineData(Hold.Frozen)]
+    [InlineData(Hold.Fighting)]
+    public async Task EscapeLeavesAHeldOrFightingMemberWhereTheyAre(Hold hold)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        HoldDown(friend, hold);
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        friend.X.Should().BeApproximately(800, 0.5f, "no one is taken out of a stun, a freeze or a fight");
+        caster.X.Should().BeApproximately(512, 0.5f);
+    }
+
+    private static void HoldDown(UserSession player, Hold hold)
+    {
+        if (hold == Hold.Fighting)
+        {
+            player.LastCombatTicks = Environment.TickCount64;
+            return;
+        }
+
+        player.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = hold == Hold.Stunned ? BuffType.Stun : BuffType.Freeze,
+            Duration = HeldSeconds, ExpireTicks = DateTime.UtcNow.AddSeconds(HeldSeconds).Ticks,
+        });
+    }
+
+    [Fact]
+    public async Task EscapeTakesABusyCasterHome()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        caster.Trade.ExchangeUser = friend.CharacterId;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        caster.X.Should().BeApproximately(512, 0.5f, "the caster chose to go");
+    }
+
+    [Fact]
+    public async Task AZoneChangeEndsGathering()
+    {
+        using var provider = CreateProvider(_ => { });
+        var (_, caster, _) = CreateCaster(provider);
+        caster.IsMining = true;
+
+        await provider.GetRequiredService<IZoneTransitionService>().ChangeZoneAsync(caster, caster.ZoneId, caster.X + 10, caster.Z);
+
+        caster.IsMining.Should().BeFalse("gathering belongs to the spot it started on");
+    }
+
+    [Fact]
+    public async Task APullEndsGathering()
+    {
+        using var provider = CreateProvider(_ => { });
+        var (_, caster, _) = CreateCaster(provider);
+        caster.IsFishing = true;
+
+        await provider.GetRequiredService<IWorldMovementService>().DisplaceAsync(caster, caster.X + 5, caster.Z);
+
+        caster.IsFishing.Should().BeFalse("gathering belongs to the spot it started on");
+    }
+
+    [Fact]
+    public async Task AWarpEndsGathering()
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (_, caster, client) = CreateCaster(provider);
+        caster.IsMining = true;
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        caster.X.Should().BeApproximately(512, 0.5f);
+        caster.IsMining.Should().BeFalse("gathering belongs to the spot it started on");
+    }
+
     [Fact]
     public async Task SummonFriendPullsAPartyMemberToTheCaster()
     {
@@ -119,12 +353,73 @@ public class MagicWarpTests : GameTestBase
         caster.Z = 260;
 
         var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
 
         await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
 
         friend.X.Should().BeApproximately(250, 0.5f);
         friend.Z.Should().BeApproximately(260, 0.5f);
         caster.X.Should().BeApproximately(250, 0.5f, "the caster does not move");
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, OtherRoom)]
+    public async Task SummonFriendLeavesAnyoneOutsideThePartyOrTheRoomWhereTheyAre(bool sameParty, int room)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var stranger = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        if (sameParty)
+            caster.PartyIndex = stranger.PartyIndex = 1;
+        stranger.Room = (ushort)room;
+
+        await Cast(provider, client, SummonFriendId, caster, stranger.CharacterId);
+
+        stranger.X.Should().BeApproximately(700, 0.5f);
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task SummonFriendLeavesABusyPartyMemberWhereTheyAre(bool trading, bool selling, bool mining)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        if (trading)
+            friend.Trade.ExchangeUser = caster.CharacterId;
+        if (selling)
+            friend.Trade.MerchantState = MerchantMode.Selling;
+        friend.IsMining = mining;
+
+        await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
+
+        var busy = trading || selling || mining;
+        friend.X.Should().BeApproximately(busy ? 700 : caster.X, 0.5f, "a trade, a stall or gathering counts on the player staying put");
+    }
+
+    [Theory]
+    [InlineData(Wolves, true)]
+    [InlineData(Hounds, false)]
+    public async Task RetrievingAClanMemberPullsOnlySomeoneOfTheCastersClan(short clan, bool pulled)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, RetrieveClanMemberId, SkillMoral.ClanAll, MagicWarpType.SummonInZone, useItem: RetrieveClanMemberScroll));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        HoldReagent(provider, caster, RetrieveClanMemberScroll);
+        var member = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.KnightsId = Wolves;
+        member.KnightsId = clan;
+
+        await Cast(provider, client, RetrieveClanMemberId, caster, member.CharacterId);
+
+        member.X.Should().BeApproximately(pulled ? caster.X : 700, 0.5f);
     }
 
     [Fact]
@@ -142,6 +437,26 @@ public class MagicWarpTests : GameTestBase
         caster.X.Should().BeApproximately(130, 0.5f);
         caster.Z.Should().BeApproximately(140, 0.5f);
         friend.X.Should().BeApproximately(130, 0.5f, "the target does not move");
+    }
+
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task DescentStaysPutUnderNoRecallOrForAnotherRoom(bool noRecall, bool otherRoom)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, DescentId, SkillMoral.Party, MagicWarpType.MoveToTarget, DescentRadius));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var startX = caster.X;
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 130, z: 140);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        caster.CanTeleport = !noRecall;
+        if (otherRoom)
+            friend.Room = OtherRoom;
+
+        await Cast(provider, client, DescentId, caster, friend.CharacterId);
+
+        caster.X.Should().BeApproximately(startX, 0.5f);
     }
 
     [Fact]
@@ -380,14 +695,15 @@ public class MagicWarpTests : GameTestBase
 
     private static void Warp(
         IGameDataService gameData, int skillId, SkillMoral moral, MagicWarpType warpType, short radius = 0,
-        short range = 10000)
+        short range = 10000, int useItem = 0)
     {
         gameData.GetMagic(skillId).Returns(new MagicData
         {
             Id = skillId,
             Type1 = 8,
             Moral = (byte)moral,
-            Range = range
+            Range = range,
+            UseItem = useItem
         });
 
         var rows = new Dictionary<int, MagicType8Data>(
@@ -458,6 +774,7 @@ public class MagicWarpTests : GameTestBase
     private static async Task Cast(
         ServiceProvider provider, IClient client, int skillId, UserSession caster, int targetId, int[] data)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

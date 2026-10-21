@@ -22,25 +22,21 @@ public class RoulettePacketCoordinator(
     private const byte RouletteResultSpun = RoulettePacketWriter.ResultOk;
 
     private const int RouletteSpinCost = 1;          // coins per spin
-    private const int RouletteStartingCoins = 10;    // seeded the first time a char checks status
 
-    // One slice of the prize wheel. A slice is either an item (ItemId != 0) or gold (Gold != 0).
-    private readonly struct RouletteSlice(int weight, int itemId, int gold)
+    private const int NoPrizeItem = 0;
+
+    private readonly struct RouletteSlice(int weight, int gold)
     {
         public readonly int Weight = weight;
-        public readonly int ItemId = itemId;
         public readonly int Gold = gold;
     }
 
-    // Static weighted prize wheel (shared by all characters). Higher weight = more likely.
     private static readonly RouletteSlice[] RouletteWheel =
     {
-        new(40, 0, 1_000),          // common: 1k gold
-        new(25, 0, 5_000),          // 5k gold
-        new(15, 379_022_000, 0),    // an item (HP potion id, illustrative)
-        new(10, 0, 25_000),         // 25k gold
-        new(7,  385_000_000, 0),    // another item
-        new(3,  0, 100_000),        // 100k gold jackpot
+        new(40, 1_000),
+        new(25, 5_000),
+        new(10, 25_000),
+        new(3, 100_000),
     };
 
     private static readonly int RouletteWheelTotalWeight = ComputeTotalWeight();
@@ -96,7 +92,7 @@ public class RoulettePacketCoordinator(
 
     private async Task HandleRouletteSpinAsync(UserSession session)
     {
-        int prizeItemId = 0;
+        const int prizeItemId = NoPrizeItem;
         int prizeGold = 0;
         byte rouletteResult;
 
@@ -111,30 +107,28 @@ public class RoulettePacketCoordinator(
             {
                 rouletteCoins[session.CharacterId] = coins - RouletteSpinCost;
                 var slice = RollRouletteSlice();
-                prizeItemId = slice.ItemId;
-                // Deterministic spin prize gold per character (the wheel's item slices still drive the
-                // prize log / future item grants; the gold payout itself is fixed so it's reproducible).
-                prizeGold = ComputeRoulettePrizeGold(session.CharacterId);
+                prizeGold = slice.Gold;
                 AppendRoulettePrizeLog(session.CharacterId, prizeItemId, prizeGold);
                 rouletteResult = RouletteResultSpun;
             }
         }
 
         // Grant the real gold once, only on a successful spin (the coin-deduction guard above ran exactly once).
-        if (rouletteResult == RouletteResultSpun)
+        if (rouletteResult == RouletteResultSpun && prizeGold > 0)
         {
-            session.Money += prizeGold;
-            await userNotification.SendGoldGainAsync(session, prizeGold);   // grants gold + GS_GOLD_CHANGE
+            prizeGold = session.WithLock(s =>
+            {
+                var gained = (int)Math.Min(prizeGold, (long)ExchangePacketConstants.CoinMax - s.Money);
+                s.Money += gained;
+                return gained;
+            });
+            await userNotification.SendGoldGainAsync(session, prizeGold);
             logger.LogDebug("{Name} spun roulette -> item {Item} gold {Gold}", session.Name, prizeItemId, prizeGold);
         }
 
         await session.Client.SendPacket(
             RoulettePacketWriter.Spin(rouletteResult, prizeItemId, prizeGold));
     }
-
-    // Deterministic spin prize gold: 5000 + (CharacterId % 20) * 2500  ->  5,000 .. 52,500 gold.
-    private static int ComputeRoulettePrizeGold(int charId) =>
-        5_000 + (charId % 20) * 2_500;
 
     private static RouletteSlice RollRouletteSlice()
     {
@@ -163,15 +157,8 @@ public class RoulettePacketCoordinator(
             return GetRouletteCoinsUnlocked(charId);
     }
 
-    private static int GetRouletteCoinsUnlocked(int charId)
-    {
-        if (!rouletteCoins.TryGetValue(charId, out var coins))
-        {
-            coins = RouletteStartingCoins;
-            rouletteCoins[charId] = coins;
-        }
-        return coins;
-    }
+    private static int GetRouletteCoinsUnlocked(int charId) =>
+        rouletteCoins.TryGetValue(charId, out var coins) ? coins : 0;
 
     private static void AppendRoulettePrizeLog(int charId, int itemId, int gold)
     {

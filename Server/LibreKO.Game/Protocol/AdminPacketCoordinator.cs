@@ -55,7 +55,8 @@ public class AdminPacketCoordinator(
     ICastleSiegeService castleSiegeService,
     IVanguardService vanguardService,
     IClanMatchService clanMatchService,
-    ILogger<AdminPacketCoordinator> logger) : IAdminPacketCoordinator
+    ILogger<AdminPacketCoordinator> logger,
+    TimeProvider? timeProvider = null) : IAdminPacketCoordinator
 {
     private const int MaxGmSummonCount = 50;
     public const string GmNoticeFrame = "#### NOTICE : {0} ####";
@@ -1815,6 +1816,7 @@ public class AdminPacketCoordinator(
         await worldPacketCoordinator.BroadcastUserInOutAsync(session, InOutType.Out);
         session.X = x;
         session.Z = z;
+        MovePace.Placed(session, (timeProvider ?? TimeProvider.System).GetUtcNow().UtcTicks);
         sessionManager.Regions.UpdateRegion(session);
 
         await session.Client.SendPacket(MovementPacketWriter.Warp(

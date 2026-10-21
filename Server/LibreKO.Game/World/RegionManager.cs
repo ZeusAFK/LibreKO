@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using LibreKO.Common.Infrastructure.Network;
 
 namespace LibreKO.Game.World;
@@ -62,6 +62,12 @@ public class RegionManager
 
     public IEnumerable<UserSession> GetNearbyUsers(UserSession session)
         => GetNearbyUsersAt(session.Room, session.ZoneId, session.RegionX, session.RegionZ, session.CharacterId);
+
+    public static bool IsInView(UserSession viewer, UserSession target)
+        => viewer.Room == target.Room
+        && viewer.ZoneId == target.ZoneId
+        && Math.Abs(viewer.RegionX - target.RegionX) <= ViewDistance
+        && Math.Abs(viewer.RegionZ - target.RegionZ) <= ViewDistance;
 
     public IEnumerable<UserSession> GetNearbyUsersAt(ushort room, byte zoneId, int regionX, int regionZ, int excludeCharacterId)
     {
@@ -292,11 +298,13 @@ public class RegionManager
     // ─────────────────────────────────────────────
     // Ground loot bundle management
     // ─────────────────────────────────────────────
-    public LootBundle CreateBundle(float x, float z, float y)
+    public LootBundle CreateBundle(byte zoneId, ushort room, float x, float z, float y)
     {
         var bundle = new LootBundle
         {
             BundleId = Interlocked.Increment(ref nextBundleId),
+            ZoneId = zoneId,
+            Room = room,
             X = x,
             Z = z,
             Y = y,
@@ -323,6 +331,15 @@ public class RegionManager
         if (!bundles.TryGetValue(bundleId, out var bundle))
             return false;
         if (!bundle.TryClaimSlot(slotIndex, expectedItemId, out claimed))
+            return false;
+        if (bundle.IsEmpty())
+            bundles.TryRemove(bundleId, out _);
+        return true;
+    }
+
+    public bool TryClaimBundleItem(int bundleId, int slotIndex, LootItem expected)
+    {
+        if (!bundles.TryGetValue(bundleId, out var bundle) || !bundle.TryClaimSlot(slotIndex, expected))
             return false;
         if (bundle.IsEmpty())
             bundles.TryRemove(bundleId, out _);

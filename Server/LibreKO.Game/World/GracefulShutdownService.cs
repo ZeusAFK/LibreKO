@@ -18,22 +18,25 @@ public sealed class GracefulShutdownService(
         {
             logger.LogInformation("Graceful shutdown: logging out {SessionCount} active session(s)", sessions.Length);
 
-            foreach (var session in sessions)
-            {
-                try
-                {
-                    await sessionTerminationService.LogoutAsync(session.Client, cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning(ex,
-                        "Graceful shutdown failed to log out {Name} (CharId={CharId})",
-                        session.Name,
-                        session.CharacterId);
-                }
-            }
+            // Sessions are saved side by side, and even past the host stop timeout.
+            await Task.WhenAll(sessions.Select(LogOutAsync));
         }
 
         await accountLockService.ClearOwnClaimsAsync();
+    }
+
+    private async Task LogOutAsync(UserSession session)
+    {
+        try
+        {
+            await sessionTerminationService.LogoutAsync(session.Client, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Graceful shutdown failed to log out {Name} (CharId={CharId})",
+                session.Name,
+                session.CharacterId);
+        }
     }
 }

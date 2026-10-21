@@ -23,7 +23,6 @@ public class VipWarehousePacketCoordinator(
     private const int RentalCapDays = 60;
     private const int UseKeyBytes = 11;
     internal const byte PasswordTriesAllowed = 3;
-    private const int ItemCountMax = 9999;
     private const int CoinMax = 2_100_000_000;
 
     public async Task HandleAsync(IClient client, Packet packet)
@@ -33,8 +32,7 @@ public class VipWarehousePacketCoordinator(
 
         var sub = (VipWarehouseSubOpcode)packet.ReadByte();
 
-        if (session.Hp <= 0 || session.Trade.IsTrading || session.Trade.IsMerchanting
-            || session.IsGathering)
+        if (session.IsBusy)
         {
             await SendResult(session, sub, VipWarehouseResult.Failed);
             return;
@@ -135,18 +133,10 @@ public class VipWarehousePacketCoordinator(
                 return false;
 
             var destination = s.VipWarehouse[realDst];
-            if (!CanMergeOrPlace(itemData, destination, itemId, count))
+            if (!ItemTransfer.Fits(source, destination, itemData, count))
                 return false;
 
-            var destinationWasEmpty = destination.IsEmpty;
-            destination.ItemId = itemId;
-            destination.Count += (ushort)count;
-            destination.Flag = source.Flag;
-            if (destinationWasEmpty) destination.Durability = source.Durability;
-            if (destination.Count > ItemCountMax) destination.Count = ItemCountMax;
-
-            source.Count -= (ushort)count;
-            if (source.Count == 0) source.Clear();
+            ItemTransfer.Move(source, destination, count);
 
             var coefficient = gameDataService.GetCoefficient(s.Class);
             if (coefficient != null)
@@ -206,17 +196,10 @@ public class VipWarehousePacketCoordinator(
                 return false;
 
             var destination = s.Inventory[absDst];
-            if (!CanMergeOrPlace(itemData, destination, itemId, count))
+            if (!ItemTransfer.Fits(source, destination, itemData, count))
                 return false;
 
-            var destinationWasEmpty = destination.IsEmpty;
-            destination.ItemId = itemId;
-            destination.Count += (ushort)count;
-            destination.Flag = source.Flag;
-            if (destinationWasEmpty) destination.Durability = source.Durability;
-
-            source.Count -= (ushort)count;
-            if (source.Count == 0) source.Clear();
+            ItemTransfer.Move(source, destination, count);
 
             var coefficient = gameDataService.GetCoefficient(s.Class);
             if (coefficient != null)
@@ -266,11 +249,7 @@ public class VipWarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         });
 
@@ -308,11 +287,7 @@ public class VipWarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         });
 
@@ -385,13 +360,6 @@ public class VipWarehousePacketCoordinator(
     private static async Task SendResult(UserSession session, VipWarehouseSubOpcode sub, VipWarehouseResult result)
     {
         await session.Client.SendPacket(WarehousePacketWriter.VipResult(sub, result));
-    }
-
-    private static bool CanMergeOrPlace(ItemData itemData, ItemSlot destination, int itemId, int count)
-    {
-        if (destination.IsEmpty) return true;
-        if (destination.ItemId != itemId || itemData.Countable == 0) return false;
-        return destination.Count + count <= ItemCountMax;
     }
 
     private async Task SetPasswordAsync(UserSession session, Packet packet)

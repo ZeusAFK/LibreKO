@@ -16,6 +16,8 @@ namespace LibreKO.Game.Tests;
 public class PetTests : GameTestBase
 {
     private const byte Zone = (byte)ZoneId.Moradon;
+    private const byte FamiliarSummonCastTenths = 100;
+    private const int TenthsPerSecond = 10;
     private const int EggId = 600_001_000;
     private const int KaulId = PetService.HatchedPetItem;
     private const int LeafId = 389_570_000;
@@ -125,6 +127,23 @@ public class PetTests : GameTestBase
         packet.ReadSByteString().Should().Be(PetName);
         packet.ReadInt().Should().Be(NpcSpawnPacketWriter.PetRecordTail);
         packet.ReadByte().Should().Be((byte)AccountNation.Karus, "the nation follows the familiar's names");
+    }
+
+    [Fact]
+    public async Task AnEggHatchesOnlyAtTheFamiliarTamer()
+    {
+        using var provider = Provider();
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (owner, _) = Player(sessions, 701);
+        var bystander = sessions.Regions.SpawnNpc(new NpcInstance
+        {
+            NpcId = KateNpcId + 1, NpcType = NpcData.TypeTalk, ZoneId = Zone, X = 102, Z = 101, Hp = 1, MaxHp = 1,
+        });
+        PutEgg(owner, 0);
+
+        await provider.GetRequiredService<IPetService>().HatchAsync(owner, bystander.NpcId, EggId, 0, PetName);
+
+        owner.Inventory[InventoryConstants.SlotMax].ItemId.Should().Be(EggId, "naming the NPC beside the player does not make it a tamer");
     }
 
     [Fact]
@@ -1016,6 +1035,7 @@ public class PetTests : GameTestBase
         var magic = provider.GetRequiredService<IMagicPacketCoordinator>();
 
         await magic.HandleAsync(owner.Client, Magic(MagicProcessOpcode.Casting, PetService.FamiliarSummonSkill, owner));
+        owner.AcceptedCasts[PetService.FamiliarSummonSkill] -= FamiliarSummonCastTenths * TimeSpan.TicksPerSecond / TenthsPerSecond;
         await magic.HandleAsync(owner.Client, Magic(MagicProcessOpcode.Effecting, PetService.FamiliarSummonSkill, owner));
 
         owner.Pet.Should().NotBeNull("the scroll's skill is the familiar summon");
@@ -1047,7 +1067,7 @@ public class PetTests : GameTestBase
         gameData.GetMagic(PetService.FamiliarSummonSkill).Returns(new MagicData
         {
             Id = PetService.FamiliarSummonSkill, Type1 = (byte)MagicSkillType.Stealth, Moral = 1, SkillLevel = 1,
-            UseItem = FamiliarSummonScroll, ItemGroup = 9, CastTime = 100, ReCastTime = 30, SuccessRate = 70,
+            UseItem = FamiliarSummonScroll, ItemGroup = 9, CastTime = FamiliarSummonCastTenths, ReCastTime = 30, SuccessRate = 70,
             SelfEffect = 255,
         });
         gameData.MagicType9Table.Returns(new Dictionary<int, MagicType9Data>
@@ -1200,7 +1220,7 @@ public class PetTests : GameTestBase
     private static NpcInstance Kate(SessionManager sessions) =>
         sessions.Regions.SpawnNpc(new NpcInstance
         {
-            NpcId = KateNpcId, NpcType = NpcData.TypeTalk, ZoneId = Zone, X = 102, Z = 101, Hp = 1, MaxHp = 1,
+            NpcId = KateNpcId, NpcType = NpcData.TypeFamiliarTamer, ZoneId = Zone, X = 102, Z = 101, Hp = 1, MaxHp = 1,
         });
 
     private static NpcInstance Monster(SessionManager sessions, float x, float z, int hp) =>

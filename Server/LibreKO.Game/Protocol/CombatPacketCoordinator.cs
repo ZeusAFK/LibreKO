@@ -25,15 +25,24 @@ public class CombatPacketCoordinator(
     IStealthService stealthService,
     IResurrectionOfferService resurrectionOfferService,
     IQuestDefinitionSource questDefinitions,
-    ILogger<CombatPacketCoordinator> logger) : ICombatPacketCoordinator
+    ILogger<CombatPacketCoordinator> logger,
+    TimeProvider? timeProvider = null) : ICombatPacketCoordinator
 {
     private const short MaxSwingInterval = 500;
     private const short BareHandedSwingInterval = 100;
+    private const int MillisecondsPerDelayUnit = 10;
+    private const int BareHandedSwingMs = 1000;
+    private const int FastestAttackIntervalPercent = 90;
+    private const int PercentScale = 100;
+    private const int SwingJitterMs = 250;
+    private const float MovementSlack = 4f;
+
+    private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
 
     public async Task HandleAttackAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
-        if (session == null || session.Hp <= 0 || session.IsBlinking)
+        if (session == null || session.Hp <= 0 || session.IsBlinking || session.IsHeld)
             return;
 
         if (packet.RemainingBytes < 10)
@@ -81,9 +90,30 @@ public class CombatPacketCoordinator(
             return;
         }
 
+        var now = time.GetUtcNow().UtcTicks;
+        var target = sessionManager.GetByCharacterId(targetId);
+        var npcInReach = target == null ? sessionManager.Regions.GetNpc(targetId) : null;
+        var inReach = target != null
+            ? target.Room == session.Room && WithinAttackReach(
+                session, target.X, target.Z, AttackReach.PlayerBodyRadius + AttackReach.MovementLag(target, now), weaponProto, isBowAttack, now)
+            : npcInReach != null && npcInReach.Room == session.Room
+                && WithinAttackReach(session, npcInReach.X, npcInReach.Z, npcInReach.BulkRadius, weaponProto, isBowAttack, now);
+        if (!inReach)
+        {
+            logger.LogDebug("Attack rejected for {Name}: target {Target} out of reach", session.Name, targetId);
+            return;
+        }
+
+        if (!TakeSwing(session))
+        {
+            logger.LogDebug("Attack rejected for {Name}: swing before the weapon is ready", session.Name);
+            return;
+        }
+
+        session.IsSitting = false;
+
         var attackResult = AttackResult.Failed;
 
-        var target = sessionManager.GetByCharacterId(targetId);
         if (target != null)
         {
             var mayAttack = target.Hp > 0 && PvpRules.CanAttackPlayer(session, target);
@@ -122,7 +152,7 @@ public class CombatPacketCoordinator(
         }
         else
         {
-            var npcTarget = sessionManager.Regions.GetNpc(targetId);
+            var npcTarget = npcInReach;
             if (npcTarget != null && npcTarget.IsAlive && npcTarget.ZoneId == session.ZoneId
                 && NpcHostility.IsAttackableBy(npcTarget, session))
             {
@@ -157,6 +187,51 @@ public class CombatPacketCoordinator(
         var result = AttackPacketWriter.Create(
             attackType, attackResult, session.CharacterId, targetId, criticalHit);
         await sessionManager.Regions.SendToRegion(session, result, excludeSender: false);
+    }
+
+    private static bool WithinAttackReach(
+        UserSession session, float targetX, float targetZ, float targetRadius, ItemData? weapon, bool isBowAttack, long now)
+    {
+        var weaponReach = isBowAttack && weapon != null ? weapon.Range / AttackReach.RangeUnitsPerMetre : AttackReach.Melee;
+        var reach = weaponReach + AttackReach.PlayerBodyRadius + targetRadius + MovementSlack + AttackReach.MovementLag(session, now);
+        return AttackReach.Within(session, targetX, targetZ, reach);
+    }
+
+    private bool TakeSwing(UserSession session)
+    {
+        var now = time.GetUtcNow().UtcTicks;
+        var interval = SwingInterval(session);
+        if (session.SwingIntervalTicks != 0)
+            session.NextSwingTicks += interval - session.SwingIntervalTicks;
+        session.SwingIntervalTicks = interval;
+        if (now + SwingJitterMs * TimeSpan.TicksPerMillisecond < session.NextSwingTicks - interval)
+            return false;
+
+        session.NextSwingTicks = Math.Max(session.NextSwingTicks, now) + interval;
+        return true;
+    }
+
+    private long SwingInterval(UserSession session)
+    {
+        var rightHand = session.GetEquippedItem(InventoryConstants.RightHand);
+        var delay = rightHand.IsEmpty ? 0 : gameDataService.GetItem(rightHand.ItemId)?.Delay ?? 0;
+        double ms = (delay > 0 ? (double)delay * MillisecondsPerDelayUnit : BareHandedSwingMs)
+            * FastestAttackIntervalPercent / PercentScale;
+        return (long)(ms / AttackSpeedFactor(session) * TimeSpan.TicksPerMillisecond);
+    }
+
+    private double AttackSpeedFactor(UserSession session)
+    {
+        var factor = 1.0;
+        foreach (var (magicId, buff) in session.ActiveBuffs)
+        {
+            if (buff.IsExpired || gameDataService.GetMagic(magicId) is not { PrimaryType: MagicSkillType.Buff } magic
+                || !MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, magicId, out var type4)
+                || type4.AttackSpeed is <= 0 or PercentScale)
+                continue;
+            factor *= type4.AttackSpeed / (double)PercentScale;
+        }
+        return factor;
     }
 
     public async Task HandleRegeneAsync(IClient client, Packet packet)
@@ -247,6 +322,9 @@ public class CombatPacketCoordinator(
         var target = sessionManager.GetByCharacterId(targetId);
         if (target != null)
         {
+            if (!Sight.Sees(session, target))
+                return;
+
             var result = BuildTargetHpPacket(targetId, echo, target.MaxHp, target.Hp, 0);
             await client.SendPacket(result);
             return;

@@ -1,9 +1,13 @@
+﻿using LibreKO.Common.Enums;
+
 namespace LibreKO.Game.World;
 
 public static class PvpRules
 {
     public static bool CanAttackPlayer(UserSession attacker, UserSession target)
-        => target.Hp > 0 && !target.IsBot && !target.IsInfiltrating && !target.IsBlinking && IsHostileTarget(attacker, target);
+        => target.Hp > 0 && !target.IsBot && !target.IsInfiltrating && !target.IsBlinking
+            && !ZoneSafetyAreas.IsInEnemySafetyArea(attacker) && !ZoneSafetyAreas.IsInOwnSafetyArea(target)
+            && IsHostile(attacker, target);
 
     public static bool IsEnemy(UserSession caster, UserSession target)
     {
@@ -19,13 +23,9 @@ public static class PvpRules
     public static bool IsPenaltyFreeDeath(UserSession victim, UserSession killer)
         => victim.IsInArena || killer.IsInArena;
 
-    private static bool IsHostileTarget(UserSession attacker, UserSession target)
+    public static bool IsHostile(UserSession attacker, UserSession target)
     {
         if (attacker.CharacterId == target.CharacterId || attacker.ZoneId != target.ZoneId)
-            return false;
-
-        if (ZoneSafetyAreas.IsInEnemySafetyArea(attacker)
-            || ZoneSafetyAreas.IsInOwnSafetyArea(target))
             return false;
 
         if (attacker.IsInArena || target.IsInArena)
@@ -46,6 +46,24 @@ public static class PvpRules
         return attacker.Nation != target.Nation
             && BattleZoneManager.AllowsNationCombat(attacker.ZoneId);
     }
+
+    // One rule for who an aimed skill may touch, both before the cast is paid and when it lands.
+    public static bool MayTouch(UserSession caster, UserSession target, SkillMoral moral, bool healStrikes) => moral switch
+    {
+        SkillMoral.Enemy or SkillMoral.AreaEnemy or SkillMoral.Npc => CanAttackPlayer(caster, target),
+        SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,
+        SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe or SkillMoral.AreaFriend or SkillMoral.Clan
+            or SkillMoral.ClanAll or SkillMoral.CorpseFriend
+            => !IsHostile(caster, target) || (healStrikes && CanAttackPlayer(caster, target)),
+        _ => true,
+    };
+
+    public static SkillMoral CureMoral(SkillMoral moral, bool liftsBlessings) => moral switch
+    {
+        SkillMoral.None or SkillMoral.All or SkillMoral.AreaAll or SkillMoral.SelfArea
+            => liftsBlessings ? SkillMoral.Enemy : SkillMoral.FriendWithMe,
+        _ => moral,
+    };
 
     private static bool AtClanWar(UserSession attacker, UserSession target)
         => attacker.ClanBattleEnemy > 0 && attacker.ClanBattleEnemy == target.KnightsId;

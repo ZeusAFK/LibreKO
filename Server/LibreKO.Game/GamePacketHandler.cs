@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using LibreKO.Common.Domain.Services;
+using System.Collections.Concurrent;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
@@ -42,8 +43,14 @@ public class GamePacketHandler(
     public async Task OnClientDisconnected(IClient client)
     {
         lastPingTicks.TryRemove(client.Id, out _);
-        await sessionTerminationService.DisconnectAsync(client);
-        await accountLockService.ReleaseAsync(client);
+        try
+        {
+            await sessionTerminationService.DisconnectAsync(client);
+        }
+        finally
+        {
+            await accountLockService.ReleaseAsync(client);
+        }
     }
 
     private async Task HandlePingAsync(IClient client, Packet packet)
@@ -64,8 +71,11 @@ public class GamePacketHandler(
 
         if (opcode == GameOpcodes.GS_COMPRESS_PACKET)
         {
+            if (client.AccountId == 0)
+                return;
+
             var decompressed = Packet.Decompress(packet);
-            if (decompressed != null)
+            if (decompressed != null && (GameOpcodes)decompressed.GetOpcode() != GameOpcodes.GS_COMPRESS_PACKET)
                 await HandlePacket(client, decompressed);
             return;
         }
@@ -75,6 +85,11 @@ public class GamePacketHandler(
             await HandlePingAsync(client, packet);
             return;
         }
+
+        // A connection that lost its account to a kick, or whose session is closing, is heard no more.
+        if (client.AccountId != 0
+            && (!accountLockService.Owns(client) || sessionManager.GetByClientId(client.Id) is { IsClosing: true }))
+            return;
 
         // In-game traffic (movement, combat, …) is the overwhelming majority, and its
         // handlers are singleton coordinators that scope their own DB work. Skip the
@@ -105,7 +120,7 @@ public class GamePacketHandler(
                     return;
                 }
                 var preGameService = scope.ServiceProvider.GetRequiredService<IPreGameService>();
-                var response = await preGameService.LoginAsync(packet.ReadString(), packet.ReadString());
+                var response = await preGameService.LoginAsync(packet.ReadString(), packet.ReadString(), LoginThrottle.AddressOf(client));
                 await HandleLoginAsync(client, response);
                 return;
             }
@@ -167,7 +182,7 @@ public class GamePacketHandler(
         var login = packet.ReadString();
         var password = packet.ReadString();
 
-        var auth = await preGameService.LoginAsync(login, password);
+        var auth = await preGameService.LoginAsync(login, password, LoginThrottle.AddressOf(client));
         if (!auth.Success)
         {
             logger.LogWarning("Rejected kick request for '{Login}' from client {ClientId}", login, client.Id);
@@ -193,10 +208,32 @@ public class GamePacketHandler(
         return packet.GetData()[0] is (byte)AllCharacterInfoOpcode.ArrangeOpen or (byte)AllCharacterInfoOpcode.ArrangeReceive;
     }
 
-    private async Task HandleInGamePacket(
-        IClient client,
-        Packet packet,
-        GameOpcodes opcode)
+    private async Task HandleInGamePacket(IClient client, Packet packet, GameOpcodes opcode)
+    {
+        var session = sessionManager.GetByClientId(client.Id);
+        if (session == null)
+        {
+            await DispatchInGameAsync(client, packet, opcode);
+            return;
+        }
+
+        await session.PacketGate.WaitAsync();
+        try
+        {
+            // A close that began while this packet waited has already saved the session for the last time.
+            if (session.IsClosing)
+                return;
+
+            using (PacketTurn.Of(session))
+                await DispatchInGameAsync(client, packet, opcode);
+        }
+        finally
+        {
+            session.PacketGate.Release();
+        }
+    }
+
+    private async Task DispatchInGameAsync(IClient client, Packet packet, GameOpcodes opcode)
     {
         switch (opcode)
         {
@@ -243,13 +280,23 @@ public class GamePacketHandler(
 
         if (subOpcode == 1)
         {
-            session = await gameSessionInitializer.InitializeAsync(client);
+            if (sessionManager.GetByClientId(client.Id) != null)
+                return;
+
+            session = await InitializeOwnedAsync(client, gameSessionInitializer);
             if (session == null)
                 return;
 
             logger.LogDebug(
                 "GameStart subOp=1: {Name} (id={Id}) entered zone={Zone} pos=({X},{Z}) region=({RX},{RZ})",
                 session.Name, session.CharacterId, session.ZoneId, session.X, session.Z, session.RegionX, session.RegionZ);
+        }
+
+        if (subOpcode == 2)
+        {
+            session = sessionManager.GetByClientId(client.Id) ?? await InitializeOwnedAsync(client, gameSessionInitializer);
+            if (session == null || !session.TryBeginGame())
+                return;
         }
 
         var responses = await preGameService.GameStartAsync(client.CharacterId, client.AccountId, subOpcode, session);
@@ -268,12 +315,8 @@ public class GamePacketHandler(
             }
         }
 
-        if (subOpcode == 2)
+        if (subOpcode == 2 && session != null)
         {
-            session ??= sessionManager.GetByClientId(client.Id) ?? await gameSessionInitializer.InitializeAsync(client);
-            if (session == null)
-                return;
-
             logger.LogDebug(
                 "GameStart subOp=2: {Name} (id={Id}) ready in zone={Zone} pos=({X},{Z}) region=({RX},{RZ}) — broadcasting Respawn",
                 session.Name, session.CharacterId, session.ZoneId, session.X, session.Z, session.RegionX, session.RegionZ);
@@ -296,6 +339,17 @@ public class GamePacketHandler(
             if (session.Hp <= 0)
                 await SendReconnectDeathStateAsync(session);
         }
+    }
+
+    // A kick that lands while the character loads leaves no session behind.
+    private async Task<UserSession?> InitializeOwnedAsync(IClient client, IGameSessionInitializer gameSessionInitializer)
+    {
+        var session = await gameSessionInitializer.InitializeAsync(client);
+        if (session == null || accountLockService.Owns(client))
+            return session;
+
+        sessionManager.RemoveSession(session);
+        return null;
     }
 
     private static async Task SendReconnectDeathStateAsync(UserSession session)

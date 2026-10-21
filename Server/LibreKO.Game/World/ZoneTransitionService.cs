@@ -24,7 +24,10 @@ public class ZoneTransitionService(
     InstanceRoomRegistry instanceRooms,
     IPetService petService,
     ILogger<ZoneTransitionService> logger,
-    IPartyPacketCoordinator? partyCoordinator = null) : IZoneTransitionService
+    IPartyPacketCoordinator? partyCoordinator = null,
+    IMerchantLifecycleService? merchantLifecycle = null,
+    TimeProvider? timeProvider = null,
+    IMiningPacketCoordinator? mining = null) : IZoneTransitionService
 {
     private const byte ZoneAbilityUpdate = 1;
     private const byte DefaultTariff = 10;
@@ -37,9 +40,10 @@ public class ZoneTransitionService(
     public event Func<UserSession, byte, Task>? PlayerLeavingZone;
     public event Func<UserSession, Task>? ZoneAbilitySent;
 
+    // A merchant bot stays where its stall was set up.
     public async Task ChangeZoneAsync(UserSession session, byte newZone, float x, float z)
     {
-        if (session.IsWarping)
+        if (session.IsWarping || session.IsBot)
             return;
 
         if (ZoneRules.BarsReborn(newZone) && session.RebirthLevel > 0 && !session.IsGM)
@@ -47,6 +51,14 @@ public class ZoneTransitionService(
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, RebornBarredNotice));
             return;
         }
+
+        if (session.IsGathering && mining != null)
+            await mining.StopGatheringAsync(session);
+
+        // Leaving the zone closes a stall, its held gold included.
+        if (session.ZoneId != newZone && merchantLifecycle != null
+            && (session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.Trade.BuyMerchantGold > 0))
+            await merchantLifecycle.CloseAsync(session, MerchantInOut.StallClosed);
 
         if (session.ZoneId != newZone && PlayerLeavingZone is { } leaving)
         {
@@ -79,9 +91,8 @@ public class ZoneTransitionService(
         session.Ground = GroundEffect.None;
         session.X = x;
         session.Z = z;
+        MovePace.Placed(session, (timeProvider ?? TimeProvider.System).GetUtcNow().UtcTicks);
         session.Y = ResolveTargetHeight(newZone, x, z);
-        session.SpeedLastX = 0f;
-        session.SpeedLastZ = 0f;
         session.Quest.BindPoint = -1;
 
         logger.LogDebug("ZoneChange for {Name}: zone={Zone} X={X} Z={Z} Y={Y} PosX={PosX} PosZ={PosZ} PosY={PosY}",

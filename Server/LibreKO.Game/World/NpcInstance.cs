@@ -317,6 +317,7 @@ public class NpcInstance
 
     public byte SpawnActType { get; set; }
     public short TrapNumber { get; set; }
+    public short SpecialType { get; set; }
     public bool UsesNpcSpawnStyle => SpawnActType >= 100;
     public bool IsAlive => Hp > 0;
     public bool IsNpc => !IsMonster;
@@ -351,8 +352,13 @@ public class NpcInstance
     public int NewRegionX => (int)(X / RegionManager.RegionSize);
     public int NewRegionZ => (int)(Z / RegionManager.RegionSize);
 
+    private int dying;
+
+    public bool TryBeginDeath() => Interlocked.CompareExchange(ref dying, 1, 0) == 0;
+
     public void Respawn()
     {
+        Interlocked.Exchange(ref dying, 0);
         Hp = MaxHp;
         Mp = MaxMp;
         X = SpawnX;
@@ -431,6 +437,7 @@ public class NpcInstance
             NpcType = npc.NpcType,
             SpawnActType = pos.ActType,
             TrapNumber = pos.TrapNumber,
+            SpecialType = pos.SpecialType,
             Group = npc.Group,
             Level = npc.Level,
             MaxHp = npc.Hp,

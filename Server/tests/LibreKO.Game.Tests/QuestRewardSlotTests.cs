@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -13,10 +14,28 @@ namespace LibreKO.Game.Tests;
 
 public class QuestRewardSlotTests
 {
+    private const int StunRow = 110560;
+    private const byte JobLevel = 60;
+    private const byte SpentStrength = 200;
     private const int Filler = 700_000_000;
     private const int Reward = 123;
     private const int BackHalfSlot = 20;
     private const int NoFreeSlot = -1;
+    private const short Warrior = 101;
+    private const byte Kurian = (byte)JobChangeTarget.Kurian;
+    private const int Token = JobChangeRules.MasterChangeScroll;
+    private const ushort Held = 50;
+    private const ushort Given = 10;
+    private const int RentalHours = 24;
+    private const long RentalEnds = 4_102_444_800;
+    private const int Purse = 1000;
+    private const int Fee = 100;
+    private const int Ore = 389_043_000;
+    private const byte OreType = 2;
+    private const short Pitman = 31511;
+    private const int EveryTime = 10000 * 5;
+    private const ushort Ores = 2;
+    private const ushort AlmostFullStack = InventoryConstants.MaxStackCount - 1;
 
     private readonly IGameDataService data = Substitute.For<IGameDataService>();
     private readonly UserSession session;
@@ -81,15 +100,177 @@ public class QuestRewardSlotTests
     [Fact]
     public void AJobChangeTokenInTheBackHalfOfTheBagNamesThatSlot()
     {
-        session.Class = 101;
+        session.Class = Warrior;
         session.Race = 1;
         session.Nation = AccountNation.Karus;
         Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
 
-        context.Character.JobChange(0, changeType: 0, newJob: 5).Should().BeTrue();
+        context.Character.JobChange(0, changeType: 0, newJob: Kurian).Should().BeTrue();
 
         CountChangePositions().Should().Equal((byte)BackHalfSlot);
     }
+
+    [Fact]
+    public void AQuestJobChangeResetsTheStatsAndIsSavedWithItsRace()
+    {
+        session.Class = Warrior;
+        session.Race = 1;
+        session.Nation = AccountNation.Karus;
+        session.Level = JobLevel;
+        session.Strength = SpentStrength;
+        session.StatPoints = 0;
+        Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
+
+        context.Character.JobChange(0, changeType: 0, newJob: Kurian).Should().BeTrue();
+
+        session.StatPoints.Should().Be(ProgressionTable.StatPointsForLevel(JobLevel), "a new job starts from its own base stats, as the packet path does");
+        session.Strength.Should().NotBe(SpentStrength);
+        var row = new Character();
+        new UserSessionCharacterMapper().ApplyToCharacter(session, row);
+        row.Race.Should().Be(session.Race, "the next save writes the race the job changed");
+        row.Class.Should().Be(session.Class);
+    }
+
+    public enum Tie { Trading, Stunned, Fighting }
+
+    [Theory]
+    [InlineData(Tie.Trading)]
+    [InlineData(Tie.Stunned)]
+    [InlineData(Tie.Fighting)]
+    public void APlayerTiedUpKeepsTheTokenAndTheJobAQuestWouldChange(Tie tie)
+    {
+        session.Class = Warrior;
+        session.Race = 1;
+        session.Nation = AccountNation.Karus;
+        switch (tie)
+        {
+            case Tie.Trading:
+                session.Trade.ExchangeUser = session.CharacterId + 1;
+                break;
+            case Tie.Stunned:
+                session.SetBuff(StunRow, new ActiveBuff
+                {
+                    MagicId = StunRow, CasterId = 1, BuffType = BuffType.Stun, Duration = 2, ExpireTicks = DateTime.UtcNow.AddSeconds(2).Ticks,
+                });
+                break;
+            case Tie.Fighting:
+                session.MarkCombat();
+                break;
+        }
+        Place(BackHalfSlot, JobChangeRules.MasterChangeScroll);
+
+        context.Character.JobChange(0, changeType: 0, newJob: Kurian).Should().BeFalse();
+
+        session.Class.Should().Be(101);
+        Bag(BackHalfSlot).ItemId.Should().Be(JobChangeRules.MasterChangeScroll,
+            "a token offered in a trade is not also spent on a job");
+    }
+
+    [Fact]
+    public void ARentedGiftLeavesThePermanentStackBesideItAlone()
+    {
+        Place(0, Token);
+        Bag(0).Count = Held;
+
+        context.Items.GiveItem(0, Token, Given, RentalHours).Should().BeTrue();
+
+        Bag(0).Count.Should().Be(Held);
+        Bag(0).Expires.Should().BeFalse("a rental reward must not make the tokens the player already owned expire");
+        var rented = session.Inventory.Single(slot => slot.ItemId == Token && slot.Expires);
+        rented.Count.Should().Be(Given);
+        rented.State.Should().Be(ItemFlag.Rented);
+    }
+
+    [Fact]
+    public void APlainGiftDoesNotJoinARentedStack()
+    {
+        Place(0, Token);
+        Bag(0).Count = Held;
+        Bag(0).ExpireInHours(RentalHours, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
+
+        context.Items.GiveItem(0, Token, Given).Should().BeTrue();
+
+        Bag(0).Count.Should().Be(Held, "a lasting reward does not vanish with a rented stack");
+        session.Inventory.Single(slot => slot.ItemId == Token && !slot.Expires).Count.Should().Be(Given);
+    }
+
+    [Fact]
+    public void ARewardDoesNotCountARentedStackAsRoomAndTakesNothing()
+    {
+        FillBagExcept(0);
+        Place(0, Token);
+        Bag(0).ExpiresAt = RentalEnds;
+        session.Money = Purse;
+
+        context.Items.ApplyScriptReward([(InventoryConstants.ItemGold, Fee)], [(Token, 1, 0)]).Should().BeFalse();
+
+        session.Money.Should().Be(Purse, "nothing is taken for a reward that cannot be given");
+        Bag(0).Count.Should().Be(1);
+    }
+
+    [Fact]
+    public void AMiningExchangeDoesNotCountARentedStackAsRoomAndKeepsTheOre()
+    {
+        FillBagExcept(0);
+        Place(0, Token);
+        Bag(0).ExpiresAt = RentalEnds;
+        Place(1, Ore);
+        Bag(1).Count = Ores;
+        data.GetItem(Ore).Returns(new ItemData { Num = Ore, Countable = 1 });
+        data.MiningExchangesByOreNpc.Returns(new[]
+        {
+            new MiningExchangeData
+            {
+                NpcId = Pitman, OreType = OreType, OriginItemNum = Ore, GiveItemNum = Token, GiveItemCount = 1,
+                SuccessRate = EveryTime,
+            },
+        }.ToLookup(entry => (entry.OreType, entry.NpcId)));
+
+        context.Items.RunMiningExchange(0, OreType).Should().BeFalse();
+
+        Bag(1).Count.Should().Be(Ores, "the ore is not taken for a reward that has no room");
+        Bag(0).Count.Should().Be(1);
+    }
+
+    [Fact]
+    public void ARentedRewardDoesNotCountAPlainStackAsRoomAndTakesNothing()
+    {
+        FillBagExcept(0);
+        Place(0, Token);
+        session.Money = Purse;
+
+        context.Items.ApplyScriptReward([(InventoryConstants.ItemGold, Fee)], [(Token, 1, RentalHours)]).Should().BeFalse();
+
+        session.Money.Should().Be(Purse, "a rental needs a slot of its own, and the bag has none");
+        Bag(0).Count.Should().Be(1);
+        Bag(0).Expires.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AMiningExchangeDoesNotCountAStackWithTooLittleRoomAndKeepsTheOre()
+    {
+        FillBagExcept(0);
+        Place(0, Token);
+        Bag(0).Count = AlmostFullStack;
+        Place(1, Ore);
+        Bag(1).Count = Ores;
+        data.GetItem(Ore).Returns(new ItemData { Num = Ore, Countable = 1 });
+        data.MiningExchangesByOreNpc.Returns(new[]
+        {
+            new MiningExchangeData
+            {
+                NpcId = Pitman, OreType = OreType, OriginItemNum = Ore, GiveItemNum = Token, GiveItemCount = (short)Ores,
+                SuccessRate = EveryTime,
+            },
+        }.ToLookup(entry => (entry.OreType, entry.NpcId)));
+
+        context.Items.RunMiningExchange(0, OreType).Should().BeFalse();
+
+        Bag(1).Count.Should().Be(Ores, "the ore is not taken for a reward the stack cannot hold");
+        Bag(0).Count.Should().Be(AlmostFullStack);
+    }
+
+    private ItemSlot Bag(int bagSlot) => session.Inventory[InventoryConstants.InventoryStart + bagSlot];
 
     private void Place(int bagSlot, int itemId)
     {

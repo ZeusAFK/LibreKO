@@ -44,6 +44,8 @@ public class Account : Entity
         return remaining <= 0 ? (short)0 : (short)Math.Min(remaining, short.MaxValue);
     }
 
+    public const int MaxLoginLength = 50;
+
     internal class EntityConfiguration : IEntityTypeConfiguration<Account>
     {
         public void Configure(EntityTypeBuilder<Account> builder)
@@ -51,7 +53,7 @@ public class Account : Entity
 
             builder.HasKey(a => a.Id);
 
-            builder.Property(a => a.Login).IsRequired().HasMaxLength(50);
+            builder.Property(a => a.Login).IsRequired().HasMaxLength(MaxLoginLength);
             builder.Property(a => a.Password).IsRequired().HasMaxLength(255);
             builder.Property(a => a.Authority).IsRequired().HasConversion<string>();
             builder.Property(a => a.Nation).IsRequired().HasConversion<string>();

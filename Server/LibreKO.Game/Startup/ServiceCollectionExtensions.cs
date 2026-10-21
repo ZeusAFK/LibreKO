@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddPreGameServices(this IServiceCollection services)
     {
         services.AddScoped<IPreGameService, PreGameService>();
+        services.AddSingleton<LoginThrottle>();
         services.AddScoped<IPreGamePacketCoordinator, PreGamePacketCoordinator>();
         services.AddScoped<IGameSessionInitializer, GameSessionInitializer>();
         return services;
@@ -77,7 +78,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMailService, MailService>();
         services.AddSingleton<ISpecialAuctionService, SpecialAuctionService>();
         services.AddSingleton<IAttendancePacketCoordinator, AttendancePacketCoordinator>();
-        services.AddSingleton<IBountyPacketCoordinator, BountyPacketCoordinator>();
+        services.AddSingleton<BountyPacketCoordinator>();
+        services.AddSingleton<IBountyPacketCoordinator>(sp => sp.GetRequiredService<BountyPacketCoordinator>());
         services.AddSingleton<ITournamentPacketCoordinator, TournamentPacketCoordinator>();
         services.AddSingleton<IMessengerPacketCoordinator, MessengerPacketCoordinator>();
         services.AddSingleton<IForcesPacketCoordinator, ForcesPacketCoordinator>();
@@ -148,6 +150,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INereidMonumentService, NereidMonumentService>();
         services.AddSingleton<IExpSealService, ExpSealService>();
         services.AddSingleton<ICharacterSealService, CharacterSealService>();
+        services.AddSingleton<SealGates>();
         services.AddSingleton<ClanMatchService>();
         services.AddSingleton<IClanMatchService>(sp => sp.GetRequiredService<ClanMatchService>());
         services.AddSingleton<VanguardService>();
@@ -305,6 +308,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService(sp => sp.GetRequiredService<PartyUserVoteService>());
         services.AddHostedService(sp => sp.GetRequiredService<PartyWarBoardService>());
         services.AddHostedService(sp => sp.GetRequiredService<PartySignalService>());
+        services.AddHostedService(sp => sp.GetRequiredService<BountyPacketCoordinator>());
         services.AddHostedService<ItemExpiryService>();
         services.AddHostedService<QuestAvailabilityService>();
         services.AddHostedService<HpMpRegenService>();

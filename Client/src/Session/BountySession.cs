@@ -10,7 +10,11 @@ public sealed class BountySession
 
     internal void RaiseBountyPost(bool value) => BountyPostEvent?.Invoke(value);
 
-    public event Action<int, bool>? BountyClaimEvent;
+    public event Action<BountyOutcome>? BountyClaimEvent;
 
-    internal void RaiseBountyClaim(int arg1, bool arg2) => BountyClaimEvent?.Invoke(arg1, arg2);
+    internal void RaiseBountyClaim(BountyOutcome outcome) => BountyClaimEvent?.Invoke(outcome);
+
+    public event Action<BountyOutcome>? BountyWithdrawEvent;
+
+    internal void RaiseBountyWithdraw(BountyOutcome outcome) => BountyWithdrawEvent?.Invoke(outcome);
 }

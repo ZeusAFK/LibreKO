@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
 using LibreKO.Game.World;
@@ -47,6 +47,27 @@ public class InventoryPersistenceTests
         slots[0].Durability.Should().Be(150);
         slots[0].Count.Should().Be(2);
         slots[0].State.Should().Be(ItemFlag.Unsealed);
+    }
+
+    [Fact]
+    public void ACountSavedInAnEmptySlotIsNotLoaded()
+    {
+        var saved = NewSlots(3);
+        saved[1].Count = 3;
+        saved[1].Durability = 1;
+        saved[1].Flag = (byte)ItemFlag.Bound;
+        saved[2].ItemId = PlainSword;
+        saved[2].Count = 1;
+
+        var loaded = NewSlots(3);
+        UserSessionBinaryState.LoadSlots(loaded, UserSessionBinaryState.SerializeSlots(saved));
+
+        loaded[1].IsEmpty.Should().BeTrue();
+        loaded[1].Count.Should().Be(0, "a count with no item is the leftover of the C6 trade dupe");
+        loaded[1].Durability.Should().Be(0);
+        loaded[1].Flag.Should().Be(0);
+        loaded[2].ItemId.Should().Be(PlainSword);
+        loaded[2].Count.Should().Be(1);
     }
 
     [Fact]

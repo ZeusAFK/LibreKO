@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
@@ -12,6 +13,8 @@ namespace LibreKO.Game.Tests;
 public class MerchantBotTests : GameTestBase
 {
     private const int ItemId = 379080000;
+    private const long RentalEnds = 4_102_444_800;
+    private const int SealedCharacter = 4242;
 
     [Fact]
     public async Task GmOpeningSellingMerchant_AutomaticallyClonesToBotSession_AndReleasesGm()
@@ -70,6 +73,42 @@ public class MerchantBotTests : GameTestBase
         bot.Trade.MerchantItems[0]!.ItemId.Should().Be(ItemId);
         bot.Trade.MerchantItems[0]!.Count.Should().Be(5);
         bot.Trade.MerchantItems[0]!.Price.Should().Be(1000);
+    }
+
+    [Fact]
+    public async Task AGmStallCloneKeepsEachItemsStateAndExpiryAndLeavesOutLinkedItems()
+    {
+        using var provider = Provider();
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var botService = provider.GetRequiredService<IMerchantBotService>();
+        var gm = CreatePlayer(sessionManager, characterId: 1003, accountId: 2003, out _);
+        gm.IsGM = true;
+        gm.Trade.IsSellingMerchantPreparing = true;
+        gm.Trade.MerchantItems[0] = new MerchantItem
+        {
+            ItemId = ItemId, Count = 1, Price = 500, OriginalSlot = InventoryConstants.InventoryStart,
+            Flag = (byte)ItemFlag.NotBound, ExpiresAt = RentalEnds,
+        };
+        gm.Trade.MerchantItems[1] = new MerchantItem
+        {
+            ItemId = InventoryConstants.CypherRing, Count = 1, Price = 500, OriginalSlot = InventoryConstants.InventoryStart + 1,
+            UniqueId = SealedCharacter,
+        };
+
+        var insertPacket = new Packet(GameOpcodes.GS_MERCHANT);
+        insertPacket.WriteString("Clone Stall");
+        await provider.GetRequiredService<IMerchantLifecycleService>().InsertAsync(gm, insertPacket);
+        var clone = sessionManager.GetAll().OfType<BotSession>().Single();
+        clone.Inventory[clone.Trade.MerchantItems[0]!.OriginalSlot].ExpiresAt.Should().Be(RentalEnds);
+        await botService.SaveActiveBotsAsync();
+        await botService.ClearAllBotsAsync();
+        await botService.LoadAllBotsAsync();
+
+        var bot = sessionManager.GetAll().OfType<BotSession>().Single();
+        bot.Trade.MerchantItems[0]!.ExpiresAt.Should().Be(RentalEnds);
+        bot.Trade.MerchantItems[0]!.Flag.Should().Be((byte)ItemFlag.NotBound);
+        bot.Inventory[bot.Trade.MerchantItems[0]!.OriginalSlot].ExpiresAt.Should().Be(RentalEnds);
+        bot.Trade.MerchantItems[1].Should().BeNull("a clone cannot copy another character's sealed ring");
     }
 
     [Fact]
@@ -223,7 +262,7 @@ public class MerchantBotTests : GameTestBase
 
         // Real buyer arrives with money
         var buyer = CreatePlayer(sessionManager, characterId: 2001, accountId: 3001, out _, money: 1000);
-        buyer.Trade.MerchantTargetUserId = bot.CharacterId;
+        buyer.Trade.LookAt(bot.CharacterId, bot.Trade.StallGeneration);
 
         // Buyer buys 2 units of ItemId from slot 0
         var buyPacket = new Packet(GameOpcodes.GS_MERCHANT);

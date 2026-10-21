@@ -19,6 +19,7 @@ public interface IItemInventoryRuleService
         out int destinationIndex);
     bool TryResolveRemoveIndex(byte type, byte position, out int absoluteIndex, out bool affectsEquipment);
     bool IsEquipmentChange(ItemMoveDirection direction);
+    bool TakesDisplaced(UserSession session, ItemMoveDirection direction, byte sourcePosition, ItemData? displaced);
     int GetItemLeavingEquipment(ItemMoveDirection direction, int sourceItemId, int destinationItemId);
     int GetItemEnteringEquipment(ItemMoveDirection direction, int sourceItemId, int destinationItemId);
     bool TryGetCospreVisualSlot(byte cosprePosition, out byte visualSlot);
@@ -285,6 +286,18 @@ public class ItemInventoryRuleService(IGameDataService gameDataService) : IItemI
 
         return visualSlot != byte.MaxValue;
     }
+
+    public bool TakesDisplaced(UserSession session, ItemMoveDirection direction, byte sourcePosition, ItemData? displaced) =>
+        direction switch
+        {
+            ItemMoveDirection.SlotToInventory or ItemMoveDirection.SlotToSlot =>
+                displaced != null
+                && IsValidEquipmentDestination(session, displaced, sourcePosition)
+                && EquipRequirements.Check(session, displaced) == EquipRefusal.None,
+            ItemMoveDirection.CospreToInventory => displaced != null && IsValidCospreDestination(displaced, sourcePosition),
+            ItemMoveDirection.BagSlotToInventory => displaced?.Slot == ItemSlotBag,
+            _ => true,
+        };
 
     private bool IsValidEquipmentDestination(UserSession session, ItemData itemData, byte destinationPosition)
     {

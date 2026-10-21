@@ -42,7 +42,10 @@ public class CombatLifecycleService(
     IVanguardService vanguardService,
     IWarCaptainService warCaptainService,
     IClanMatchService clanMatchService,
-    ILogger<CombatLifecycleService> logger) : ICombatLifecycleService
+    IBountyPacketCoordinator bountyPacketCoordinator,
+    IMerchantLifecycleService merchantLifecycleService,
+    ILogger<CombatLifecycleService> logger,
+    TimeProvider? timeProvider = null) : ICombatLifecycleService
 {
     public const int NoKillerId = -1;
 
@@ -147,6 +150,7 @@ public class CombatLifecycleService(
 
         session.X = x;
         session.Z = z;
+        MovePace.Placed(session, (timeProvider ?? TimeProvider.System).GetUtcNow().UtcTicks);
 
         await SendRespawnAsync(client, session);
 
@@ -183,6 +187,9 @@ public class CombatLifecycleService(
 
     public async Task HandleNpcDeathAsync(NpcInstance npc, UserSession killer)
     {
+        if (!npc.TryBeginDeath())
+            return;
+
         if (npc.State == NpcState.Sleeping)
             await sessionManager.Regions.BroadcastFromNpc(
                 npc,
@@ -213,15 +220,22 @@ public class CombatLifecycleService(
 
         await combatRewardService.AwardNpcKillAsync(npc, rewardRecipient);
         await petService.AwardKillAsync(npc);
+        await eventSystemsPacketCoordinator.OnBattleNpcKilledAsync(npc, rewardRecipient);
     }
 
     public async Task HandlePlayerDeathAsync(UserSession victim, UserSession? killer)
     {
+        if (victim.IsBot || !victim.TryRecordDeath())
+            return;
+
         if (killer?.CharacterId == victim.CharacterId)
             killer = null;
 
         if (victim.Trade.IsTrading)
             await exchangePacketCoordinator.CancelAsync(victim, isOnDeath: true);
+
+        if (victim.Trade.IsMerchanting || victim.Trade.IsMerchantPreparing || victim.Trade.BuyMerchantGold > 0)
+            await merchantLifecycleService.CloseAsync(victim, MerchantInOut.StallClosed);
 
         await miningPacketCoordinator.StopGatheringAsync(victim);
 
@@ -254,6 +268,9 @@ public class CombatLifecycleService(
 
         var penaltyFree = PvpRules.IsPenaltyFreeDeath(victim, killer);
         var avenged = killer.HasRival && killer.RivalId == victim.CharacterId;
+
+        if (!penaltyFree)
+            bountyPacketCoordinator.RecordKill(victim, killer);
 
         if (killer.Nation != victim.Nation && !penaltyFree)
         {

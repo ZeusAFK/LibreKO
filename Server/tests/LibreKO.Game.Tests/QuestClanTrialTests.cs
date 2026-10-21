@@ -44,6 +44,8 @@ public class QuestClanTrialTests
     private static void Run(QuestProgram program, IQuestHost host, int eventId) =>
         new QuestInterpreter(program, host).Run(eventId).Failure.Should().BeNull();
 
+    private const short MemberHp = 100;
+
     private static UserSession Online(SessionManager sessions, int id, byte zone, short clan, ushort room = 0)
     {
         var client = Substitute.For<IClient>();
@@ -55,6 +57,7 @@ public class QuestClanTrialTests
         session.Room = room;
         session.X = 100f + id;
         session.Z = 200f + id;
+        session.Hp = session.MaxHp = MemberHp;
         return session;
     }
 
@@ -249,6 +252,33 @@ public class QuestClanTrialTests
         mate.InstanceReturn.Should().Be(((byte)ZoneId.ElMoradCamp1, mate.X, mate.Z), "every member goes back to their own spot");
     }
 
+    [Theory]
+    [InlineData(true, false, false)]
+    [InlineData(false, true, false)]
+    [InlineData(false, false, true)]
+    public async Task TheTrialRoomLeavesAPrisonerABusyMemberAndOneUnderNoRecall(bool inPrison, bool trading, bool noRecall)
+    {
+        var sessions = new SessionManager();
+        const short Knights = 7;
+        var chief = Online(sessions, 1, (byte)ZoneId.Moradon, Knights);
+        var mate = Online(sessions, 2, inPrison ? (byte)ZoneId.Prison : (byte)ZoneId.Moradon, Knights);
+        if (trading)
+            mate.Trade.ExchangeUser = chief.CharacterId;
+        mate.CanTeleport = !noRecall;
+        var transitions = Substitute.For<IZoneTransitionService>();
+        var gameData = Substitute.For<IGameDataService>();
+        gameData.NpcPositions.Returns(new List<NpcPosData>());
+        var registry = new InstanceRoomRegistry(sessions, Substitute.For<ILogger<InstanceRoomRegistry>>());
+        var service = new InstanceEntryService(
+            sessions, gameData, Substitute.For<IMonsterAggressionPolicy>(), transitions, registry,
+            Substitute.For<ILogger<InstanceEntryService>>());
+
+        await service.EnterClanAsync(chief, (byte)Coliseum, TrialSet, 150, 150);
+
+        await transitions.DidNotReceive().ChangeZoneAsync(mate, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
+        mate.Room.Should().Be(0);
+    }
+
     [Fact]
     public async Task TwoClansGetTwoRoomsWithTheirOwnBoss()
     {
@@ -330,6 +360,7 @@ public class QuestClanTrialTests
         var alreadyThere = Online(sessions, 3, (byte)Coliseum, Knights);
         var atWar = Online(sessions, 4, (byte)ZoneId.BorderDefenseWar, Knights);
         var stranger = Online(sessions, 5, (byte)ZoneId.Moradon, 8);
+        var prisoner = Online(sessions, 6, (byte)ZoneId.Prison, Knights);
 
         var gameData = Substitute.For<IGameDataService>();
         gameData.ZoneInfoTable.Returns(new Dictionary<short, ZoneInfoData>
@@ -351,6 +382,7 @@ public class QuestClanTrialTests
             Substitute.For<ILogger<ScriptEffectApplier>>());
         await applier.ApplyAsync(chief, context, "trial.quest");
 
+        await transitions.DidNotReceive().ChangeZoneAsync(prisoner, Arg.Any<byte>(), Arg.Any<float>(), Arg.Any<float>());
         await transitions.Received(1).ChangeZoneAsync(chief, (byte)Coliseum, 150, 150);
         await transitions.Received(1).ChangeZoneAsync(mate, (byte)Coliseum, 150, 150);
         await movement.Received(1).WarpAsync(alreadyThere, 1500, 1500);

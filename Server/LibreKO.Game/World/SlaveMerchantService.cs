@@ -130,12 +130,12 @@ public class SlaveMerchantService(
             HeartbeatAt = now,
         };
 
-        var journal = new InventoryJournal(owner);
+        var journal = new InventoryJournal(owner, logger);
         var hoursLeft = 0;
         var outcome = await statePersister.CommitAsync(owner, async db =>
         {
             var time = await db.SlaveMerchantTimes.FindAsync(owner.CharacterId);
-            if (time == null || time.Hours < 1 || !owner.WithLock(active => Take(active, staged, journal)))
+            if (time == null || time.Hours < 1 || !journal.Apply(active => Take(active, staged, journal)))
                 return false;
 
             time.Hours--;
@@ -273,18 +273,23 @@ public class SlaveMerchantService(
         await owner.Client.SendPacket(SlaveMerchantPacketWriter.Status(open: false, hours, held?.EarnedNoah ?? 0, Lines(items)));
     }
 
+    // Items reach or leave the bag only while it is not tied up in a trade, an open stall or gathering.
+    private static bool BagIsFree(UserSession owner) =>
+        !owner.Trade.IsTrading && !owner.Trade.IsMerchanting && !owner.IsGathering;
+
     public async Task CollectAsync(UserSession owner)
     {
         await gate.WaitAsync();
         try
         {
-            if (activeByOwner.TryGetValue(owner.CharacterId, out var bot) && !await CloseAsync(bot, closing: null))
+            if (!BagIsFree(owner)
+                || activeByOwner.TryGetValue(owner.CharacterId, out var bot) && !await CloseAsync(bot, closing: null))
             {
                 await owner.Client.SendPacket(SlaveMerchantPacketWriter.CollectFailed());
                 return;
             }
 
-            var journal = new InventoryJournal(owner);
+            var journal = new InventoryJournal(owner, logger);
             var tally = new CollectTally();
             var outcome = await statePersister.CommitAsync(owner, async db =>
             {
@@ -292,7 +297,7 @@ public class SlaveMerchantService(
                 if (held.Count == 0)
                     return false;
 
-                owner.WithLock(active => TakeHome(active, held, journal, tally, db));
+                journal.Apply(active => TakeHome(active, held, journal, tally, db));
                 return true;
             }, () => owner.WithLock(_ => journal.Restore()));
 
@@ -359,25 +364,20 @@ public class SlaveMerchantService(
 
     private bool GiveBack(UserSession owner, StoredItem item, InventoryJournal journal)
     {
-        var destination = owner.FindSlotForItem(item.ItemId, gameDataService, item.Count);
+        if (gameDataService.GetItem(item.ItemId) is not { } itemData)
+            return false;
+
+        var returned = new ExchangeItem
+        {
+            ItemId = item.ItemId, Count = item.Count, Durability = item.Durability, Flag = item.Flag,
+            ExpiresAt = item.ExpiresAt, UniqueId = item.UniqueId, Countable = itemData.Countable != 0,
+        };
+        var destination = ItemPlacement.FindForDelivery(
+            owner.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, returned);
         if (destination < 0)
             return false;
 
-        var slot = journal.Slot(destination);
-        if (slot.IsEmpty)
-        {
-            slot.ItemId = item.ItemId;
-            slot.Count = item.Count;
-            slot.Durability = item.Durability;
-            slot.Flag = item.Flag;
-            slot.ExpiresAt = item.ExpiresAt;
-            slot.UniqueId = item.UniqueId;
-        }
-        else
-        {
-            slot.Count += item.Count;
-        }
-
+        ItemPlacement.Put(journal.Slot(destination), returned);
         return true;
     }
 
@@ -388,13 +388,13 @@ public class SlaveMerchantService(
         {
             var added = HoursOf(itemId);
             var slotIndex = InventoryConstants.InventoryStart + bagPosition;
-            var journal = new InventoryJournal(owner);
+            var journal = new InventoryJournal(owner, logger);
             var hours = 0;
-            var outcome = added == 0 || bagPosition >= InventoryConstants.HaveMax
+            var outcome = added == 0 || bagPosition >= InventoryConstants.HaveMax || !BagIsFree(owner)
                 ? StateCommit.Unchanged
                 : await statePersister.CommitAsync(owner, async db =>
                 {
-                    if (!owner.WithLock(_ => TakeOne(owner, slotIndex, itemId, journal)))
+                    if (!journal.Apply(_ => TakeOne(owner, slotIndex, itemId, journal)))
                         return false;
 
                     hours = await AddHoursAsync(db, owner.CharacterId, added);
@@ -725,6 +725,9 @@ public class SlaveMerchantService(
             Price = item.Price,
             Durability = item.Durability,
             OriginalSlot = (byte)bagSlot,
+            Flag = item.Flag,
+            ExpiresAt = item.ExpiresAt,
+            UniqueId = item.UniqueId,
         };
     }
 

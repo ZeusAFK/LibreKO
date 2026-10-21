@@ -2,6 +2,7 @@
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
+using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.World;
 using NSubstitute;
@@ -20,7 +21,7 @@ public class MagicSecondTypeTests
         var (execution, combat, status, movement) = CreateExecutionService();
         var magic = new MagicData { Id = SkillId, Type1 = 3, Type2 = 4 };
 
-        await execution.ExecuteAsync(null!, magic, SkillId, TargetId, new int[7]);
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
 
         await combat.Received(1).ExecuteAsync(
             Arg.Any<UserSession>(), magic, MagicSkillType.OverTime, SkillId, TargetId, Arg.Any<int[]>());
@@ -35,7 +36,7 @@ public class MagicSecondTypeTests
         var (execution, combat, status, _) = CreateExecutionService();
         var magic = new MagicData { Id = SkillId, Type1 = 1, Type2 = 0 };
 
-        await execution.ExecuteAsync(null!, magic, SkillId, TargetId, new int[7]);
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
 
         await combat.Received(1).ExecuteAsync(
             Arg.Any<UserSession>(), magic, MagicSkillType.Melee, SkillId, TargetId, Arg.Any<int[]>());
@@ -48,7 +49,7 @@ public class MagicSecondTypeTests
         var (execution, combat, status, _) = CreateExecutionService();
         var magic = new MagicData { Id = SkillId, Type1 = 6, Type2 = 4 };
 
-        await execution.ExecuteAsync(null!, magic, SkillId, TargetId, new int[7]);
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
 
         await status.Received(1).ExecuteAsync(
             Arg.Any<UserSession>(), magic, MagicSkillType.Transform, SkillId, TargetId, Arg.Any<int[]>(), true);
@@ -56,6 +57,35 @@ public class MagicSecondTypeTests
             Arg.Any<UserSession>(), magic, MagicSkillType.Buff, SkillId, TargetId, Arg.Any<int[]>(), false);
         await combat.DidNotReceiveWithAnyArgs().ExecuteAsync(default!, default!, 0, 0, 0, default!);
     }
+
+    [Fact]
+    public async Task ADamageOverTimeSecondTypeIsToldItIsTheSecond()
+    {
+        var (execution, combat, _, _) = CreateExecutionService();
+        var magic = new MagicData { Id = SkillId, Type1 = 2, Type2 = 3 };
+
+        await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
+
+        await combat.Received(1).ExecuteAsync(
+            Arg.Any<UserSession>(), magic, MagicSkillType.Ranged, SkillId, TargetId, Arg.Any<int[]>(), true);
+        await combat.Received(1).ExecuteAsync(
+            Arg.Any<UserSession>(), magic, MagicSkillType.OverTime, SkillId, TargetId, Arg.Any<int[]>(), false);
+    }
+
+    [Fact]
+    public async Task AFirstTypeThatIsRefusedRunsNothingElse()
+    {
+        var (execution, combat, status, _) = CreateExecutionService();
+        combat.ExecuteAsync(default!, default!, default, default, default, default!).ReturnsForAnyArgs(false);
+        var magic = new MagicData { Id = SkillId, Type1 = 3, Type2 = 4 };
+
+        var tookEffect = await execution.ExecuteAsync(Caster(), magic, SkillId, TargetId, new int[7]);
+
+        tookEffect.Should().BeFalse();
+        await status.DidNotReceiveWithAnyArgs().ExecuteAsync(default!, default!, 0, 0, 0, default!);
+    }
+
+    private static UserSession Caster() => new(Substitute.For<IClient>(), characterId: 7, accountId: 7);
 
     private static (IMagicExecutionService Execution,
                     IMagicCombatEffectService Combat,
@@ -65,6 +95,9 @@ public class MagicSecondTypeTests
         var combat = Substitute.For<IMagicCombatEffectService>();
         var status = Substitute.For<IMagicStatusEffectService>();
         var movement = Substitute.For<IMagicMovementEffectService>();
+        combat.ExecuteAsync(default!, default!, default, default, default, default!).ReturnsForAnyArgs(true);
+        status.ExecuteAsync(default!, default!, default, default, default, default!, default).ReturnsForAnyArgs(true);
+        movement.ExecuteAsync(default!, default!, default, default, default!).ReturnsForAnyArgs(true);
 
         var gameData = Substitute.For<IGameDataService>();
         gameData.MagicType1Table.Returns(new Dictionary<int, MagicType1Data> { [SkillId] = new() { Id = SkillId } });

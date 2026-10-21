@@ -29,7 +29,7 @@ public class GameSessionInitializer(
 
         var character = await characterRepository.GetById(client.CharacterId);
         var account = await accountRepository.GetById(client.AccountId);
-        if (character == null || account == null)
+        if (character == null || account == null || character.Sealed)
             return null;
 
         var originalZoneId = character.MapId;

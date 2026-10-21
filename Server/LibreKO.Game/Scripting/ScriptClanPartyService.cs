@@ -54,7 +54,7 @@ public class ScriptClanPartyService(
 
         var clan = GetClan();
         if (clan != null)
-            clan.ClanPointFund = Math.Max(0, clan.ClanPointFund - amount);
+            ClanRules.AddToFund(clan, -amount);
     }
 
     public bool GiveClanPremium(int _uid, int days)

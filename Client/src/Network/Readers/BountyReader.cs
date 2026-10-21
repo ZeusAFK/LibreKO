@@ -28,7 +28,8 @@ internal sealed class BountyReader : IPacketReader
                 string target = p.ReadSByteString();
                 string poster = p.ReadSByteString();
                 int reward = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
-                list.Add(new BountyEntry { Id = id, Target = target, Poster = poster, Reward = reward });
+                var standing = p.RemainingBytes >= 1 ? (BountyStanding)p.ReadByte() : BountyStanding.Open;
+                list.Add(new BountyEntry { Id = id, Target = target, Poster = poster, Reward = reward, Standing = standing });
             }
             bounty.RaiseBountyList(list);
         }
@@ -41,7 +42,13 @@ internal sealed class BountyReader : IPacketReader
         {
             bool ok = p.RemainingBytes >= 1 && (BountyResult)p.ReadByte() == BountyResult.Succeeded;
             int bountyId = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
-            bounty.RaiseBountyClaim(bountyId, ok);
+            bounty.RaiseBountyClaim(new BountyOutcome(bountyId, ok));
+        }
+        else if (sub == BountySubOpcode.Withdraw)
+        {
+            bool ok = p.RemainingBytes >= 1 && (BountyResult)p.ReadByte() == BountyResult.Succeeded;
+            int bountyId = p.RemainingBytes >= 4 ? p.ReadInt() : 0;
+            bounty.RaiseBountyWithdraw(new BountyOutcome(bountyId, ok));
         }
     }
 }

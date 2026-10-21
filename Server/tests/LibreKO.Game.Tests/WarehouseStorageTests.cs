@@ -47,6 +47,7 @@ public class WarehouseStorageTests : GameTestBase
             .Returns(Task.CompletedTask);
 
         var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 72, accountId: 82);
+        session.Hp = 100;
         session.Inventory[InventoryConstants.SlotMax].ItemId = itemId;
         session.Inventory[InventoryConstants.SlotMax].Count = 1;
         session.Inventory[InventoryConstants.SlotMax].Durability = 50;
@@ -59,6 +60,7 @@ public class WarehouseStorageTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteByte(0);
         packet.WriteInt(1);
+        StandAtWarehouseKeeper(provider, client);
         await provider.GetRequiredService<IWarehousePacketCoordinator>().HandleAsync(client, packet);
 
         var reply = sent.Single(p => p.GetOpcode() == (byte)GameOpcodes.GS_WAREHOUSE);

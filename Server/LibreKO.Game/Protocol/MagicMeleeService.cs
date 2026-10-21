@@ -17,14 +17,14 @@ public class MagicMeleeService(
     private const float AreaReach = 6f;
     private const short AreaStruckFlag = 1;
 
-    public async Task ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
+    public async Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType1Table, magic, skillId, out var type1Data))
         {
             logger.LogWarning("Type1 TryResolve FAILED: {Name} skill={SkillId} etc={Etc} tableCount={Count}",
                 caster.Name, skillId, magic.Etc, gameDataService.MagicType1Table.Count);
             await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-            return;
+            return false;
         }
 
         int finalDamage;
@@ -33,7 +33,7 @@ public class MagicMeleeService(
             if (type1Data.HitType != 0)
             {
                 await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-                return;
+                return false;
             }
 
             finalDamage = await StrikeAreaAsync(caster, type1Data, data);
@@ -48,7 +48,7 @@ public class MagicMeleeService(
                 if (!PvpRules.CanAttackPlayer(caster, target))
                 {
                     await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-                    return;
+                    return false;
                 }
 
                 finalDamage = await StrikePlayerAsync(caster, type1Data, target);
@@ -63,7 +63,7 @@ public class MagicMeleeService(
                         caster.Name, skillId, targetId,
                         npcTarget != null, npcTarget?.IsAlive, npcTarget?.IsAttackable);
                     await MagicCombatHelper.SendMagicFailAsync(caster, skillId);
-                    return;
+                    return false;
                 }
 
                 finalDamage = await StrikeNpcAsync(caster, type1Data, npcTarget);
@@ -80,6 +80,7 @@ public class MagicMeleeService(
                 targetId,
                 data),
             excludeSender: false);
+        return true;
     }
 
     private async Task<int> StrikeAreaAsync(UserSession caster, MagicType1Data type1Data, int[] data)

@@ -80,8 +80,10 @@ public sealed class ClanMatchService : BackgroundService, IClanMatchService
         shown.Clear();
         int moved = 0;
         foreach (var (clan, team, x, z) in new[] { (a, TeamA, StartAX, StartAZ), (b, TeamB, StartBX, StartBZ) })
-            foreach (var fighter in sessions.GetAll().Where(s => s.KnightsId == clan.Id && s.Hp > 0).Take(MaxFighters).ToList())
+            foreach (var fighter in sessions.GetAll().Where(s => s.KnightsId == clan.Id && s.Hp > 0 && s.MayBeMovedByOthers).Take(MaxFighters).ToList())
             {
+                if (fighter.Hp <= 0 || !fighter.MayBeMovedByOthers)
+                    continue;
                 fighter.MatchTeam = team;
                 moved++;
                 await zones.ChangeZoneAsync(fighter, Zone, x, z);

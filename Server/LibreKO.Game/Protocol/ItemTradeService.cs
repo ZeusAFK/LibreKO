@@ -20,6 +20,7 @@ public class ItemTradeService(
     IUserNotificationService userNotificationService,
     IKingSystemRuntimeService kingSystemRuntimeService) : IItemTradeService
 {
+    public const int RepurchaseNpcId = CharacterDevelopmentPacketCoordinator.GrandMerchantNpcId;
     private const int ItemNoTrade = 900000001;
     private const int LoyaltyMerchantSellingGroup = 249000;
     private const int SaleTypeFull = 1;
@@ -72,8 +73,9 @@ public class ItemTradeService(
             return;
         }
 
+        // A charge item's durability is its uses left, so a repair would refill its charges.
         var itemData = gameDataService.GetItem(itemId);
-        if (itemData == null || itemData.Duration <= 1 || itemData.SellPrice == SaleTypeNoRepair)
+        if (itemData == null || itemData.Duration <= 1 || itemData.SellPrice == SaleTypeNoRepair || itemData.IsChargeItem)
         {
             await SendRepairResponseAsync(session, ItemRepairResult.Failed);
             return;
@@ -135,12 +137,13 @@ public class ItemTradeService(
             var npcId = packet.ReadInt();
 
             var npc = sessionManager.Regions.GetNpc(npcId);
-            if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc) || npc.SellingGroup != sellingGroup)
+            if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc)
+                || !OpensShop(npc) || npc.SellingGroup != sellingGroup)
             {
                 await SendItemTradeErrorAsync(session, ItemTradeRefusal.CannotTrade);
                 return;
             }
-            if (session.Trade.IsTrading)
+            if (session.IsBusy)
             {
                 await SendItemTradeErrorAsync(session, ItemTradeRefusal.CannotTrade);
                 return;
@@ -182,7 +185,8 @@ public class ItemTradeService(
         if (type == 3)
         {
             var destinationPosition = packet.ReadByte();
-            if (position >= InventoryConstants.HaveMax || destinationPosition >= InventoryConstants.HaveMax)
+            if (session.IsBusy
+                || position >= InventoryConstants.HaveMax || destinationPosition >= InventoryConstants.HaveMax)
             {
                 await SendItemTradeErrorAsync(session, ItemTradeRefusal.InventoryFull);
                 return;
@@ -194,7 +198,7 @@ public class ItemTradeService(
             {
                 if (s.Inventory[sourceIndex].ItemId != itemId)
                     return false;
-                SwapItems(s.Inventory[sourceIndex], s.Inventory[destinationIndex]);
+                s.Inventory[sourceIndex].SwapWith(s.Inventory[destinationIndex]);
                 return true;
             });
 
@@ -227,10 +231,10 @@ public class ItemTradeService(
 
         var row = packet.ReadByte();
         var itemId = packet.ReadInt();
-        var npcId = packet.ReadInt();
-        var npc = sessionManager.Regions.GetNpc(npcId);
+        packet.ReadInt();
         var itemData = gameDataService.GetItem(itemId);
-        if (npc == null || !npc.IsAlive || !IsInNpcRange(session, npc) || itemData == null || session.Trade.IsTrading)
+        // The merchant spoken to stands in for the kind the client names.
+        if (!NpcPresence.IsAt(sessionManager, session, RepurchaseNpcId) || itemData == null || session.IsBusy)
         {
             await client.SendPacket(ItemTradePacketWriter.RepurchaseRefused(itemId, RepurchaseGenericError));
             return;
@@ -247,21 +251,18 @@ public class ItemTradeService(
             var price = RepurchaseRules.Price(itemData.BuyPrice, entry.Count);
             if (s.Money < price)
                 return (Error: RepurchaseNoCoins, Slot: 0, Count: (ushort)0, Durability: (short)0, Flag: (byte)0, Price: 0, IsNew: false);
-            var slotIndex = s.FindSlotForItem(itemId, gameDataService, entry.Count);
+            var bought = new ExchangeItem
+            {
+                ItemId = itemId, Count = entry.Count, Durability = entry.Durability, Flag = entry.Flag,
+                Countable = itemData.Countable != 0,
+            };
+            var slotIndex = ItemPlacement.FindForDelivery(s.Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, bought);
             if (slotIndex < 0)
                 return (Error: RepurchaseNoRoom, Slot: 0, Count: (ushort)0, Durability: (short)0, Flag: (byte)0, Price: 0, IsNew: false);
 
             var slot = s.Inventory[slotIndex];
             var isNew = slot.IsEmpty;
-            if (isNew)
-            {
-                slot.ItemId = itemId;
-                slot.Durability = entry.Durability;
-                slot.Flag = entry.Flag;
-                slot.Count = entry.Count;
-            }
-            else
-                slot.Count = (ushort)Math.Min(InventoryConstants.MaxStackCount, slot.Count + entry.Count);
+            ItemPlacement.Put(slot, bought);
             s.Money -= price;
             s.Repurchases.RemoveAt(row);
             s.RecalculateStatsWithBuffs(gameDataService);
@@ -313,14 +314,20 @@ public class ItemTradeService(
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var premiumSeller = NpcSellRules.SellsAtPremium(session,
             session.KnightsId > 0 && sessionManager.Knights.GetClan(session.KnightsId)?.HasPremium == true);
+        static (ItemTradeRefusal Error, int Price, int Money, int Loyalty, byte SellingGroup, bool HasItems) Refuse(
+            ItemTradeRefusal reason) => (reason, 0, 0, 0, 0, false);
+
+        // Every line is checked before any is applied, and the gold is settled once.
         var outcome = session.WithLock(s =>
         {
             if (type == 2 && loyaltyShop)
-                return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                return Refuse(ItemTradeRefusal.CannotTrade);
 
+            var lines = new List<(NpcTradeEntry Entry, ItemData Item)>(entries.Count);
             var usedPositions = new HashSet<byte>();
-            var totalPrice = 0;
-            ItemData? lastItemData = null;
+            var soldFrom = new Dictionary<byte, int>();
+            long totalPrice = 0;
+            long totalWeight = 0;
 
             foreach (var entry in entries)
             {
@@ -328,78 +335,101 @@ public class ItemTradeService(
                 if (itemData == null
                     || entry.Position >= InventoryConstants.HaveMax
                     || entry.Count == 0
-                    || entry.Count > 9999
+                    || entry.Count > InventoryConstants.MaxStackCount
                     || (type == 1 && !usedPositions.Add(entry.Position))
+                    || (type == 1 && !IsOnShopList(npc.SellingGroup, entry))
+                    || (type == 1 && itemData.Countable == 0 && entry.Count != 1)
                     || (type == 2 && (entry.ItemId >= ItemNoTrade || UnsellableRaces.Contains(itemData.Race))))
-                {
-                    return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
-                }
+                    return Refuse(ItemTradeRefusal.CannotTrade);
 
-                var absolutePosition = InventoryConstants.InventoryStart + entry.Position;
+                var slot = s.Inventory[InventoryConstants.InventoryStart + entry.Position];
                 if (type == 1)
                 {
-                    var existingItem = s.Inventory[absolutePosition];
-                    if (!existingItem.IsEmpty)
+                    if (!slot.IsEmpty)
                     {
-                        if (existingItem.ItemId != entry.ItemId || itemData.Countable == 0)
-                            return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                        if (slot.ItemId != entry.ItemId || itemData.Countable == 0 || !slot.IsPlain)
+                            return Refuse(ItemTradeRefusal.CannotTrade);
 
-                        if (existingItem.Count + entry.Count > 9999)
-                            return (Error: ItemTradeRefusal.InventoryFull, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                        if (slot.Count + entry.Count > InventoryConstants.MaxStackCount)
+                            return Refuse(ItemTradeRefusal.InventoryFull);
                     }
 
-                    var entryPrice = checked(itemData.BuyPrice * entry.Count);
-                    if ((loyaltyShop ? s.Loyalty : s.Money) < NpcTariff.WithTax((long)totalPrice + entryPrice, tariff))
-                        return (Error: ItemTradeRefusal.NotEnoughCoins, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
-
-                    var totalWeight = s.Stats.ItemWeight + entries.Sum(candidate =>
-                    {
-                        var data = gameDataService.GetItem(candidate.ItemId);
-                        return data == null ? 0 : data.Weight * candidate.Count;
-                    });
-                    if (totalWeight > s.Stats.MaxWeight)
-                        return (Error: ItemTradeRefusal.InventoryFull, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
-
-                    existingItem.ItemId = entry.ItemId;
-                    existingItem.Durability = itemData.Duration;
-                    existingItem.Count += entry.Count;
-                    totalPrice += entryPrice;
+                    totalPrice += (long)itemData.BuyPrice * entry.Count;
+                    totalWeight += (long)itemData.Weight * entry.Count;
                 }
                 else
                 {
-                    var inventoryItem = s.Inventory[absolutePosition];
-                    if (inventoryItem.ItemId != entry.ItemId || inventoryItem.Count < entry.Count || !inventoryItem.IsTradable)
-                        return (Error: ItemTradeRefusal.CannotTrade, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+                    // Lines selling from the same stack add up against what it holds.
+                    var sold = soldFrom.GetValueOrDefault(entry.Position) + entry.Count;
+                    if (slot.ItemId != entry.ItemId || slot.Count < sold || !slot.IsTradable || slot.IsLinked || slot.Expires)
+                        return Refuse(ItemTradeRefusal.CannotTrade);
 
-                    var entryPrice = SellUnitPrice(itemData, premiumSeller) * entry.Count;
-
-                    totalPrice += entryPrice;
-                    RepurchaseRules.Record(s.Repurchases, inventoryItem, Math.Min(entry.Count, inventoryItem.Count), now);
-
-                    if (entry.Count >= inventoryItem.Count)
-                        inventoryItem.Clear();
-                    else
-                        inventoryItem.Count -= entry.Count;
+                    soldFrom[entry.Position] = sold;
+                    totalPrice += (long)SellUnitPrice(itemData, premiumSeller) * entry.Count;
                 }
 
-                lastItemData = itemData;
+                lines.Add((entry, itemData));
             }
 
-            if (lastItemData == null)
-                return (Error: ItemTradeRefusal.None, Price: 0, Money: 0, Loyalty: 0, SellingGroup: (byte)0, HasItems: false);
+            if (lines.Count == 0)
+                return Refuse(ItemTradeRefusal.None);
 
-            tax = NpcTariff.Tax(totalPrice, tariff);
-            totalPrice += tax;
+            var due = type == 1 ? NpcTariff.WithTax(totalPrice, tariff) : totalPrice;
+            if (type == 1)
+            {
+                if ((loyaltyShop ? s.Loyalty : s.Money) < due)
+                    return Refuse(ItemTradeRefusal.NotEnoughCoins);
+
+                if (s.Stats.ItemWeight + totalWeight > s.Stats.MaxWeight)
+                    return Refuse(ItemTradeRefusal.InventoryFull);
+            }
+            else if (s.Money + due > ExchangePacketConstants.CoinMax)
+            {
+                return Refuse(ItemTradeRefusal.CannotTrade);
+            }
+
+            foreach (var (entry, itemData) in lines)
+            {
+                var slot = s.Inventory[InventoryConstants.InventoryStart + entry.Position];
+                if (type == 1)
+                {
+                    // An empty slot gets its count set, never added to whatever it held before.
+                    if (slot.IsEmpty)
+                    {
+                        slot.Clear();
+                        slot.ItemId = entry.ItemId;
+                        slot.Count = entry.Count;
+                    }
+                    else
+                    {
+                        slot.Count += entry.Count;
+                    }
+
+                    slot.Durability = itemData.Duration;
+                }
+                else
+                {
+                    RepurchaseRules.Record(s.Repurchases, slot, entry.Count, now);
+                    if (entry.Count >= slot.Count)
+                        slot.Clear();
+                    else
+                        slot.Count -= entry.Count;
+                }
+            }
+
+            tax = (int)(due - totalPrice);
+            var price = (int)due;
             if (type == 1 && loyaltyShop)
-                s.Loyalty -= totalPrice;
+                s.Loyalty -= price;
             else if (type == 1)
-                s.Money -= totalPrice;
+                s.Money -= price;
             else
-                s.Money += totalPrice;
+                s.Money += price;
 
             s.RecalculateStatsWithBuffs(gameDataService);
 
-            return (Error: ItemTradeRefusal.None, Price: totalPrice, Money: s.Money, Loyalty: s.Loyalty, SellingGroup: lastItemData.SellingGroup, HasItems: true);
+            return (Error: ItemTradeRefusal.None, Price: price, Money: s.Money, Loyalty: s.Loyalty,
+                SellingGroup: lines[^1].Item.SellingGroup, HasItems: true);
         });
 
         if (outcome.Error != ItemTradeRefusal.None)
@@ -437,8 +467,7 @@ public class ItemTradeService(
         if (kingData == null || string.IsNullOrWhiteSpace(kingData.KingName))
             return;
         var (treasury, territory) = NpcTariff.KingSplit(tax);
-        kingData.NationalTreasury = (int)Math.Min((long)kingData.NationalTreasury + treasury, ExchangePacketConstants.CoinMax);
-        kingData.TerritoryTax = (int)Math.Min((long)kingData.TerritoryTax + territory, ExchangePacketConstants.CoinMax);
+        KingSystemRuntimeService.AddTax(kingData, treasury, territory);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.NationalTreasury);
         await kingSystemRuntimeService.PersistKingPropertyAsync(kingData, entry => entry.TerritoryTax);
     }
@@ -453,19 +482,21 @@ public class ItemTradeService(
     private static bool RepairsItems(NpcInstance npc) =>
         npc.NpcType is NpcData.TypeTradeMerchant or NpcData.TypeRepairMerchant;
 
+    private static bool OpensShop(NpcInstance npc) =>
+        npc.NpcType is NpcData.TypeTradeMerchant or NpcData.TypeRepairMerchant or NpcData.TypeFamiliarTamer;
+
+    private bool IsOnShopList(int sellingGroup, NpcTradeEntry entry) =>
+        gameDataService.ItemSellsByGroup[sellingGroup]
+            .Any(sold => sold.Line == entry.Line && sold.Index == entry.Index && sold.ItemId == entry.ItemId);
+
     private static bool IsInNpcRange(UserSession session, NpcInstance npc)
     {
+        if (npc.ZoneId != session.ZoneId)
+            return false;
+
         var dx = session.X - npc.X;
         var dz = session.Z - npc.Z;
         return dx * dx + dz * dz <= GameConstants.MaxNpcInteractionRangeSq;
-    }
-
-    private static void SwapItems(ItemSlot sourceItem, ItemSlot destinationItem)
-    {
-        (sourceItem.ItemId, destinationItem.ItemId) = (destinationItem.ItemId, sourceItem.ItemId);
-        (sourceItem.Durability, destinationItem.Durability) = (destinationItem.Durability, sourceItem.Durability);
-        (sourceItem.Count, destinationItem.Count) = (destinationItem.Count, sourceItem.Count);
-        (sourceItem.Flag, destinationItem.Flag) = (destinationItem.Flag, sourceItem.Flag);
     }
 
     private static async Task SendRepairResponseAsync(UserSession session, ItemRepairResult result)

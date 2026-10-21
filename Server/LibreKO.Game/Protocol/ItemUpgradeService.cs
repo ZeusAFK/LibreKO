@@ -42,7 +42,6 @@ public class ItemUpgradeService(
     private const byte ObjectAnvil = 8;
 
     private const int UpgradeSlotCount = 10;
-    private const int UpgradeMaterialMax = 8;
     private const int UpgradeRequestBytes = 1 + 4 + UpgradeSlotCount * 5;
     private const float MaxAnvilRangeSq = 100.0f;
 
@@ -92,7 +91,7 @@ public class ItemUpgradeService(
     private static readonly Dictionary<ItemSealType, SealRule> SealRules = new()
     {
         [ItemSealType.Seal] = new SealRule(
-            flag => flag != ItemFlag.Sealed, ItemFlag.Sealed, SealPrice, NeedsCode: true),
+            flag => flag is not (ItemFlag.Sealed or ItemFlag.Rented), ItemFlag.Sealed, SealPrice, NeedsCode: true),
         [ItemSealType.Unseal] = new SealRule(
             flag => flag == ItemFlag.Sealed, ItemFlag.Unsealed, NeedsCode: true),
         [ItemSealType.Bind] = new SealRule(
@@ -220,6 +219,7 @@ public class ItemUpgradeService(
             return;
         }
 
+        var references = new Dictionary<sbyte, int>();
         for (var index = 0; index < UpgradeSlotCount; index++)
         {
             if (positions[index] < 0 || itemIds[index] == 0)
@@ -250,6 +250,16 @@ public class ItemUpgradeService(
                     "Upgrade rejected for {Name}: slot {SlotIndex} item {ItemId} carries flag {Flag}",
                     session.Name, index, itemIds[index], slot.Flag);
                 await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeRental, itemIds, positions);
+                return;
+            }
+
+            var uses = references[positions[index]] = references.GetValueOrDefault(positions[index]) + 1;
+            if (uses > Math.Max(1, (int)slot.Count))
+            {
+                logger.LogWarning(
+                    "Upgrade rejected for {Name}: position {Position} named {Uses} times but holds {Count}",
+                    session.Name, positions[index], uses, slot.Count);
+                await SendUpgradeResultAsync(session, responseSubOpcode, upgradeType, UpgradeNoMatch, itemIds, positions);
                 return;
             }
         }
@@ -484,8 +494,7 @@ public class ItemUpgradeService(
 
     private static void ConsumeMaterials(UserSession session, int[] itemIds, sbyte[] positions)
     {
-        var consumed = 0;
-        for (var index = 1; index < UpgradeSlotCount && consumed < UpgradeMaterialMax; index++)
+        for (var index = 1; index < UpgradeSlotCount; index++)
         {
             if (positions[index] < 0 || itemIds[index] == 0)
                 continue;
@@ -498,8 +507,6 @@ public class ItemUpgradeService(
                 material.Count--;
             else
                 material.Clear();
-
-            consumed++;
         }
     }
 
@@ -679,7 +686,9 @@ public class ItemUpgradeService(
         if (stones > 0)
             await SpendSealStonesAsync(session, stones);
 
-        slot.Flag = (byte)rule.AppliedFlag;
+        slot.Flag = (byte)(sealType == ItemSealType.Unseal && gameDataService.GetItem(itemId)?.Bound > 0
+            ? ItemFlag.Bound
+            : rule.AppliedFlag);
         return ItemSealResult.Succeeded;
     }
 

@@ -15,6 +15,9 @@ public class MagicTimingTests
     private const int Crash = 101005;
     private const int Archery = 102003;
     private const int Inferno = 110545;
+    private const int CastTenths = 5;
+    private const int ThreeReleases = 3;
+    private const int RiceCakeItem = 389001000;
 
     private sealed class StubClock(DateTimeOffset start) : TimeProvider
     {
@@ -66,7 +69,94 @@ public class MagicTimingTests
 
         session.CastingSkillId.Should().Be(0, "the last arrow closes the cast");
         session.PendingArrowHits.Should().BeEmpty();
-        timing.CheckRelease(session, volley).Should().Be(MagicTimingVerdict.OnCooldown, "a fourth hit is not part of the volley");
+        timing.CheckRelease(session, volley).Should().Be(MagicTimingVerdict.NotCast, "a fourth hit is not part of the volley, whose cast is spent");
+        timing.CheckCasting(session, volley).Should().Be(MagicTimingVerdict.OnCooldown, "the volley's 3 s cooldown still runs");
+    }
+
+    [Fact]
+    public void ARefusedSkillWithoutAFlightGetsItsCooldownBack()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var scroll = Magic(490213, castTenths: 15, recastTenths: 600, useItem: 379098000);
+
+        timing.OnCastAccepted(session, scroll);
+        clock.Advance(TimeSpan.FromSeconds(1.5));
+        timing.OnReleaseRefused(session, scroll);
+
+        timing.CheckCasting(session, scroll).Should().Be(MagicTimingVerdict.Allowed, "the client gives the timer back too");
+        timing.CheckRelease(session, scroll).Should().Be(MagicTimingVerdict.NotCast, "the refused cast is spent");
+    }
+
+    [Fact]
+    public void ARefusedSkillWithAFlightKeepsItsCooldownAsTheClientDoes()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var bolt = Magic(Inferno, castTenths: 15, recastTenths: 100);
+        bolt.FlyingEffect = 1;
+
+        timing.OnCastAccepted(session, bolt);
+        clock.Advance(TimeSpan.FromSeconds(1.5));
+        timing.OnReleaseRefused(session, bolt);
+
+        session.CastingSkillId.Should().Be(0);
+        timing.CheckCasting(session, bolt).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void ARefusedArrowIsSpentLikeAMiss()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var shot = new MagicData { Id = Archery, Type1 = 2, CastTime = 13, UseItem = 391010000 };
+
+        timing.OnCastAccepted(session, shot);
+        clock.Advance(TimeSpan.FromMilliseconds(400));
+        timing.OnVolleyAccepted(session, shot, arrows: 1);
+        timing.OnReleaseRefused(session, shot);
+
+        session.PendingArrowHits.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void ABowLoosesNoFasterThanItIsDrawn()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var shot = new MagicData { Id = Archery, Type1 = 2, CastTime = 13, UseItem = 391010000 };
+
+        timing.CheckVolley(session).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnVolleyAccepted(session, shot, arrows: 1);
+        clock.Advance(TimeSpan.FromMilliseconds(100));
+        timing.CheckVolley(session).Should().Be(MagicTimingVerdict.TooSoonAfterLastSkill);
+
+        clock.Advance(TimeSpan.FromMilliseconds(300));
+        timing.CheckVolley(session).Should().Be(MagicTimingVerdict.Allowed, "an honest bow is drawn again 400 ms later at the earliest");
+    }
+
+    [Fact]
+    public void ShotsSentEarlyDoNotAddUpToAFasterBow()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var shot = new MagicData { Id = Archery, Type1 = 2, CastTime = 13, UseItem = 391010000 };
+        const int attempts = 20;
+        const int everyMs = 200;
+        const int drawMs = 400;
+
+        var loosed = 0;
+        for (var attempt = 0; attempt < attempts; attempt++)
+        {
+            if (timing.CheckVolley(session) == MagicTimingVerdict.Allowed)
+            {
+                timing.OnVolleyAccepted(session, shot, arrows: 1);
+                loosed++;
+            }
+            clock.Advance(TimeSpan.FromMilliseconds(everyMs));
+        }
+
+        loosed.Should().BeLessThanOrEqualTo(attempts * everyMs / drawMs + 1);
     }
 
     [Fact]
@@ -74,16 +164,27 @@ public class MagicTimingTests
     {
         var (timing, clock) = Subject();
         var session = Session();
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
+        var inferno = Magic(Inferno, castTenths: CastTenths, recastTenths: 31);
 
-        timing.OnCastAccepted(session, slash);
-        timing.OnReleaseAccepted(session, slash);
+        timing.OnCastAccepted(session, inferno);
+        timing.OnReleaseAccepted(session, inferno);
 
         clock.Advance(TimeSpan.FromSeconds(2.5));
-        timing.CheckCasting(session, slash).Should().Be(MagicTimingVerdict.OnCooldown);
+        timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.OnCooldown);
 
         clock.Advance(TimeSpan.FromSeconds(0.8));
-        timing.CheckCasting(session, slash).Should().Be(MagicTimingVerdict.Allowed);
+        timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void ACastingStageIsRefusedForARowWithoutACastTime()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+
+        timing.CheckCasting(session, Magic(Slash, castTenths: 0, recastTenths: 31)).Should().Be(MagicTimingVerdict.NotCast);
+        timing.CheckCasting(session, Magic(RiceCake, castTenths: 0, recastTenths: 0, useItem: RiceCakeItem))
+            .Should().Be(MagicTimingVerdict.NotCast, "the client sends a casting stage only for a row with a cast time");
     }
 
     [Fact]
@@ -145,14 +246,15 @@ public class MagicTimingTests
     }
 
     [Fact]
-    public void ASecondInstantSkillInsideTheBurstFloorIsRefused()
+    public void ASecondCastInsideTheBurstFloorIsRefused()
     {
         var (timing, clock) = Subject();
         var session = Session();
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
-        var crash = Magic(Crash, castTenths: 0, recastTenths: 31);
+        var slash = Magic(Slash, castTenths: CastTenths, recastTenths: 31);
+        var crash = Magic(Crash, castTenths: CastTenths, recastTenths: 31);
 
         timing.OnCastAccepted(session, slash);
+        timing.OnReleaseAccepted(session, slash);
 
         timing.CheckCasting(session, crash).Should().Be(MagicTimingVerdict.TooSoonAfterLastSkill);
 
@@ -314,12 +416,62 @@ public class MagicTimingTests
         new() { Id = id, Type1 = 3, Moral = 1, ItemGroup = 9, UseItem = useItem, CastTime = (byte)castTenths, ReCastTime = (short)recastTenths };
 
     [Fact]
+    public void InstantSkillsReleasedWithoutACastKeepTheBurstFloor()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var instants = new[] { Slash, Crash, Inferno }.Select(id => Magic(id, castTenths: 0, recastTenths: 0)).ToArray();
+
+        foreach (var instant in instants.Take(2))
+        {
+            timing.CheckRelease(session, instant).Should().Be(MagicTimingVerdict.Allowed, "two at once ride out a lag spike");
+            timing.OnReleaseAccepted(session, instant);
+        }
+
+        timing.CheckRelease(session, instants[2]).Should().Be(MagicTimingVerdict.TooSoonAfterLastSkill);
+        clock.Advance(TimeSpan.FromMilliseconds(250));
+        timing.CheckRelease(session, instants[2]).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void ARefusedInstantSkillDoesNotUseUpThePace()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+        var slash = Magic(Slash, castTenths: 0, recastTenths: 0);
+
+        for (var i = 0; i < ThreeReleases; i++)
+            timing.OnReleaseRefused(session, slash);
+
+        timing.CheckRelease(session, slash).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void ItemsAndArrowsAreNotHeldToTheInstantPace()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+        var potion = Magic(RiceCake, castTenths: 0, recastTenths: 0, useItem: RiceCakeItem);
+        var arrow = Magic(Archery, castTenths: 0, recastTenths: 0);
+        arrow.Type1 = (byte)MagicSkillType.Ranged;
+
+        for (var i = 0; i < ThreeReleases; i++)
+        {
+            timing.OnReleaseAccepted(session, potion);
+            timing.OnReleaseAccepted(session, arrow);
+        }
+
+        timing.CheckRelease(session, potion).Should().Be(MagicTimingVerdict.Allowed);
+        timing.CheckRelease(session, arrow).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
     public void AConsumableIsExemptFromTheBurstFloor()
     {
         var (timing, _) = Subject();
         var session = Session();
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
-        var potion = Magic(500023, castTenths: 0, recastTenths: 0, useItem: 379090000);
+        var slash = Magic(Slash, castTenths: CastTenths, recastTenths: 31);
+        var potion = Magic(RiceCake, castTenths: CastTenths, recastTenths: 0, useItem: RiceCakeItem);
 
         timing.OnCastAccepted(session, slash);
 
@@ -332,7 +484,7 @@ public class MagicTimingTests
         var (timing, clock) = Subject();
         var session = Session();
         var potion = Magic(390001, castTenths: 5, recastTenths: 20, useItem: 389001000);
-        var slash = Magic(Slash, castTenths: 0, recastTenths: 31);
+        var slash = Magic(Slash, castTenths: CastTenths, recastTenths: 31);
 
         timing.CheckCasting(session, potion).Should().Be(MagicTimingVerdict.Allowed);
         timing.OnCastAccepted(session, potion);
@@ -466,6 +618,101 @@ public class MagicTimingTests
 
         session.CastingSkillId.Should().Be(0);
         session.SkillCooldowns.Should().NotContainKey(inferno.Id);
+    }
+
+    [Fact]
+    public void CancellingAReleasedSkillKeepsItsCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var inferno = Magic(Inferno, castTenths: 15, recastTenths: 153);
+
+        timing.OnCastAccepted(session, inferno);
+        clock.Advance(TimeSpan.FromSeconds(1.5));
+        timing.CheckRelease(session, inferno).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnReleaseAccepted(session, inferno);
+        timing.OnCastAborted(session, inferno.Id);
+
+        session.SkillCooldowns.Should().ContainKey(inferno.Id);
+        clock.Advance(TimeSpan.FromSeconds(1));
+        timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void CancellingASkillThatWasOnlyReleasedKeepsItsCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var slash = Magic(Slash, castTenths: 0, recastTenths: 100);
+
+        timing.CheckRelease(session, slash).Should().Be(MagicTimingVerdict.Allowed);
+        timing.OnReleaseAccepted(session, slash);
+        timing.OnCastAborted(session, slash.Id);
+
+        clock.Advance(TimeSpan.FromSeconds(1));
+        timing.CheckRelease(session, slash).Should().Be(MagicTimingVerdict.OnCooldown,
+            "a Cancel of a skill that already landed must not reset its cooldown");
+    }
+
+    [Fact]
+    public void CancellingAfterTheArrowLeftTheBowKeepsTheCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var arcShot = Magic(102010, castTenths: 13, recastTenths: 30);
+        arcShot.Type1 = 2;
+
+        timing.OnCastAccepted(session, arcShot);
+        clock.Advance(TimeSpan.FromMilliseconds(500));
+        timing.OnFlightLaunched(session, arcShot);
+        timing.OnCastAborted(session, arcShot.Id);
+
+        session.CastingSkillId.Should().Be(0, "the cut draw frees the cast slot");
+        session.SkillCooldowns.Should().ContainKey(arcShot.Id);
+        timing.CheckCasting(session, arcShot).Should().Be(MagicTimingVerdict.OnCooldown);
+    }
+
+    [Fact]
+    public void AnItemSkillIsNotReleasedBeforeItsCastTime()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var scroll = Magic(490201, castTenths: 15, recastTenths: 600, useItem: 379098000);
+
+        timing.OnCastAccepted(session, scroll);
+        clock.Advance(TimeSpan.FromMilliseconds(500));
+        timing.CheckRelease(session, scroll).Should().Be(MagicTimingVerdict.NotCast,
+            "the item's own cast phase has a second still to run");
+
+        clock.Advance(TimeSpan.FromMilliseconds(800));
+        timing.CheckRelease(session, scroll).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
+    [Fact]
+    public void AnArcheryShotWithADrawNeedsTheDraw()
+    {
+        var (timing, _) = Subject();
+        var session = Session();
+        var arcShot = Magic(102010, castTenths: 13, recastTenths: 30, useItem: 391010000);
+        arcShot.Type1 = 2;
+
+        timing.CheckRelease(session, arcShot).Should().Be(MagicTimingVerdict.NotCast);
+    }
+
+    [Fact]
+    public void AnArcheryShotThatUsesArrowsFliesOnlyFromItsCommitPoint()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        var arcShot = Magic(102010, castTenths: 13, recastTenths: 30, useItem: 391010000);
+        arcShot.Type1 = 2;
+
+        timing.OnCastAccepted(session, arcShot);
+        timing.CheckRelease(session, arcShot).Should().Be(MagicTimingVerdict.NotCast);
+
+        clock.Advance(TimeSpan.FromMilliseconds(200));
+        timing.CheckRelease(session, arcShot).Should().Be(MagicTimingVerdict.Allowed,
+            "the arrow leaves the bow 400 ms into the draw, less the latency grace");
     }
 
     [Fact]

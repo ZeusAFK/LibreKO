@@ -154,6 +154,12 @@ public sealed class MonsterStoneService(
             return;
         }
 
+        if (session.IsBusy || session.IsHeld || session.IsInCombat || !session.CanTeleport)
+        {
+            await ReplyAsync(session, MonsterStoneResult.Failed);
+            return;
+        }
+
         if (!MonsterStoneRules.CanEnterFrom(session.ZoneId))
         {
             await ReplyAsync(session, MonsterStoneResult.CannotEnterHere);

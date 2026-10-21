@@ -116,7 +116,7 @@ public class PartyDisconnectTests : GameTestBase
         oldSession.GenieTime.Load(120);
         oldSession.GenieActive = true;
         var persister = Substitute.For<ICharacterStatePersister>();
-        persister.SaveAsync(oldSession, Arg.Any<CancellationToken>()).Returns(
+        persister.SaveAndSealAsync(oldSession, Arg.Any<CancellationToken>()).Returns(
             throws ? Task.FromException<bool>(new InvalidOperationException("Save failed")) : Task.FromResult(false));
         var service = ActivatorUtilities.CreateInstance<SessionTerminationService>(provider, persister);
 
@@ -126,7 +126,7 @@ public class PartyDisconnectTests : GameTestBase
         manager.GetByClientId(oldSession.Client.Id).Should().BeNull();
         oldSession.GenieTime.IsRunning.Should().BeFalse();
         oldSession.GenieActive.Should().BeFalse();
-        await persister.Received(1).SaveAsync(oldSession, Arg.Any<CancellationToken>());
+        await persister.Received(1).SaveAndSealAsync(oldSession, Arg.Any<CancellationToken>());
         var replacement = CreateMember(manager, 400, new List<Packet>());
         manager.GetByCharacterId(400).Should().BeSameAs(replacement);
     }

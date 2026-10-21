@@ -15,7 +15,7 @@ public record CharacterSelectResult(Packet Packet, int CharacterId);
 
 public interface IPreGameService
 {
-    Task<GameLoginResult> LoginAsync(string login, string password);
+    Task<GameLoginResult> LoginAsync(string login, string password, string address = "");
     Task<Packet> SelectNationAsync(int accountId, AccountNation nation);
     Task<Packet> GetAllCharacterInfoAsync(int accountId);
     Task<Packet> LoadingLoginAsync(byte subOpcode);
@@ -42,6 +42,7 @@ public class PreGameService(
     ISocialPacketCoordinator social,
     ISlaveMerchantService slaveMerchants,
     AppDbContext unitOfWork,
+    LoginThrottle throttle,
     ILogger<PreGameService> logger) : IPreGameService
 {
     private const byte NewCharacterStartZone = (byte)ZoneId.Moradon;
@@ -49,14 +50,23 @@ public class PreGameService(
     private const int MaxCharacterNameLength = 20;
     private const int MaxSocialNumberLength = 15;
 
-    public async Task<GameLoginResult> LoginAsync(string login, string password)
+    public async Task<GameLoginResult> LoginAsync(string login, string password, string address = "")
     {
+        if (!throttle.TryAttempt(address, login))
+        {
+            logger.LogDebug("Login for {Login} from {Address} refused without checking: too many failures, or a name longer than any account's", login, address);
+            return new(0, 0, false);
+        }
+
+        await Task.Delay(throttle.SlowdownFor(address, login));
         var account = await accountRepository.GetByLogin(login);
         if (account == null || !PasswordHasher.Verify(password, account.Password))
         {
             logger.LogWarning("Login failed for {Login}: invalid credentials", login);
             return new(0, 0, false);
         }
+
+        throttle.Succeeded(address, login);
 
         if (account.Authority == AccountAuthority.Banned)
         {
@@ -219,8 +229,9 @@ public class PreGameService(
             return new CharacterSelectResult(SelectFailed(), 0);
         }
 
+        // A sealed character keeps its old account until someone unseals it.
         var character = await characterRepository.GetByName(characterName);
-        if (character == null || character.AccountId != account.Id || character.NameChangeRequired)
+        if (character == null || character.AccountId != account.Id || character.NameChangeRequired || character.Sealed)
         {
             return new CharacterSelectResult(SelectFailed(), 0);
         }

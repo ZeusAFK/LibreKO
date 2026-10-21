@@ -44,6 +44,8 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public IReadOnlyDictionary<int, SetItemData> SetItemTable { get; private set; } = new Dictionary<int, SetItemData>();
     public IReadOnlyDictionary<int, ItemExchangeData> ItemExchangeTable { get; private set; } = new Dictionary<int, ItemExchangeData>();
     public IReadOnlyDictionary<int, ItemExchangeExpData> ItemExchangeExpTable { get; private set; } = new Dictionary<int, ItemExchangeExpData>();
+    public ILookup<int, ItemSellData> ItemSellsByGroup { get; private set; } = Enumerable.Empty<ItemSellData>().ToLookup(x => x.SellingGroup);
+    public IReadOnlySet<int> NonActionMagic { get; private set; } = new HashSet<int>();
     public ILookup<(byte OreType, short NpcId), MiningExchangeData> MiningExchangesByOreNpc { get; private set; }
         = Enumerable.Empty<MiningExchangeData>().ToLookup(x => ((byte)0, (short)0));
     public ILookup<(GatherType Type, GatherTool Tool, GatherWarStatus War), MiningFishingItemData> MiningFishingItemsByPool { get; private set; }
@@ -291,6 +293,11 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
 
             ItemExchangeTable = await LoadDictionaryAsync(db.ItemExchanges, x => x.Index, "item exchange entries", cancellationToken);
             ItemExchangeExpTable = LoadSeedDictionary(new ItemExchangeExpSeed(), x => x.Index, "item exchange extra reward entries");
+            var itemSells = new ItemSellSeed().GetSeedData().ToList();
+            ItemSellsByGroup = itemSells.ToLookup(x => x.SellingGroup);
+            logger.LogInformation("Loaded {Count} merchant shop entries", itemSells.Count);
+            NonActionMagic = new MagicNonActionSeed().GetSeedData().Select(x => x.Id).ToHashSet();
+            logger.LogInformation("Loaded {Count} magic rows that play no action", NonActionMagic.Count);
 
             var miningExchanges = new MiningExchangeSeed().GetSeedData().ToList();
             MiningExchangesByOreNpc = miningExchanges.ToLookup(x => (x.OreType, x.NpcId));

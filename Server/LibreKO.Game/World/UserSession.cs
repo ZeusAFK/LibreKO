@@ -44,6 +44,41 @@ public class UserSession
     public int CharacterId { get; }
     public int AccountId { get; }
     public SemaphoreSlim CharacterPersistenceGate { get; } = new(1, 1);
+    public SemaphoreSlim PacketGate { get; } = new(1, 1);
+
+    private int closing;
+    private readonly TaskCompletionSource closed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // A session closes once; whoever comes second waits for the first close to finish.
+    public bool TryBeginClosing() => Interlocked.CompareExchange(ref closing, 1, 0) == 0;
+    public bool IsClosing => Volatile.Read(ref closing) == 1;
+    public Task Closed => closed.Task;
+    public void MarkClosed() => closed.TrySetResult();
+
+    private volatile bool savesSealed;
+
+    // After the final save nothing more is written for this session.
+    public bool SavesSealed => savesSealed;
+
+    public void SealSaves() => savesSealed = true;
+
+    private int gameStarted;
+
+    public bool TryBeginGame() => Interlocked.CompareExchange(ref gameStarted, 1, 0) == 0;
+
+    private const int ClientSaveCooldownSeconds = 10;
+    public static readonly TimeSpan ClientSaveCooldown = TimeSpan.FromSeconds(ClientSaveCooldownSeconds);
+    private long lastClientSaveTicks;
+
+    // A save the client asks for runs at most once per cooldown; now is monotonic time since boot.
+    public bool TryTakeClientSave(TimeSpan now)
+    {
+        var last = Interlocked.Read(ref lastClientSaveTicks);
+        return (last == 0 || now.Ticks - last >= ClientSaveCooldown.Ticks)
+            && Interlocked.CompareExchange(ref lastClientSaveTicks, now.Ticks, last) == last;
+    }
+
+    public static TimeSpan SinceBoot => TimeSpan.FromMilliseconds(Environment.TickCount64);
     public bool NationTransferCommitted { get; set; }
     public string Name { get; set; } = string.Empty;
     public AccountNation Nation { get; set; }
@@ -106,19 +141,41 @@ public class UserSession
     public ushort MoveOldWillZ { get; set; }
     public ushort MoveOldWillY { get; set; }
     public short MoveOldSpeed { get; set; }
+    public long LastMoveTicks { get; set; }
+    public float MoveBudget { get; set; }
+    public float LastStepSpeed { get; set; }
+    public float LastStepDistance { get; set; }
+    public long HoldSinceTicks { get; private set; }
+    public long HoldUntilTicks { get; private set; }
+    public long MoveBudgetTicks { get; set; }
+    public long PlacedTicks { get; set; }
+    public HashSet<short> OfferedWarps { get; } = [];
+    public float OfferedWarpsX { get; set; }
+    public float OfferedWarpsZ { get; set; }
     public byte MoveOldEcho { get; set; }
 
     // Set when this player moved; the movement-broadcast service coalesces the GS_MOVE
     // fan-out to a fixed cadence (instead of one broadcast per received move packet).
     public volatile bool MovePending;
 
-    // Speed-hack check: last validated position. Reset on warp/zone change.
-    public float SpeedLastX { get; set; }
-    public float SpeedLastZ { get; set; }
-
     // Derived stats
     public short MaxHp { get; set; }
-    public short Hp { get; set; }
+    private short hp;
+    private int deathRecorded;
+
+    public short Hp
+    {
+        get => hp;
+        set
+        {
+            hp = value;
+            if (value > 0 && Volatile.Read(ref deathRecorded) != 0)
+                Interlocked.Exchange(ref deathRecorded, 0);
+        }
+    }
+
+    // One death per life: a second blow on the corpse records nothing.
+    public bool TryRecordDeath() => Interlocked.CompareExchange(ref deathRecorded, 1, 0) == 0;
     public short MaxMp { get; set; }
     public short Mp { get; set; }
 
@@ -151,7 +208,20 @@ public class UserSession
     public int TransformSkillId { get; set; }
 
     // Clan/Knights
-    public short KnightsId { get; set; }
+    private short knightsId;
+
+    // A player who changes clan leaves their clan's war behind.
+    public short KnightsId
+    {
+        get => knightsId;
+        set => WithLock(session =>
+        {
+            if (session.knightsId != value)
+                session.ClanBattleEnemy = 0;
+            session.knightsId = value;
+        });
+    }
+
     public int ClanOnlineCount { get; set; }
     public SiegeSide SiegeSide { get; set; }
     public int TowerHostId { get; set; }
@@ -220,6 +290,10 @@ public class UserSession
     public DateTime LastPieceExchangeTime { get; set; } = DateTime.MinValue;
     public bool IsGathering => IsMining || IsFishing;
 
+    // Every item-moving handler refuses while this holds: a trade or a stall may count on the bag.
+    public bool IsBusy =>
+        Hp <= 0 || Trade.IsTrading || Trade.IsMerchanting || Trade.IsMerchantPreparing || IsGathering;
+
     // Pet companion
     public PetState? Pet { get; set; }
     public int LastStruckNpcId { get; set; }
@@ -233,6 +307,8 @@ public class UserSession
     public int AttendanceClaimedDays { get; set; }
     public byte AttendanceClaimedBonus { get; set; }
     public DateTime? AttendanceCheckedOn { get; set; }
+    public DateTime? GenieRewardClaimedOn { get; set; }
+    public int WarehouseKeeperId { get; set; }
 
     // Rebirth (WIZ_REBIRTH 0xD3). Snapshot stats stored at rebirth time.
     public short RebirthLevel { get; set; }
@@ -243,8 +319,66 @@ public class UserSession
     public byte RebMagic { get; set; }
 
     // Party
-    public int PartyIndex { get; set; } = -1;
+    private int partyIndex = -1;
+
+    public int PartyIndex
+    {
+        get => Volatile.Read(ref partyIndex);
+        set => Volatile.Write(ref partyIndex, value);
+    }
+
     public bool IsInParty => PartyIndex >= 0;
+
+    // A player enters a party only from outside every party, and leaves only the party they are in.
+    public bool TryEnterParty(int index) => Interlocked.CompareExchange(ref partyIndex, index, -1) == -1;
+
+    public bool TryLeaveParty(int index) => Interlocked.CompareExchange(ref partyIndex, -1, index) == index;
+
+    private int invitedToParty = -1;
+
+    public int InvitedToParty
+    {
+        get => Volatile.Read(ref invitedToParty);
+        set => Volatile.Write(ref invitedToParty, value);
+    }
+
+    // An invite stands until it is answered or its party is gone.
+    public bool TryOfferPartyInvite(int index, Func<int, bool> partyStands)
+    {
+        var pending = InvitedToParty;
+        return (pending < 0 || !partyStands(pending))
+            && Interlocked.CompareExchange(ref invitedToParty, index, pending) == pending;
+    }
+
+    public int TakePartyInvite() => Interlocked.Exchange(ref invitedToParty, -1);
+
+    private const int MaxBoardInvites = PartyGroup.MaxMembers;
+    private readonly List<PartyBoardInvite> boardInvites = [];
+
+    // Several board invites wait at once; past the cap the oldest makes way.
+    public void OfferBoardInvite(PartyBoardInvite invite)
+    {
+        lock (boardInvites)
+        {
+            boardInvites.RemoveAll(pending => pending.InviterId == invite.InviterId);
+            if (boardInvites.Count >= MaxBoardInvites)
+                boardInvites.RemoveAt(0);
+            boardInvites.Add(invite);
+        }
+    }
+
+    public bool TryTakeBoardInvite(PartyBoardInvite answer)
+    {
+        lock (boardInvites)
+            return boardInvites.Remove(answer);
+    }
+
+    public void ForgetBoardInvites()
+    {
+        lock (boardInvites)
+            boardInvites.Clear();
+    }
+
     private bool isPartyLeader;
 
     public bool IsPartyLeader
@@ -292,9 +426,14 @@ public class UserSession
     public long CastReadyTicks { get; set; }
     public long CastCommitTicks { get; set; }
     public long CastExpireTicks { get; set; }
+    public bool CastLaunched { get; set; }
     public ConcurrentDictionary<int, long> AcceptedCasts { get; } = new();
     public ConcurrentDictionary<int, int> PendingArrowHits { get; } = new();
     public long SkillBurstTicks { get; set; }
+    public long InstantSkillReadyTicks { get; set; }
+    public long NextSwingTicks { get; set; }
+    public long SwingIntervalTicks { get; set; }
+    public long NextShotTicks { get; set; }
     public long LastPotionTicks { get; set; }
     public long MageStatusImmuneUntilTicks { get; set; }
 
@@ -306,6 +445,13 @@ public class UserSession
     public bool CanUseSkills { get; set; } = true;
     public long BlinkUntilTicks { get; set; }
     public bool IsBlinking => BlinkUntilTicks != 0;
+    public bool IsHeld => activeBuffs.Any(entry => entry.Value.BuffType is BuffType.Freeze or BuffType.Stun && !entry.Value.IsExpired);
+    public bool CarriesManes => activeBuffs.Any(entry => entry.Value.BuffType == BuffType.FragmentOfManes && !entry.Value.IsExpired);
+
+    // Another player's call moves this one only while free and out of a fight, not under NoRecall or the Fragment, and not in Prison.
+    public bool MayBeMovedByOthers =>
+        !IsBusy && !IsHeld && !IsInCombat && CanTeleport && !CarriesManes && !IsWarping
+        && ZoneId != (byte)LibreKO.Common.Enums.ZoneId.Prison;
     public bool BlinkOnArrival { get; set; }
     public ResurrectionOffer? PendingResurrection { get; set; }
     public int ControlSignature { get; set; }
@@ -334,7 +480,14 @@ public class UserSession
 
     // Quest & NPC interaction state
     public QuestState Quest { get; } = new();
-    public bool IsWarping { get; set; }          // True during zone change, prevents re-entry
+    private const int WarpingTimeoutSeconds = 60;
+    public long WarpingUntilTicks { get; set; }
+
+    public bool IsWarping
+    {
+        get => WarpingUntilTicks != 0 && DateTime.UtcNow.Ticks < WarpingUntilTicks;
+        set => WarpingUntilTicks = value ? DateTime.UtcNow.AddSeconds(WarpingTimeoutSeconds).Ticks : 0;
+    }
     public byte KillerNpcType { get; set; }      // NpcType of NPC that killed this player (0 = PvP/alive)
     public bool IsSitting { get; set; }           // True when player is sitting (affects HP/MP regen rate)
     public bool InCombatStance { get; set; }
@@ -522,6 +675,14 @@ public class UserSession
 
     public void SetBuff(int skillId, ActiveBuff buff)
     {
+        if (buff.BuffType is BuffType.Freeze or BuffType.Stun)
+        {
+            var start = buff.ExpireTicks - buff.Duration * TimeSpan.TicksPerSecond;
+            if (HoldUntilTicks <= start)
+                HoldSinceTicks = start;
+            HoldUntilTicks = Math.Max(HoldUntilTicks, buff.ExpireTicks);
+        }
+
         activeBuffs[skillId] = buff;
         BuffsChanged?.Invoke(this);
     }
@@ -533,8 +694,24 @@ public class UserSession
         if (!activeBuffs.TryRemove(skillId, out removed))
             return false;
 
+        if (removed.BuffType is BuffType.Freeze or BuffType.Stun)
+            ForgetEndedHold();
         BuffsChanged?.Invoke(this);
         return true;
+    }
+
+    public void ReplaceBuff(int replacedSkillId, int skillId, ActiveBuff buff)
+    {
+        activeBuffs.TryRemove(replacedSkillId, out _);
+        SetBuff(skillId, buff);
+    }
+
+    private void ForgetEndedHold()
+    {
+        if (activeBuffs.Values.Any(buff => buff.BuffType is BuffType.Freeze or BuffType.Stun))
+            return;
+        HoldSinceTicks = 0;
+        HoldUntilTicks = 0;
     }
 
     public int RemoveBuffsWhere(Func<int, ActiveBuff, bool> match)
@@ -547,7 +724,10 @@ public class UserSession
         }
 
         if (removed > 0)
+        {
+            ForgetEndedHold();
             BuffsChanged?.Invoke(this);
+        }
         return removed;
     }
 
@@ -595,7 +775,8 @@ public class UserSession
         {
             for (int i = InventoryConstants.SlotMax; i < InventoryConstants.SlotMax + InventoryConstants.HaveMax; i++)
             {
-                if (Inventory[i].ItemId == itemId && Inventory[i].Count + count <= 9999)
+                if (Inventory[i].ItemId == itemId && Inventory[i].IsPlain
+                    && Inventory[i].Count + count <= InventoryConstants.MaxStackCount)
                     return i;
             }
         }
@@ -610,24 +791,127 @@ public class UserSession
         return -1;
     }
 
-    public void InitExchange(bool start)
+    // Call under this session's lock.
+    public ExchangeReturn InitExchange(bool start)
     {
-        // Restore items/gold from exchange list
+        var returned = new ExchangeReturn();
         foreach (var item in Trade.ExchangeItemList)
         {
             if (item.ItemId == InventoryConstants.ItemGold)
-                Money += item.Count;
-            else if (item.SrcPos < Inventory.Length)
-                Inventory[item.SrcPos].Count += (ushort)item.Count;
+            {
+                var gold = ReturnHeldGold(item.Count);
+                returned.GoldToPurse += gold.ToPurse;
+                returned.GoldToWarehouse += gold.ToWarehouse;
+                returned.GoldLost += gold.Lost;
+            }
+            else if (!ReturnEscrowedItem(item, returned))
+            {
+                returned.Unplaced.Add(item);
+            }
         }
         Trade.ExchangeItemList.Clear();
+        Trade.ExchangeOk = false;
+        Trade.ExchangeAccepted = start;
 
         if (!start)
         {
             Trade.ExchangeUser = -1;
-            Trade.ExchangeOk = false;
             Trade.AskedForExchange = false;
         }
+
+        return returned;
+    }
+
+    public bool ReturnEscrowedItem(ExchangeItem item, ExchangeReturn? returned = null)
+    {
+        if (item.SrcPos is >= InventoryConstants.InventoryStart and < InventoryConstants.InventoryStart + InventoryConstants.HaveMax)
+            returned?.BagSlots.Add(item.SrcPos);
+
+        var slot = ItemPlacement.FindForReturn(
+            Inventory, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item, item.SrcPos);
+        if (slot >= 0)
+        {
+            ItemPlacement.Put(Inventory[slot], item);
+            returned?.BagSlots.Add(slot);
+            return true;
+        }
+
+        slot = ItemPlacement.FindForReturn(Warehouse, 0, WarehouseMax, item);
+        if (slot < 0)
+            return false;
+
+        ItemPlacement.Put(Warehouse[slot], item);
+        if (returned != null)
+            returned.ItemsToWarehouse++;
+        return true;
+    }
+
+    public (int ToPurse, int ToWarehouse, long Lost) ReleaseBuyMerchantGold() => WithLock(s =>
+    {
+        var held = s.Trade.BuyMerchantGold;
+        s.Trade.BuyMerchantGold = 0;
+        return s.ReturnHeldGold(held);
+    });
+
+    // Gold a stall or a trade holds aside is saved as if it had come back.
+    public int SavedMoney => WithLock(s => s.Money + s.SplitHeldGold(s.HeldGold).ToPurse);
+
+    public int SavedWarehouseMoney => WithLock(s => s.WarehouseMoney + s.SplitHeldGold(s.HeldGold).ToWarehouse);
+
+    public byte[] SavedItems => WithLock(s => UserSessionBinaryState.SerializeItems(s.AsIfOffersCameBack().Bag));
+
+    public byte[] SavedWarehouse => WithLock(s => UserSessionBinaryState.SerializeWarehouse(s.AsIfOffersCameBack().Store));
+
+    private long HeldGold => Trade.BuyMerchantGold
+        + Trade.ExchangeItemList.Where(item => item.ItemId == InventoryConstants.ItemGold).Sum(item => (long)item.Count);
+
+    private (ItemSlot[] Bag, ItemSlot[] Store) AsIfOffersCameBack()
+    {
+        var bag = Copies(Inventory);
+        var store = Copies(Warehouse);
+        foreach (var item in Trade.ExchangeItemList.Where(item => item.ItemId != InventoryConstants.ItemGold))
+        {
+            var slot = ItemPlacement.FindForReturn(bag, InventoryConstants.InventoryStart, InventoryConstants.HaveMax, item, item.SrcPos);
+            if (slot >= 0)
+            {
+                ItemPlacement.Put(bag[slot], item);
+                continue;
+            }
+
+            slot = ItemPlacement.FindForReturn(store, 0, WarehouseMax, item);
+            if (slot >= 0)
+                ItemPlacement.Put(store[slot], item);
+        }
+
+        return (bag, store);
+    }
+
+    private static ItemSlot[] Copies(ItemSlot[] slots)
+    {
+        var copies = new ItemSlot[slots.Length];
+        for (var i = 0; i < slots.Length; i++)
+        {
+            copies[i] = new ItemSlot();
+            InventoryJournal.CopyInto(slots[i], copies[i]);
+        }
+
+        return copies;
+    }
+
+    public (int ToPurse, int ToWarehouse, long Lost) ReturnHeldGold(long amount)
+    {
+        var (toPurse, toWarehouse) = SplitHeldGold(amount);
+        Money += toPurse;
+        WarehouseMoney += toWarehouse;
+        return (toPurse, toWarehouse, Math.Max(0, amount) - toPurse - toWarehouse);
+    }
+
+    private (int ToPurse, int ToWarehouse) SplitHeldGold(long amount)
+    {
+        const long coinMax = Protocol.ExchangePacketConstants.CoinMax;
+        var toPurse = Math.Clamp(amount, 0, Math.Max(0, coinMax - Money));
+        var toWarehouse = Math.Clamp(amount - toPurse, 0, Math.Max(0, coinMax - WarehouseMoney));
+        return ((int)toPurse, (int)toWarehouse);
     }
 
     public void CompleteExchange()
@@ -635,6 +919,7 @@ public class UserSession
         Trade.ExchangeItemList.Clear();
         Trade.ExchangeUser = -1;
         Trade.ExchangeOk = false;
+        Trade.ExchangeAccepted = false;
         Trade.AskedForExchange = false;
     }
 }

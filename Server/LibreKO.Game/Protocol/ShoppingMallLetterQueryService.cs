@@ -19,8 +19,8 @@ public class ShoppingMallLetterQueryService(IServiceScopeFactory scopeFactory,
     ILogger<ShoppingMallLetterQueryService> logger) : IShoppingMallLetterQueryService
 {
     private const int LetterLifetimeDays = 30;
-    private const byte LetterTypePlain = 1;
-    private const byte LetterStatusRead = 2;
+    private const int InboxPageSize = 12;
+    private const int HistoryPageSize = 20;
 
     public async Task SendUnreadAsync(UserSession session)
     {
@@ -28,7 +28,7 @@ public class ShoppingMallLetterQueryService(IServiceScopeFactory scopeFactory,
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var count = await db.MailBoxes
-            .CountAsync(mail => mail.RecipientId == session.Name && mail.Status == 1 && !mail.Deleted);
+            .CountAsync(mail => mail.RecipientId == session.Name && mail.Status == ShoppingMallLetterProtocol.LetterStatusNew && !mail.Deleted);
         logger.LogDebug("{Name} has {Count} unread mail", session.Name, count);
 
         await session.Client.SendPacket(ShoppingMallPacketWriter.UnreadCount(
@@ -41,8 +41,8 @@ public class ShoppingMallLetterQueryService(IServiceScopeFactory scopeFactory,
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var maxResults = history ? 20 : 12;
-        var status = history ? (byte)2 : (byte)1;
+        var maxResults = history ? HistoryPageSize : InboxPageSize;
+        var status = history ? ShoppingMallLetterProtocol.LetterStatusRead : ShoppingMallLetterProtocol.LetterStatusNew;
 
         var letters = await db.MailBoxes
             .Where(mail => mail.RecipientId == session.Name && mail.Status == status && !mail.Deleted)
@@ -90,8 +90,8 @@ public class ShoppingMallLetterQueryService(IServiceScopeFactory scopeFactory,
         }
 
         letter.ReadDate ??= DateTime.UtcNow;
-        if (letter.Type == LetterTypePlain)
-            letter.Status = LetterStatusRead;
+        if (letter.Type == ShoppingMallPacketWriter.LetterTypePlain)
+            letter.Status = ShoppingMallLetterProtocol.LetterStatusRead;
 
         await db.SaveChangesAsync();
 

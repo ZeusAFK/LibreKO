@@ -19,9 +19,9 @@ public class KnightsCapePacketCoordinator(
     ILogger<KnightsCapePacketCoordinator> logger) : IKnightsCapePacketCoordinator
 {
     private const byte OpcodeNormalPurchase = 0;
-    private const byte OpcodeTicketPurchase = 1;
+    public const byte OpcodeTicketPurchase = 1;
     private const int CastellanTicketItem = 914006000;
-    private const int PaintCostClanPoints = 36000;
+    public const int PaintCostClanPoints = 36000;
     private const byte ChiefFame = 1;
     private const byte ClanFlagPromoted = 2;
 
@@ -114,12 +114,6 @@ public class KnightsCapePacketCoordinator(
                     return;
                 }
 
-                if (capeDef.BuyPrice > 0 && session.Money < capeDef.BuyPrice)
-                {
-                    await SendFailAsync(client, CapeResult.NotEnoughCoins);
-                    return;
-                }
-
                 reqCoins = capeDef.BuyPrice;
                 reqClanPoints = capeDef.BuyLoyalty;
             }
@@ -136,29 +130,19 @@ public class KnightsCapePacketCoordinator(
             reqClanPoints += PaintCostClanPoints;
         }
 
-        if (opcode == OpcodeNormalPurchase && session.Money < reqCoins)
-        {
-            await SendFailAsync(client, CapeResult.NotEnoughCoins);
-            return;
-        }
-
-        if (opcode == OpcodeNormalPurchase && reqClanPoints > 0 && clan.ClanPointFund < reqClanPoints)
+        // Paint costs clan points however it is asked for; the points, then the ticket and the coins, are each taken in one step.
+        if (!ClanRules.TrySpendFund(clan, reqClanPoints))
         {
             await SendFailAsync(client, CapeResult.NotEnoughClanPoints);
             return;
         }
 
-        // ── Apply changes ─────────────────────────────────────────────────
-        if (opcode == OpcodeTicketPurchase && capeId >= 0)
+        var useTicket = opcode == OpcodeTicketPurchase && capeId >= 0;
+        if (!session.WithLock(s => PayForCape(s, reqCoins, useTicket)))
         {
-            if (!ConsumeOneTicket(session))
-                return;
-        }
-
-        if (opcode == OpcodeNormalPurchase)
-        {
-            session.Money -= reqCoins;
-            clan.ClanPointFund -= reqClanPoints;
+            ClanRules.AddToFund(clan, reqClanPoints);
+            await SendFailAsync(client, useTicket ? CapeResult.MissingPurchaseItem : CapeResult.NotEnoughCoins);
+            return;
         }
 
         if (capeId >= 0) clan.Cape = capeId;
@@ -203,6 +187,15 @@ public class KnightsCapePacketCoordinator(
             if (slot.ItemId == itemId && slot.Count > 0) return true;
         }
         return false;
+    }
+
+    private static bool PayForCape(UserSession session, int coins, bool useTicket)
+    {
+        if (session.Money < coins || (useTicket && !ConsumeOneTicket(session)))
+            return false;
+
+        session.Money -= coins;
+        return true;
     }
 
     private static bool ConsumeOneTicket(UserSession session)

@@ -38,7 +38,8 @@ public class MerchantListingService(
 
         var itemData = gameDataService.GetItem(itemId);
         var refusal =
-            itemData == null ? "no such item"
+            !StallBeingSetUp(session) ? "no stall is being set up"
+            : itemData == null ? "no such item"
             : srcPos >= InventoryConstants.HaveMax ? "source slot out of range"
             : dstPos >= session.Trade.MerchantItems.Length ? "stall slot out of range"
             : IsNoTradeItem(itemId) ? "item cannot be traded"
@@ -58,8 +59,7 @@ public class MerchantListingService(
             refusal =
                 held.ItemId != itemId ? $"slot {absPos} holds {held.ItemId}, not {itemId}"
                 : held.Count < count ? $"slot {absPos} holds {held.Count}, fewer than {count}"
-                : !held.IsTradable ? $"item is {held.State}"
-                : gameDataService.GetItem(itemId)?.IsUntradeable == true ? "item cannot be traded"
+                : !ExchangeTransferService.MayChangeHands(itemData!, held) ? "item cannot be traded"
                 : null;
         }
 
@@ -82,7 +82,10 @@ public class MerchantListingService(
             Durability = slot.Durability,
             Count = count,
             Price = price,
-            OriginalSlot = (byte)absPos
+            OriginalSlot = (byte)absPos,
+            Flag = slot.Flag,
+            ExpiresAt = slot.ExpiresAt,
+            UniqueId = slot.UniqueId,
         };
 
         await session.Client.SendPacket(MerchantPacketWriter.ItemAdded(
@@ -94,7 +97,7 @@ public class MerchantListingService(
     {
         var slotIndex = packet.ReadByte();
 
-        if (slotIndex >= session.Trade.MerchantItems.Length)
+        if (slotIndex >= session.Trade.MerchantItems.Length || !StallBeingSetUp(session))
         {
             await session.Client.SendPacket(
                 MerchantPacketWriter.Result(MerchantSubOpcode.ItemCancel, MerchantPacketWriter.Failed));
@@ -115,17 +118,22 @@ public class MerchantListingService(
             MerchantSubOpcode.ItemCancel, slotIndex));
     }
 
+    // A stall's listings change only while it is being set up.
+    private static bool StallBeingSetUp(UserSession session) =>
+        session.Trade.IsSellingMerchantPreparing && !session.Trade.IsMerchanting;
+
     public async Task ListItemsAsync(UserSession session, Packet packet)
     {
         var targetId = packet.ReadInt();
         var merchant = sessionManager.GetByCharacterId(targetId);
-        if (merchant == null || !merchant.Trade.IsMerchanting)
+        var generation = merchant?.Trade.StallGeneration ?? 0;
+        if (merchant == null || !merchant.Trade.IsMerchanting || !ExchangePacketConstants.IsWithinTradeRange(session, merchant))
         {
             session.Trade.MerchantTargetUserId = -1;
             return;
         }
 
-        session.Trade.MerchantTargetUserId = merchant.CharacterId;
+        session.Trade.LookAt(merchant.CharacterId, generation);
         logger.LogDebug("{Name} browsing merchant shop of {MerchantName}", session.Name, merchant.Name);
 
         var stall = new List<MerchantPacketWriter.StallItem?>(session.Trade.MerchantItems.Length);
@@ -160,7 +168,7 @@ public class MerchantListingService(
             return;
         }
 
-        var purchase = new MerchantPurchase(session, merchant, itemId, count, merchantSlot);
+        var purchase = new MerchantPurchase(session, merchant, itemId, count, merchantSlot, logger);
         var sold = merchant is SlaveMerchantBotSession slave
             ? await slaveMerchants.SellAsync(slave, purchase, () => AnnounceAsync(purchase))
             : await SellAsync(purchase);

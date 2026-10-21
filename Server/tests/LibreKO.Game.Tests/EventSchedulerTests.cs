@@ -125,10 +125,29 @@ public class EventSchedulerTests
     }
 
     private static readonly DateTime FridayEightPmBerlin = new(2026, 10, 16, 18, 0, 0, DateTimeKind.Utc);
+    private const int SignUpMinutes = 10;
 
     private static TempleEventScheduleData Row(int id, TempleEvent contest, byte hour, byte minLevel, byte maxLevel,
         DayOfWeek? day = null, byte minute = 0) =>
         new() { Id = id, Event = contest, Day = day, Hour = hour, Minute = minute, MinLevel = minLevel, MaxLevel = maxLevel, CountdownMinutes = 10 };
+
+    [Fact]
+    public async Task ASignedUpPlayerSentToPrisonIsLeftThereWhenTheEventStarts()
+    {
+        gameData.TempleEventSchedules.Returns([Row(1, TempleEvent.BorderDefenseWar, 20, 20, 83)]);
+        await scheduler.TickTempleEventsAsync(FridayEightPmBerlin);
+        var (free, _) = CreateTestSession(41, 60);
+        var (jailed, _) = CreateTestSession(42, 60);
+        scheduler.TryJoinTempleEvent(free, TempleEvent.BorderDefenseWar).Should().Be(TempleJoinResult.Joined);
+        scheduler.TryJoinTempleEvent(jailed, TempleEvent.BorderDefenseWar).Should().Be(TempleJoinResult.Joined);
+        jailed.ZoneId = (byte)ZoneId.Prison;
+
+        await scheduler.TickTempleEventsAsync(FridayEightPmBerlin.AddMinutes(SignUpMinutes + 1));
+
+        await bdw.Received(1).StartMatchesAsync(
+            Arg.Is<IReadOnlyList<int>>(ids => ids.Contains(free.CharacterId) && !ids.Contains(jailed.CharacterId)),
+            Arg.Any<int>());
+    }
 
     [Fact]
     public async Task TwoEventsDueInTheSameMinuteBothStart()

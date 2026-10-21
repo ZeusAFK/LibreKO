@@ -18,6 +18,7 @@ namespace LibreKO.Game.Tests;
 public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
 {
     private const int FireBlast = 109535;
+    private const int TenthsPerSecond = 10;
     private const int FireThorn = 109554;
     private const int FireImpact = 109557;
     private const int IceOrb = 109627;
@@ -292,10 +293,13 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         caster.TransformId.Should().Be(26009);
     }
 
-    [Fact]
-    public async Task AMobPickedFromTheListTransformsWithOnlyTheDisguiseScroll()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AMobPickedFromTheListTransformsWithOnlyTheDisguiseScroll(bool inPvpZone)
     {
         const int RavenHarpy = 472250;
+        const ushort DisguiseScrolls = 10;
 
         var magic = Load<MagicData>("Magic.json", m => m.Id);
         var items = Load<ItemData>("Items.json", i => i.Num);
@@ -317,12 +321,14 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var caster = CreateCaster(provider, sessionManager, row, items);
         for (var i = 0; i < caster.SkillPoints.Length; i++)
             caster.SkillPoints[i] = 99;
+        if (inPvpZone)
+            caster.ZoneId = BattleZoneManager.ZONE_RONARK_LAND;
 
         for (var i = InventoryConstants.InventoryStart; i < caster.Inventory.Length; i++)
             caster.Inventory[i] = new ItemSlot();
         caster.Inventory[InventoryConstants.InventoryStart] = new ItemSlot
         {
-            ItemId = 381001000, Count = 10, Durability = 1
+            ItemId = 381001000, Count = DisguiseScrolls, Durability = 1
         };
 
         var sent = new List<Packet>();
@@ -343,9 +349,17 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         foreach (var s in sent)
             output.WriteLine($"  0x{s.GetOpcode():X2} {Convert.ToHexString(s.GetBytes())}");
 
+        if (inPvpZone)
+        {
+            caster.TransformId.Should().Be(0, "the list never opens in a PvP zone, so a form named straight away is refused too");
+            caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(DisguiseScrolls);
+            return;
+        }
+
         caster.TransformId.Should().Be(
             2200,
             "carrying the Disguise Scroll is enough on its own: it stands in for both the scroll and the gem");
+        caster.Inventory[InventoryConstants.InventoryStart].Count.Should().Be(9, "standing in for them, it is spent");
         sent.Should().ContainSingle(s => s.GetOpcode() == (byte)GameOpcodes.GS_STATE_CHANGE);
     }
 
@@ -432,9 +446,9 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     private static void GiveStones(UserSession caster, int stone, ushort count) =>
         caster.Inventory[InventoryConstants.InventoryStart + 1] = new ItemSlot { ItemId = stone, Count = count };
 
-    private static async Task CastAsync(
-        IMagicPacketCoordinator coordinator, UserSession caster, int skillId, int targetId)
+    private static async Task CastAsync(IServiceProvider provider, UserSession caster, int skillId, int targetId)
     {
+        var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Casting);
         packet.WriteInt(skillId);
@@ -444,6 +458,9 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
             packet.WriteInt(0);
         await coordinator.HandleAsync(caster.Client, packet);
         caster.CastCommitTicks = 0;
+        var castTenths = provider.GetRequiredService<IGameDataService>().GetMagic(skillId)?.CastTime ?? 0;
+        if (caster.AcceptedCasts.TryGetValue(skillId, out var accepted))
+            caster.AcceptedCasts[skillId] = accepted - castTenths * TimeSpan.TicksPerSecond / TenthsPerSecond;
     }
 
     private static Packet EffectingPacket(int skillId, int casterId, int targetId)
@@ -482,7 +499,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
             caster.SkillPoints[i] = 99;
         GiveStones(caster, StoneOfRogue, 3);
 
-        await CastAsync(provider.GetRequiredService<IMagicPacketCoordinator>(), caster, MagicShield, caster.CharacterId);
+        await CastAsync(provider, caster, MagicShield, caster.CharacterId);
         await provider.GetRequiredService<IMagicPacketCoordinator>()
             .HandleAsync(caster.Client, EffectingPacket(MagicShield, caster.CharacterId, caster.CharacterId));
 
@@ -601,7 +618,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var before = caster.Stats.ColdR;
 
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
-        await CastAsync(coordinator, caster, ResistCold, caster.CharacterId);
+        await CastAsync(provider, caster, ResistCold, caster.CharacterId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(ResistCold);
@@ -652,7 +669,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         var coordinator = provider.GetRequiredService<IMagicPacketCoordinator>();
         var before = monster.Hp;
 
-        await CastAsync(coordinator, caster, skillId, monster.UniqueId);
+        await CastAsync(provider, caster, skillId, monster.UniqueId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

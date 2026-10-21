@@ -163,9 +163,15 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
     {
         EnsureDailyLimit(session);
 
-        if (session.Room != 0 || session.ZoneId == DrakiTowerRules.ZoneIdValue || session.IsWarping)
+        if (session.Room != 0 || session.ZoneId == DrakiTowerRules.ZoneIdValue)
         {
             await session.Client.SendPacket(EventPacketWriter.DrakiEnterResult(DrakiEnterResult.AlreadyInInstance));
+            return;
+        }
+
+        if (session.IsWarping || session.IsBusy || !NpcPresence.IsAt(sessionManager, session, DrakiTowerRules.DrakiRiftNpcId))
+        {
+            await session.Client.SendPacket(EventPacketWriter.DrakiEnterResult(DrakiEnterResult.CannotEnterNow));
             return;
         }
 

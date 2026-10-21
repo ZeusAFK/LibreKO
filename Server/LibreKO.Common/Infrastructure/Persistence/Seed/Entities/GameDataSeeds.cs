@@ -289,6 +289,16 @@ public class ItemExchangeExpSeed : SnapshotJsonSeed<ItemExchangeExpData>
     protected override string JsonFileName => "ItemExchangeExps.json";
 }
 
+public class ItemSellSeed : SnapshotJsonSeed<ItemSellData>
+{
+    protected override string JsonFileName => "ItemSells.json";
+}
+
+public class MagicNonActionSeed : SnapshotJsonSeed<MagicNonActionData>
+{
+    protected override string JsonFileName => "MagicNonActions.json";
+}
+
 public class MiningExchangeSeed : SnapshotJsonSeed<MiningExchangeData>
 {
     protected override string JsonFileName => "MiningExchanges.json";

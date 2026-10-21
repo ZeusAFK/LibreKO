@@ -70,33 +70,62 @@ public class KnightsMembershipPacketService(
         if (string.IsNullOrWhiteSpace(clanName)
             || clanName.Length < MinClanNameLength
             || clanName.Length > MaxClanNameLength
-            || !NameRules.IsPlain(clanName)
-            || await knightsRepo.IsNameTakenAsync(clanName))
+            || !NameRules.IsPlain(clanName))
         {
             await session.Client.SendPacket(KnightsPacketWriter.CreateResult(KnightsCreateResult.NameRefused));
             return;
         }
 
-        var clan = new KnightsEntity
+        KnightsEntity clan;
+        await NameRules.Changes.WaitAsync();
+        try
         {
-            Name = clanName,
-            Chief = session.Name,
-            Nation = (byte)session.Nation,
-            Flag = (byte)ClanType.Training,
-            Grade = ClanRules.GradeFromPoints(session.Loyalty),
-            Points = session.Loyalty,
-            Members = 1,
-            Cape = ClanRules.NoCape,
-        };
+            if (await knightsRepo.IsNameTakenAsync(clanName))
+            {
+                await session.Client.SendPacket(KnightsPacketWriter.CreateResult(KnightsCreateResult.NameRefused));
+                return;
+            }
 
-        await knightsRepo.CreateAsync(clan);
+            if (!session.WithLock(TryPayForClan))
+            {
+                await session.Client.SendPacket(KnightsPacketWriter.CreateResult(KnightsCreateResult.NotEnoughCoins));
+                return;
+            }
 
-        session.Money -= ClanRules.CreationCoins;
-        session.KnightsId = clan.Id;
-        session.KnightsFame = ClanRules.FameChief;
-        session.KnightsName = clanName;
-        session.KnightsPoints = 0;
-        session.Fame = ClanRules.FameChief;
+            clan = new KnightsEntity
+            {
+                Name = clanName,
+                Chief = session.Name,
+                Nation = (byte)session.Nation,
+                Flag = (byte)ClanType.Training,
+                Grade = ClanRules.GradeFromPoints(session.Loyalty),
+                Points = session.Loyalty,
+                Members = 1,
+                Cape = ClanRules.NoCape,
+            };
+
+            try
+            {
+                await knightsRepo.CreateAsync(clan);
+            }
+            catch
+            {
+                session.WithLock(s => s.Money += ClanRules.CreationCoins);
+                throw;
+            }
+
+            // A player who joined another clan while this one was stored keeps that clan and the coins.
+            if (!session.WithLock(s => LeadNewClan(s, clan)))
+            {
+                await knightsRepo.RemoveAsync(clan);
+                await session.Client.SendPacket(KnightsPacketWriter.CreateResult(KnightsCreateResult.AlreadyInClan));
+                return;
+            }
+        }
+        finally
+        {
+            NameRules.Changes.Release();
+        }
 
         await knightsRuntimeService.SyncCharacterAsync(knightsRepo, session, includeMoney: true);
 
@@ -495,8 +524,12 @@ public class KnightsMembershipPacketService(
 
     private async Task<int> RefundDonationAsync(KnightsEntity? clan, UserSession member)
     {
-        var donated = member.KnightsPoints;
-        member.KnightsPoints = 0;
+        var donated = member.WithLock(s =>
+        {
+            var points = s.KnightsPoints;
+            s.KnightsPoints = 0;
+            return points;
+        });
         if (donated <= 0)
             return 0;
 
@@ -513,8 +546,7 @@ public class KnightsMembershipPacketService(
         }
 
         var refund = ClanDonationCalculator.RefundFor(donated, keepsEverything);
-        member.Loyalty = (int)Math.Min(
-            ClanDonationCalculator.LoyaltyMax, (long)member.Loyalty + refund);
+        member.WithLock(s => s.Loyalty = (int)Math.Min(ClanDonationCalculator.LoyaltyMax, (long)s.Loyalty + refund));
 
         try
         {
@@ -551,10 +583,37 @@ public class KnightsMembershipPacketService(
         if (clan == null)
             return;
 
-        var (grade, fund) = ClanDonationCalculator.WithdrawDonation(
-            (ClanType)clan.Flag, clan.ClanPointFund, donated);
-        clan.Flag = (byte)grade;
-        clan.ClanPointFund = fund;
+        ClanRules.ChangeFund(clan, held =>
+        {
+            var (grade, fund) = ClanDonationCalculator.WithdrawDonation((ClanType)held.Flag, held.ClanPointFund, donated);
+            held.Flag = (byte)grade;
+            held.ClanPointFund = fund;
+        });
+    }
+
+    private static bool TryPayForClan(UserSession session)
+    {
+        if (session.Money < ClanRules.CreationCoins)
+            return false;
+
+        session.Money -= ClanRules.CreationCoins;
+        return true;
+    }
+
+    private static bool LeadNewClan(UserSession session, KnightsEntity clan)
+    {
+        if (session.KnightsId > 0)
+        {
+            session.Money += ClanRules.CreationCoins;
+            return false;
+        }
+
+        session.KnightsId = clan.Id;
+        session.KnightsFame = ClanRules.FameChief;
+        session.KnightsName = clan.Name;
+        session.KnightsPoints = 0;
+        session.Fame = ClanRules.FameChief;
+        return true;
     }
 
     private async Task<bool> HasValidClanMembershipAsync(UserSession session, IKnightsRepository knightsRepo)

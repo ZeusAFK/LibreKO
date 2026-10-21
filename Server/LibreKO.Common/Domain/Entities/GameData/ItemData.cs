@@ -23,6 +23,15 @@ public class ItemData
     public byte Race { get; set; }
     public bool IsUntradeable => Race == UntradeableRace;
     private const byte UntradeableRace = 20;
+    private const byte NoTradeDestroyRace = 70;
+    private const byte NoTradeDestroyAltRace = 71;
+    private const byte NoTradeSellStoreRace = 73;
+
+    // The races the client never lets a player hand to another.
+    public bool IsTradeLocked =>
+        Race is UntradeableRace or NoTradeDestroyRace or NoTradeDestroyAltRace or NoTradeSellStoreRace;
+    public bool IsUnmailable => Race == UnmailableRace;
+    private const byte UnmailableRace = 7;
     public byte Class { get; set; }
     public short Damage { get; set; }
     public short MinDamage { get; set; }

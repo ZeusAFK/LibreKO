@@ -18,7 +18,7 @@ public static class ItemUseRules
     {
         ItemUse.Trade => TradeRefusal(itemId, race, state, timed),
         ItemUse.NpcSell => SellRefusal(itemId, race, state, timed),
-        ItemUse.ClanBank => !WarehouseRules.Storable(itemId, race) || HeldBack(state) || timed
+        ItemUse.ClanBank => !WarehouseRules.Storable(itemId, race) || TradeLocked(race) || HeldBack(state) || timed
             ? NonStorableText
             : Allowed,
         _ => WarehouseRules.Storable(itemId, race) ? Allowed : NonStorableText,
@@ -27,11 +27,15 @@ public static class ItemUseRules
     private static bool HeldBack(byte state) => state is (byte)ItemFlag.Rented or (byte)ItemFlag.CharacterSeal
         or (byte)ItemFlag.Duplicate or (byte)ItemFlag.Sealed or (byte)ItemFlag.Bound;
 
+    // The races that never go to another player, by trade, stall, mail or clan bank.
+    public static bool TradeLocked(int race) =>
+        race is ItemData.Race.Quest or ItemData.Race.NoTradeDestroy or ItemData.Race.NoTradeDestroyAlt
+            or ItemData.Race.NoTradeSellStore;
+
     private static int TradeRefusal(int itemId, int race, byte state, bool timed)
     {
         if (ItemData.IsNoTradeId(itemId)
-            || race is ItemData.Race.Quest or ItemData.Race.NoTradeDestroy or ItemData.Race.NoTradeDestroyAlt
-                or ItemData.Race.NoTradeSellStore
+            || TradeLocked(race)
             || state is >= TradeLockedStateFirst and <= TradeLockedStateLast)
             return CannotTradeText;
         return state switch

@@ -5,6 +5,7 @@ using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.Protocol;
+using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -164,6 +165,20 @@ public class NationTransferTests : GameTestBase
         var packet = Last(sent);
         packet.ReadByte().Should().Be(OpenBox);
         packet.ReadByte().Should().Be(NoItem);
+    }
+
+    [Fact]
+    public async Task APrisonerCannotTransfer()
+    {
+        using var provider = Provider();
+        var (session, sent, _) = await Online(provider, carriesItem: true);
+        session.ZoneId = (byte)ZoneId.Prison;
+
+        await provider.GetRequiredService<INationTransferService>().OpenAsync(session);
+
+        var packet = Last(sent);
+        packet.ReadByte().Should().Be(OpenBox);
+        packet.ReadByte().Should().Be(NationTransferPacketWriter.Failed, "the transfer moves every character to Moradon");
     }
 
     [Fact]

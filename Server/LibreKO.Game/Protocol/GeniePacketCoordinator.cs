@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+﻿using System;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.World;
 using Microsoft.Extensions.Logging;
@@ -35,9 +34,6 @@ public class GeniePacketCoordinator(
         (70, "You're elite — chase rare drops and help your nation in the field."),
     };
 
-    // charId -> last UTC day index on which the daily reward was claimed.
-    private static readonly Dictionary<int, int> lastClaimDay = new();
-
     public async Task HandleAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
@@ -59,7 +55,7 @@ public class GeniePacketCoordinator(
     private async Task SendGenieStatusAsync(UserSession session)
     {
         string tip = PickGenieTip(session.Level);
-        bool rewardAvail = !GenieClaimedToday(session.CharacterId);
+        bool rewardAvail = !ClaimedToday(session);
 
         await session.Client.SendPacket(
             GeniePacketWriter.Status(GenieSubStatus, tip, rewardAvail));
@@ -67,17 +63,22 @@ public class GeniePacketCoordinator(
 
     private async Task HandleGenieClaimAsync(UserSession session)
     {
-
-        if (GenieClaimedToday(session.CharacterId))
+        var claimed = session.WithLock(s =>
+        {
+            if (ClaimedToday(s) || (long)s.Money + GenieRewardGold > ExchangePacketConstants.CoinMax)
+                return false;
+            s.GenieRewardClaimedOn = DateTime.UtcNow.Date;
+            s.Money += GenieRewardGold;
+            return true;
+        });
+        if (!claimed)
         {
             await session.Client.SendPacket(GeniePacketWriter.ClaimResult(
                 GenieSubClaim, GeniePacketWriter.Failed, GeniePacketWriter.NoReward));
             return;
         }
 
-        lastClaimDay[session.CharacterId] = GenieTodayIndex();
-        session.Money += GenieRewardGold;
-        await userNotification.SendGoldGainAsync(session, GenieRewardGold);   // grants gold + GS_GOLD_CHANGE
+        await userNotification.SendGoldGainAsync(session, GenieRewardGold);
         logger.LogDebug("{Name} claimed daily genie reward ({Gold} gold)", session.Name, GenieRewardGold);
 
         await session.Client.SendPacket(GeniePacketWriter.ClaimResult(
@@ -95,9 +96,5 @@ public class GeniePacketCoordinator(
         return tip;
     }
 
-    private static bool GenieClaimedToday(int charId)
-        => lastClaimDay.TryGetValue(charId, out var day) && day == GenieTodayIndex();
-
-    private static int GenieTodayIndex()
-        => (int)(DateTime.UtcNow.Date - DateTime.UnixEpoch).TotalDays;
+    private static bool ClaimedToday(UserSession session) => session.GenieRewardClaimedOn == DateTime.UtcNow.Date;
 }

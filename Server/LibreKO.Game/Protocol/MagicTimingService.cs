@@ -21,6 +21,8 @@ public interface IMagicTimingService
 
     MagicTimingVerdict CheckRelease(UserSession session, MagicData magic);
 
+    MagicTimingVerdict CheckVolley(UserSession session);
+
     void OnCastAccepted(UserSession session, MagicData magic, bool armCooldown = true);
 
     void OnVolleyAccepted(UserSession session, MagicData magic, int arrows);
@@ -28,6 +30,8 @@ public interface IMagicTimingService
     void OnReleaseAccepted(UserSession session, MagicData magic, bool armCooldown = true);
 
     void OnCastAborted(UserSession session, int skillId);
+
+    void OnReleaseRefused(UserSession session, MagicData magic);
 }
 
 public sealed class MagicTimingService(IGameDataService gameDataService, TimeProvider? timeProvider = null) : IMagicTimingService
@@ -47,6 +51,9 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
 
     public MagicTimingVerdict CheckCasting(UserSession session, MagicData magic)
     {
+        if (magic.CastTime <= 0)
+            return MagicTimingVerdict.NotCast;
+
         var now = time.GetUtcNow().UtcTicks;
 
         if (RemainingCooldownMs(session, magic.Id, now) > 0)
@@ -81,11 +88,14 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         if (IsReleaseOfTheAcceptedCast(session, magic, now))
             return MagicTimingVerdict.Allowed;
 
-        if (magic.CastTime > 0 && magic.PrimaryType != MagicSkillType.Ranged && !HasInstantMagic(session))
+        if (magic.CastTime > 0 && !HasInstantMagic(session))
             return MagicTimingVerdict.NotCast;
 
-        return RemainingCooldownMs(session, magic.Id, now) > 0 || (IsPotion(magic) && PotionCooldownRunning(session, now))
-            ? MagicTimingVerdict.OnCooldown
+        if (RemainingCooldownMs(session, magic.Id, now) > 0 || (IsPotion(magic) && PotionCooldownRunning(session, now)))
+            return MagicTimingVerdict.OnCooldown;
+
+        return IsPacedRelease(magic) && now < session.InstantSkillReadyTicks - SkillBurstFloorMs * TimeSpan.TicksPerMillisecond
+            ? MagicTimingVerdict.TooSoonAfterLastSkill
             : MagicTimingVerdict.Allowed;
     }
 
@@ -109,23 +119,35 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
             return;
 
         session.CastingSkillId = magic.Id;
+        session.CastLaunched = false;
         var castMs = magic.CastTime * MillisecondsPerTenth;
-        var commitMs = magic.PrimaryType == MagicSkillType.Ranged ? Math.Min(castMs, RangedCommitMs) : castMs;
         session.CastReadyTicks = now + castMs * TimeSpan.TicksPerMillisecond;
-        session.CastCommitTicks = now + commitMs * TimeSpan.TicksPerMillisecond;
+        session.CastCommitTicks = now + CommitMs(magic) * TimeSpan.TicksPerMillisecond;
         session.CastExpireTicks = session.CastReadyTicks + AbandonedCastGraceMs * TimeSpan.TicksPerMillisecond;
     }
 
+    public MagicTimingVerdict CheckVolley(UserSession session) =>
+        time.GetUtcNow().UtcTicks + LatencyGraceMs * TimeSpan.TicksPerMillisecond < session.NextShotTicks
+            ? MagicTimingVerdict.TooSoonAfterLastSkill
+            : MagicTimingVerdict.Allowed;
+
     public void OnVolleyAccepted(UserSession session, MagicData magic, int arrows)
     {
-        if (arrows > 1)
-            session.PendingArrowHits[magic.Id] = arrows;
+        session.PendingArrowHits[magic.Id] = Math.Max(1, arrows);
+        session.NextShotTicks = Math.Max(session.NextShotTicks, time.GetUtcNow().UtcTicks)
+            + RangedCommitMs * TimeSpan.TicksPerMillisecond;
     }
 
     public void OnFlightLaunched(UserSession session, MagicData magic)
     {
-        if (magic.PrimaryType == MagicSkillType.Ranged || session.CastingSkillId != magic.Id)
+        if (session.CastingSkillId != magic.Id)
             return;
+
+        if (magic.PrimaryType == MagicSkillType.Ranged)
+        {
+            session.CastLaunched = true;
+            return;
+        }
 
         ClearCast(session);
     }
@@ -144,22 +166,53 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
             session.LastPotionTicks = time.GetUtcNow().UtcTicks;
 
         if (session.CastingSkillId == magic.Id)
+        {
             ClearCast(session);
-        else if (!releasesAnAcceptedCast && armCooldown)
-            ArmCooldown(session, magic, time.GetUtcNow().UtcTicks);
+            return;
+        }
+
+        if (releasesAnAcceptedCast)
+            return;
+
+        var now = time.GetUtcNow().UtcTicks;
+        if (armCooldown)
+            ArmCooldown(session, magic, now);
+        if (IsPacedRelease(magic))
+            session.InstantSkillReadyTicks = Math.Max(session.InstantSkillReadyTicks, now) + SkillBurstFloorMs * TimeSpan.TicksPerMillisecond;
     }
 
     public void OnCastAborted(UserSession session, int skillId)
     {
-        if (session.CastingSkillId == skillId)
-        {
-            ClearCast(session);
-            session.SkillBurstTicks = 0;
-        }
+        if (session.CastingSkillId != skillId)
+            return;
 
+        var launched = session.CastLaunched;
+        ClearCast(session);
+        if (launched)
+            return;
+
+        session.SkillBurstTicks = 0;
         session.PendingArrowHits.TryRemove(skillId, out _);
         session.AcceptedCasts.TryRemove(skillId, out _);
         session.SkillCooldowns.TryRemove(skillId, out _);
+    }
+
+    public void OnReleaseRefused(UserSession session, MagicData magic)
+    {
+        if (magic.PrimaryType == MagicSkillType.Ranged)
+        {
+            OnReleaseAccepted(session, magic);
+            return;
+        }
+
+        if (session.CastingSkillId == magic.Id)
+            ClearCast(session);
+        session.AcceptedCasts.TryRemove(magic.Id, out _);
+        if (magic.FlyingEffect > 0)
+            return;
+
+        session.SkillBurstTicks = 0;
+        session.SkillCooldowns.TryRemove(magic.Id, out _);
     }
 
     private void ArmCooldown(UserSession session, MagicData magic, long now)
@@ -179,12 +232,20 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         if (!session.AcceptedCasts.TryGetValue(magic.Id, out var accepted))
             return false;
 
-        var windowMs = magic.CastTime * MillisecondsPerTenth + AbandonedCastGraceMs;
-        if (MillisecondsSince(accepted, now) <= windowMs)
-            return true;
+        var sinceMs = MillisecondsSince(accepted, now);
+        if (sinceMs > magic.CastTime * MillisecondsPerTenth + AbandonedCastGraceMs)
+        {
+            session.AcceptedCasts.TryRemove(magic.Id, out _);
+            return false;
+        }
 
-        session.AcceptedCasts.TryRemove(magic.Id, out _);
-        return false;
+        return sinceMs + LatencyGraceMs >= CommitMs(magic) || HasInstantMagic(session);
+    }
+
+    private static int CommitMs(MagicData magic)
+    {
+        var castMs = magic.CastTime * MillisecondsPerTenth;
+        return magic.PrimaryType == MagicSkillType.Ranged ? Math.Min(castMs, RangedCommitMs) : castMs;
     }
 
     private static void PruneAcceptedCasts(UserSession session, long now)
@@ -224,6 +285,9 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
 
     private static bool ConsumesAnItem(MagicData magic) => magic.UseItem != 0;
 
+    private static bool IsPacedRelease(MagicData magic) =>
+        !ConsumesAnItem(magic) && magic.PrimaryType != MagicSkillType.Ranged;
+
     private static bool HasInstantMagic(UserSession session) =>
         session.ActiveBuffs.Values.Any(buff => buff.BuffType == BuffType.InstantMagic && !buff.IsExpired);
 
@@ -248,6 +312,7 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
         session.CastingSkillId = 0;
         session.CastReadyTicks = 0;
         session.CastExpireTicks = 0;
+        session.CastLaunched = false;
     }
 
     private static void PruneCooldowns(UserSession session, long now)

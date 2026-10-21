@@ -9,4 +9,5 @@ public enum DrakiEnterResult : byte
     NoLimit = 5,
     RoomCreationFailed = 6,
     InvalidItem = 7,
+    CannotEnterNow = 13,
 }

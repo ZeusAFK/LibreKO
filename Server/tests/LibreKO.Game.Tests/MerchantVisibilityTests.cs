@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Protocol;
@@ -150,12 +150,15 @@ public class MerchantVisibilityTests : GameTestBase
         merchant.ZoneId = 21;
         merchant.Hp = 100;
         merchant.Money = 50_000;
-        merchant.Trade.MerchantState = MerchantMode.Buying;
-        merchant.Trade.BuyMerchantItems[0] = new MerchantItem
-        {
-            ItemId = itemId, Count = 10, Price = 1_000, Durability = 0,
-        };
+        merchant.Trade.IsBuyingMerchantPreparing = true;
         sessionManager.Regions.AddToRegion(merchant);
+        var insert = new Packet(GameOpcodes.GS_MERCHANT);
+        insert.WriteByte((byte)MerchantSubOpcode.BuyInsert);
+        insert.WriteByte(1);
+        insert.WriteInt(itemId);
+        insert.WriteUShort(10);
+        insert.WriteInt(1_000);
+        await provider.GetRequiredService<IMerchantPacketCoordinator>().HandleAsync(merchantClient, insert);
 
         var sellerClient = Substitute.For<IClient>();
         sellerClient.Id.Returns(Guid.NewGuid());
@@ -166,7 +169,7 @@ public class MerchantVisibilityTests : GameTestBase
         seller.ZoneId = 21;
         seller.Hp = 100;
         seller.Money = 200;
-        seller.Trade.MerchantTargetUserId = merchant.CharacterId;
+        seller.Trade.LookAt(merchant.CharacterId, merchant.Trade.StallGeneration);
         seller.Inventory[InventoryConstants.SlotMax].ItemId = itemId;
         seller.Inventory[InventoryConstants.SlotMax].Count = 4;
         sessionManager.Regions.AddToRegion(seller);
@@ -180,14 +183,14 @@ public class MerchantVisibilityTests : GameTestBase
         await provider.GetRequiredService<IMerchantPacketCoordinator>().HandleAsync(sellerClient, buy);
 
         seller.Money.Should().Be(200 + 3_000, "the seller is paid for what the stall took");
-        merchant.Money.Should().Be(50_000 - 3_000, "the stall pays out of the owner's gold");
+        merchant.Money.Should().Be(50_000 - 10_000, "the stall took the gold for its whole list when it opened");
         seller.Inventory[InventoryConstants.SlotMax].Count.Should().Be(1);
         merchant.Trade.BuyMerchantItems[0].Count.Should().Be(7);
 
         sellerSent.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_GOLD_CHANGE,
             "the seller's balance has to refresh on screen");
         merchantSent.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_GOLD_CHANGE,
-            "the stall owner's balance has to refresh on screen");
+            "the stall owner's balance refreshes when the stall takes its gold");
     }
 
     [Fact]

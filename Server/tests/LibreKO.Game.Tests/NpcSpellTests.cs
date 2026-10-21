@@ -29,6 +29,7 @@ public class NpcSpellTests : GameTestBase
     private const byte RawDamage = (byte)MagicDirectType.RawDamage;
     private const short RawSpellDamage = -500;
     private const byte NpcTypeUnderTest = 7;
+    private const int SlaveId = 704;
 
     [Fact]
     public async Task TheApostlesIceCometHitsForItsSpellDamageNotItsAttack()
@@ -135,6 +136,31 @@ public class NpcSpellTests : GameTestBase
         player.Hp.Should().Be((short)(PlayerHp + RawSpellDamage));
         neighbour.Hp.Should().Be((short)(PlayerHp + RawSpellDamage));
         faraway.Hp.Should().Be(PlayerHp);
+    }
+
+    [Fact]
+    public async Task AnAreaSpellPassesOverASlaveMerchant()
+    {
+        using var provider = CreateProvider(_ => { }, SpellData(new MagicType3Data
+        {
+            Id = IceComet, DirectType = RawDamage, FirstDamage = RawSpellDamage, Radius = 5,
+        }, moral: AreaEnemyMoral));
+        var (player, apostle) = Arena(provider);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var slave = new SlaveMerchantBotSession(client, SlaveId, SlaveId)
+        {
+            Name = "Slave", Nation = AccountNation.ElMorad, ZoneId = Zone, X = Spot + 3, Z = Spot, MaxHp = PlayerHp, Hp = PlayerHp,
+        };
+        sessions.RegisterSession(slave);
+        sessions.Regions.AddToRegion(slave);
+
+        ArmCast(apostle, player);
+        await provider.GetRequiredService<INpcAiCombatService>().HandleCastingAsync(apostle, DateTime.UtcNow.Ticks);
+
+        player.Hp.Should().Be((short)(PlayerHp + RawSpellDamage));
+        slave.Hp.Should().Be(PlayerHp, "a slave's stall is not something a monster can kill");
     }
 
     [Fact]

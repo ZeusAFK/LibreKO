@@ -21,6 +21,7 @@ public class LotteryService : ILotteryService
     private int lastAnnouncedMinute = -1;
     private int lastAutoCheckMinute = -1;
     private readonly ScheduleClock scheduleClock;
+    private readonly TimeProvider clock;
 
     public LotteryService(
         SessionManager sessionManager,
@@ -28,8 +29,10 @@ public class LotteryService : ILotteryService
         IUserNotificationService userNotificationService,
         IMailService mailService,
         ScheduleClock scheduleClock,
-        ILogger<LotteryService> logger)
+        ILogger<LotteryService> logger,
+        TimeProvider? clock = null)
     {
+        this.clock = clock ?? TimeProvider.System;
         this.sessionManager = sessionManager;
         this.gameDataService = gameDataService;
         this.userNotificationService = userNotificationService;
@@ -60,8 +63,8 @@ public class LotteryService : ILotteryService
             }
 
             var duration = durationMinutes ?? (eventData.DurationMinutes > 0 ? eventData.DurationMinutes : LotteryEventData.DefaultDurationMinutes);
-            var endTime = DateTime.UtcNow.AddMinutes(duration);
-            active = new ActiveLottery(eventData, endTime);
+            var endTime = clock.GetUtcNow().UtcDateTime.AddMinutes(duration);
+            active = new ActiveLottery(eventData, endTime, clock);
             lastAnnouncedMinute = duration + 1;
         }
 
@@ -86,14 +89,12 @@ public class LotteryService : ILotteryService
     {
         ActiveLottery? current;
         Dictionary<int, int>? refundSnapshot = null;
+        // Whoever takes the lottery off the board settles it, once.
         lock (stateLock)
         {
             current = active;
             if (current == null) return;
-            if (cancelWithoutWinners)
-            {
-                active = null;
-            }
+            active = null;
         }
 
         if (cancelWithoutWinners)
@@ -247,7 +248,8 @@ public class LotteryService : ILotteryService
             var rem = active.RemainingSeconds;
             if (rem <= 0)
             {
-                await FinishAsync(active);
+                if (TakeOffTheBoard(active))
+                    await FinishAsync(active);
                 return;
             }
 
@@ -288,13 +290,19 @@ public class LotteryService : ILotteryService
         }
     }
 
-    private async Task FinishAsync(ActiveLottery active)
+    private bool TakeOffTheBoard(ActiveLottery expected)
     {
         lock (stateLock)
         {
-            if (this.active == active) this.active = null;
+            if (active != expected)
+                return false;
+            active = null;
+            return true;
         }
+    }
 
+    private async Task FinishAsync(ActiveLottery active)
+    {
         List<(int CharacterId, string CharacterName)> ticketSnapshot;
         lock (active.Lock)
         {

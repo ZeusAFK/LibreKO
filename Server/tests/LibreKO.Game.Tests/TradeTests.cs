@@ -103,6 +103,7 @@ public class TradeTests : GameTestBase
         bagSlot.ItemId = itemId;
         bagSlot.Count = 3;
         bagSlot.Durability = 25;
+        session.Trade.IsSellingMerchantPreparing = true;
 
         var add = new Packet(GameOpcodes.GS_MERCHANT);
         add.WriteByte((byte)MerchantSubOpcode.ItemAdd);
@@ -150,6 +151,7 @@ public class TradeTests : GameTestBase
         buyerClient.Id.Returns(Guid.NewGuid());
         buyerClient.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         var buyer = sessionManager.CreateSession(buyerClient, characterId: 51, accountId: 61);
+        buyer.Hp = 100;
         buyer.Money = 100_000;
 
         var merchantAClient = Substitute.For<IClient>();
@@ -229,6 +231,7 @@ public class TradeTests : GameTestBase
         buyerClient.SendPacket(Arg.Do<Packet>(packet => buyerPackets.Add(packet)), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
         var buyer = sessionManager.CreateSession(buyerClient, characterId: 511, accountId: 611);
+        buyer.Hp = 100;
         buyer.Class = 101;
         buyer.Level = 20;
         buyer.Strength = 50;
@@ -623,6 +626,7 @@ public class TradeTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteInt(1);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 
@@ -663,6 +667,7 @@ public class TradeTests : GameTestBase
         var packet = new Packet(GameOpcodes.GS_WAREHOUSE);
         packet.WriteByte(1);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 
@@ -698,6 +703,7 @@ public class TradeTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 73, accountId: 83);
+        session.Hp = 100;
         session.Money = 5000;
         session.WarehouseMoney = 1000;
 
@@ -711,6 +717,7 @@ public class TradeTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteInt(2000);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 
@@ -735,6 +742,7 @@ public class TradeTests : GameTestBase
 
         var sessionManager = provider.GetRequiredService<SessionManager>();
         var session = sessionManager.CreateSession(client, characterId: 74, accountId: 84);
+        session.Hp = 100;
         session.Money = 1000;
         session.WarehouseMoney = 5000;
 
@@ -748,6 +756,7 @@ public class TradeTests : GameTestBase
         packet.WriteByte(0);
         packet.WriteInt(2000);
 
+        StandAtWarehouseKeeper(provider, client);
         var coordinator = provider.GetRequiredService<IWarehousePacketCoordinator>();
         await coordinator.HandleAsync(client, packet);
 
@@ -1015,5 +1024,6 @@ public class TradeTests : GameTestBase
     {
         a.Trade.ExchangeUser = b.CharacterId;
         b.Trade.ExchangeUser = a.CharacterId;
+        a.Trade.ExchangeAccepted = b.Trade.ExchangeAccepted = true;
     }
 }

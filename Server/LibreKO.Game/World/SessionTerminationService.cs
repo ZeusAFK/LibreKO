@@ -39,6 +39,7 @@ public class SessionTerminationService(
     // dropping at once) can't exhaust the connection pool. Static = shared across all
     // terminations regardless of this service's DI lifetime.
     private const int MaxConcurrentDisconnectDbOps = 24;
+    private const int OtherConnectionWaitSeconds = 10;
     private static readonly SemaphoreSlim DisconnectDbGate = new(MaxConcurrentDisconnectDbOps);
 
     public async Task SaveAsync(UserSession session, CancellationToken cancellationToken = default)
@@ -62,29 +63,58 @@ public class SessionTerminationService(
 
     public async Task EvictForTakeoverAsync(UserSession session)
     {
-        session.Client.ExpectedClose = true;
-        await RemoveFromWorldAsync(session);
-        await knightsRuntime.NotifyMemberOfflineAsync(session);
-
-        try
+        if (!session.TryBeginClosing())
         {
-            await ReleaseWorldStateAsync(session);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
+            await session.Closed;
+            return;
         }
 
+        var waited = await WaitForPacketInProgressAsync(session);
         try
         {
-            if (!session.IsBot && !await characterStatePersister.SaveAsync(session))
+            session.Client.ExpectedClose = true;
+            await RemoveFromWorldAsync(session);
+            await knightsRuntime.NotifyMemberOfflineAsync(session);
+
+            try
+            {
+                await ReleaseWorldStateAsync(session);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
+            }
+
+            if (!session.IsBot && !await characterStatePersister.SaveAndSealAsync(session))
                 logger.LogWarning("Could not save character state during login takeover for {Name}", session.Name);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Error saving character state during login takeover for {Name}", session.Name);
         }
-        sessionManager.RemoveSession(session);
+        finally
+        {
+            sessionManager.RemoveSession(session);
+            if (waited)
+                session.PacketGate.Release();
+            session.MarkClosed();
+        }
+    }
+
+    // A packet of this session never waits for a close of this session.
+    private static bool IsOwnPacket(UserSession session) => ReferenceEquals(PacketTurn.Current, session);
+
+    // A close from another connection lets that connection's packet in progress finish first.
+    private async Task<bool> WaitForPacketInProgressAsync(UserSession session)
+    {
+        if (IsOwnPacket(session))
+            return false;
+
+        if (await session.PacketGate.WaitAsync(TimeSpan.FromSeconds(OtherConnectionWaitSeconds)))
+            return true;
+
+        logger.LogWarning("The packet {Name} was handling did not finish; closing anyway", session.Name);
+        return false;
     }
 
     private async Task TerminateAsync(IClient client, bool unexpectedDisconnect, CancellationToken cancellationToken)
@@ -116,14 +146,24 @@ public class SessionTerminationService(
             return;
         }
 
-        if (unexpectedDisconnect)
-            logger.LogInformation("Client disconnected unexpectedly: {Name} (CharId={CharId})", session.Name, session.CharacterId);
+        if (!session.TryBeginClosing())
+        {
+            if (IsOwnPacket(session))
+                return;
 
-        await RemoveFromWorldAsync(session);
-        await knightsRuntime.NotifyMemberOfflineAsync(session);
+            await session.Closed.WaitAsync(cancellationToken);
+            client.CharacterId = 0;
+            return;
+        }
 
+        var waited = await WaitForPacketInProgressAsync(session);
         try
         {
+            if (unexpectedDisconnect)
+                logger.LogInformation("Client disconnected unexpectedly: {Name} (CharId={CharId})", session.Name, session.CharacterId);
+
+            await RemoveFromWorldAsync(session);
+            await knightsRuntime.NotifyMemberOfflineAsync(session);
             await CleanupAsync(session, cancellationToken);
         }
         catch (Exception ex)
@@ -135,6 +175,9 @@ public class SessionTerminationService(
             sessionManager.RemoveSession(session);
             await MarkOfflineAsync(session.CharacterId, cancellationToken);
             client.CharacterId = 0;
+            if (waited)
+                session.PacketGate.Release();
+            session.MarkClosed();
         }
     }
 
@@ -159,12 +202,19 @@ public class SessionTerminationService(
 
     private async Task CleanupAsync(UserSession session, CancellationToken cancellationToken)
     {
-        await ReleaseWorldStateAsync(session);
+        try
+        {
+            await ReleaseWorldStateAsync(session);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Error releasing world state for {Name}", session.Name);
+        }
 
         await DisconnectDbGate.WaitAsync(cancellationToken);
         try
         {
-            await characterStatePersister.SaveAsync(session, cancellationToken);
+            await characterStatePersister.SaveAndSealAsync(session, cancellationToken);
         }
         finally
         {
@@ -174,8 +224,9 @@ public class SessionTerminationService(
 
     private async Task ReleaseWorldStateAsync(UserSession session)
     {
+        // Even a dead player's escrowed offers go back before the save below.
         if (session.Trade.IsTrading)
-            await exchangePacketCoordinator.CancelAsync(session);
+            await exchangePacketCoordinator.CancelAsync(session, isOnDeath: true);
         if (session.Trade.IsRequestingChallenge || session.Trade.IsChallengeRequested)
             await challengePacketCoordinator.CancelAsync(session);
         if (session.HasRival)

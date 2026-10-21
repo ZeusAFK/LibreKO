@@ -14,6 +14,7 @@ public class ClanBattleTests
     private const byte Ronark = 71;
     private const short Wolves = 10;
     private const short Doves = 11;
+    private static readonly TimeSpan LockWait = TimeSpan.FromSeconds(5);
 
     private sealed record Player(UserSession Session, List<Packet> Sent);
 
@@ -63,6 +64,53 @@ public class ClanBattleTests
         beta.Session.ClanBattleEnemy.Should().Be(Wolves);
         PvpRules.CanAttackPlayer(wolf.Session, beta.Session).Should().BeTrue();
         battles.EnemyOf(Wolves).Should().Be(Doves);
+    }
+
+    [Fact]
+    public async Task AMemberWhoLeavesTheClanMidWarLeavesTheWarBehind()
+    {
+        var (sessions, battles) = Arrange();
+        var alpha = Join(sessions, 1, "Alpha", Wolves);
+        var beta = Join(sessions, 2, "Beta", Doves);
+        var wolf = Join(sessions, 3, "Cub", Wolves);
+        await battles.ChallengeAsync(alpha.Session, beta.Session.CharacterId);
+        await battles.AnswerAsync(beta.Session, accept: true, alpha.Session.CharacterId);
+
+        wolf.Session.KnightsId = 0;
+
+        PvpRules.CanAttackPlayer(wolf.Session, beta.Session).Should().BeFalse("the war was the clan's, not the player's");
+        await battles.SurrenderAsync(alpha.Session);
+        wolf.Session.ClanBattleEnemy.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task AMemberWhoLeavesAsTheWarBeginsIsNotMadeAnEnemy()
+    {
+        var (sessions, battles) = Arrange();
+        var alpha = Join(sessions, 1, "Alpha", Wolves);
+        var beta = Join(sessions, 2, "Beta", Doves);
+        var wolf = Join(sessions, 3, "Cub", Wolves);
+        await battles.ChallengeAsync(alpha.Session, beta.Session.CharacterId);
+        using var holding = new ManualResetEventSlim();
+        using var release = new ManualResetEventSlim();
+        var holder = new Thread(() => wolf.Session.WithLock(s =>
+        {
+            holding.Set();
+            release.Wait();
+            s.KnightsId = 0;
+        }));
+        holder.Start();
+        holding.Wait();
+        var answer = new Thread(() => battles.AnswerAsync(beta.Session, accept: true, alpha.Session.CharacterId).GetAwaiter().GetResult());
+
+        answer.Start();
+        SpinWait.SpinUntil(() => answer.ThreadState.HasFlag(ThreadState.WaitSleepJoin), LockWait).Should().BeTrue("the war waits for the member's lock");
+        release.Set();
+        holder.Join();
+        answer.Join();
+
+        wolf.Session.ClanBattleEnemy.Should().Be(0, "the player left the clan before the war reached them");
+        alpha.Session.ClanBattleEnemy.Should().Be(Doves);
     }
 
     [Fact]

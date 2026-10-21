@@ -16,6 +16,12 @@ namespace LibreKO.Game.Tests;
 
 public class WorldTests : GameTestBase
 {
+    private const short ResetClass = 101;
+    private const byte ResetLevel = 30;
+    private const byte ResetRace = 1;
+    private const int ResetPurse = 2_000_000;
+    private const byte SpentStrength = 80;
+
     [Fact]
     public void NpcInstance_UsesNpcSpawnStyle_DistinguishesMonsterFromNpcStyleSpawn()
     {
@@ -325,6 +331,39 @@ public class WorldTests : GameTestBase
     }
 
     [Fact]
+    public async Task GracefulShutdownLogsEverySessionOutSideBySide()
+    {
+        var sessionManager = new SessionManager();
+        var clients = new[] { 903, 904 }.Select(characterId =>
+        {
+            var client = Substitute.For<IClient>();
+            client.Id.Returns(Guid.NewGuid());
+            sessionManager.CreateSession(client, characterId, accountId: characterId + 1000);
+            return client;
+        }).ToList();
+        var stuck = clients.ToDictionary(client => client, _ => new TaskCompletionSource());
+        var terminationService = Substitute.For<ISessionTerminationService>();
+        foreach (var client in clients)
+            terminationService.LogoutAsync(client, Arg.Any<CancellationToken>()).Returns(stuck[client].Task);
+        var service = new GracefulShutdownService(
+            sessionManager,
+            terminationService,
+            Substitute.For<IAccountLockService>(),
+            Substitute.For<Microsoft.Extensions.Logging.ILogger<GracefulShutdownService>>());
+
+        var stop = service.StopAsync(new CancellationToken(canceled: true));
+        var startedBeforeAnyFinished = clients.Count(client =>
+            terminationService.ReceivedCalls().Any(call => call.GetArguments()[0] == client));
+        foreach (var hold in stuck.Values)
+            hold.SetResult();
+        await stop;
+
+        startedBeforeAnyFinished.Should().Be(clients.Count, "one stuck session holds up no other session's save");
+        foreach (var client in clients)
+            await terminationService.Received(1).LogoutAsync(client, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task WorldPacketCoordinator_HandleMoveAsync_KeepsTheCurrentPositionAndBroadcastsTheClientsDestination()
     {
         using var provider = CreateProvider(_ => { });
@@ -428,7 +467,7 @@ public class WorldTests : GameTestBase
         sessionManager.Regions.AddToRegion(viewer);
 
         var packet = new Packet(GameOpcodes.GS_MOVE);
-        packet.WriteUShort(600);
+        packet.WriteUShort(560);
         packet.WriteUShort(80);
         packet.WriteUShort(0);
         packet.WriteShort(45);
@@ -443,12 +482,12 @@ public class WorldTests : GameTestBase
 
         mover.X.Should().Be(50f);
         mover.Z.Should().Be(8);
-        mover.MoveOldWillX.Should().Be(600);
+        mover.MoveOldWillX.Should().Be(560);
 
         movePacket.Should().NotBeNull();
         movePacket!.ResetOffset();
         movePacket.ReadInt().Should().Be(mover.CharacterId);
-        movePacket.ReadUShort().Should().Be(600);
+        movePacket.ReadUShort().Should().Be(560);
         movePacket.ReadUShort().Should().Be(80);
         movePacket.ReadUShort().Should().Be(0);
         movePacket.ReadShort().Should().Be(45);
@@ -722,6 +761,30 @@ public class WorldTests : GameTestBase
     }
 
     [Fact]
+    public async Task AFriendReportTheClientNeverSendsTellsNothing()
+    {
+        using var provider = CreateProvider(_ => { });
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var sentPackets = new List<Packet>();
+        client.SendPacket(Arg.Do<Packet>(packet => sentPackets.Add(packet)), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        sessionManager.CreateSession(client, characterId: 601, accountId: 701).Name = "Asker";
+        var stranger = sessionManager.CreateSession(Substitute.For<IClient>(), characterId: 602, accountId: 702);
+        stranger.Name = "Stranger";
+        var report = new Packet(GameOpcodes.GS_FRIEND_PROCESS);
+        report.WriteByte(2);
+        report.WriteUShort(1);
+        report.WriteSByteString(stranger.Name);
+        report.ResetOffset();
+
+        await provider.GetRequiredService<ISocialPacketCoordinator>().HandleFriendProcessAsync(client, report);
+
+        sentPackets.Should().BeEmpty("sub 2 told the zone, level and id of any name");
+    }
+
+    [Fact]
     public async Task SocialPacketCoordinator_HandleFriendProcessAsync_RequestUsesInt32FriendIds()
     {
         using var provider = CreateProvider(db =>
@@ -854,7 +917,7 @@ public class WorldTests : GameTestBase
         var session = sessionManager.CreateSession(client, characterId: 282, accountId: 292);
         session.Name = "Walker";
         session.ZoneId = 1;
-        session.X = 8;
+        session.X = 46;
         session.Z = 8;
         session.Y = 0;
         session.Hp = 100;
@@ -1161,6 +1224,7 @@ public class WorldTests : GameTestBase
         });
         session.Quest.EventNpcUniqueId = npc.UniqueId;
 
+        await OfferWarps(provider, session, 21);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(900);
         packet.WriteShort(21);
@@ -1221,6 +1285,7 @@ public class WorldTests : GameTestBase
         session.Z = 20;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 21);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(2);
         packet.WriteShort(21);
@@ -1232,7 +1297,7 @@ public class WorldTests : GameTestBase
         session.X.Should().Be(30);
         session.Z.Should().Be(40);
 
-        var warpListAck = sentPackets.First(p => p.GetOpcode() == (byte)GameOpcodes.GS_WARP_LIST);
+        var warpListAck = sentPackets.Last(p => p.GetOpcode() == (byte)GameOpcodes.GS_WARP_LIST);
         warpListAck.ResetOffset();
         warpListAck.ReadByte().Should().Be(2);
         warpListAck.ReadByte().Should().Be(1);
@@ -1295,6 +1360,7 @@ public class WorldTests : GameTestBase
         session.Z = 20;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 2121);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(4013);
         packet.WriteShort(2121);
@@ -1369,6 +1435,7 @@ public class WorldTests : GameTestBase
         session.Z = 104;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 7314);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(4020);
         packet.WriteShort(7314);
@@ -1438,6 +1505,7 @@ public class WorldTests : GameTestBase
         session.Z = 526;
         sessionManager.Regions.AddToRegion(session);
 
+        await OfferWarps(provider, session, 2114);
         var packet = new Packet(GameOpcodes.GS_WARP_LIST);
         packet.WriteShort(4014);
         packet.WriteShort(2114);
@@ -1947,6 +2015,7 @@ public class WorldTests : GameTestBase
         packet.WriteByte((byte)ClassChangeSubOpcode.StatReset);
 
         var coordinator = provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>();
+        StandAt(provider, session, CharacterDevelopmentPacketCoordinator.GrandMerchantNpcId);
         await coordinator.HandleClassChangeAsync(client, packet);
 
         session.Strength.Should().Be(65);
@@ -1961,6 +2030,46 @@ public class WorldTests : GameTestBase
         sentPacket.ReadByte().Should().Be((byte)ClassChangeSubOpcode.StatReset);
         sentPacket.ReadByte().Should().Be(1);
         sentPacket.ReadInt().Should().Be(session.Money);
+    }
+
+    [Fact]
+    public async Task AStatResetAwayFromTheGrandMerchantChangesNothing()
+    {
+        using var provider = CreateProvider(_ => { }, gameData => gameData.GetCoefficient((short)101).Returns(CreateBasicCoefficient(101)));
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 195, accountId: 205);
+        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (ResetClass, ResetLevel, ResetRace, ResetPurse, SpentStrength);
+        var packet = new Packet(GameOpcodes.GS_CLASS_CHANGE);
+        packet.WriteByte((byte)ClassChangeSubOpcode.StatReset);
+
+        await provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>().HandleClassChangeAsync(client, packet);
+
+        session.Strength.Should().Be(SpentStrength, "a reset is offered by the Grand Merchant");
+        session.Money.Should().Be(ResetPurse);
+    }
+
+    [Theory]
+    [InlineData(ClassChangeSubOpcode.SkillReset)]
+    [InlineData(ClassChangeSubOpcode.StatResetCost)]
+    [InlineData(ClassChangeSubOpcode.RebirthStatReset)]
+    public async Task AResetOrARebirthResetAwayFromItsNpcIsNotAnswered(ClassChangeSubOpcode sub)
+    {
+        using var provider = CreateProvider(_ => { }, gameData => gameData.GetCoefficient((short)101).Returns(CreateBasicCoefficient(101)));
+        var client = Substitute.For<IClient>();
+        client.Id.Returns(Guid.NewGuid());
+        client.SendPacket(Arg.Any<Packet>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        var session = provider.GetRequiredService<SessionManager>().CreateSession(client, characterId: 196, accountId: 206);
+        (session.Class, session.Level, session.Race, session.Money, session.Strength) = (ResetClass, ResetLevel, ResetRace, ResetPurse, SpentStrength);
+        var packet = new Packet(GameOpcodes.GS_CLASS_CHANGE);
+        packet.WriteByte((byte)sub);
+        packet.WriteByte(0);
+
+        await provider.GetRequiredService<ICharacterDevelopmentPacketCoordinator>().HandleClassChangeAsync(client, packet);
+
+        client.ReceivedCalls().Where(call => call.GetMethodInfo().Name == nameof(IClient.SendPacket))
+            .Should().BeEmpty("resets are offered by their NPC, and a request from anywhere else is not heard");
+        session.Money.Should().Be(ResetPurse);
     }
 
     private static (IClient Client, UserSession Session, Func<Packet?> Sent) CreateMasterySession(
@@ -2057,4 +2166,7 @@ public class WorldTests : GameTestBase
         sent().Should().BeNull();
     }
 
+    private static Task OfferWarps(ServiceProvider provider, UserSession session, params short[] warpIds) =>
+        provider.GetRequiredService<IWorldMovementService>().SendWarpListAsync(
+            session, [.. warpIds.Select(id => new WarpListEntry(id, string.Empty, string.Empty, 0, 0, 0))]);
 }

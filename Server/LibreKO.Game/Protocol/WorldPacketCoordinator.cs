@@ -23,7 +23,6 @@ public interface IWorldPacketCoordinator
     Task HandleNpcRegionAsync(IClient client);
     Task HandleBottomUserListAsync(IClient client, Packet packet);
     Task HandleStealthAsync(IClient client, Packet packet);
-    Task HandleSpeedHackCheckAsync(IClient client, Packet packet);
     Task HandleObjectEventAsync(IClient client, Packet packet);
     Task BroadcastUserLookChangeAsync(UserSession session, byte slot, int itemId, short durability);
     Task BroadcastDisplayTitleAsync(UserSession session);
@@ -86,9 +85,6 @@ public class WorldPacketCoordinator(
 
     public Task HandleStealthAsync(IClient client, Packet packet) =>
         worldMovementService.HandleStealthAsync(client, packet);
-
-    public Task HandleSpeedHackCheckAsync(IClient client, Packet packet) =>
-        worldMovementService.HandleSpeedHackCheckAsync(client, packet);
 
     public Task HandleObjectEventAsync(IClient client, Packet packet) =>
         worldObjectEventService.HandleObjectEventAsync(client, packet);

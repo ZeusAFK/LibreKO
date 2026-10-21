@@ -18,6 +18,9 @@ public class MagicPartyCleanseTests : GameTestBase
     private const byte Moradon = 21;
     private const byte RemoveBuffSubtype = 2;
     private const int AreaTarget = -1;
+    private const int Cure = 112672;
+    private const short CureMana = 50;
+    private const short StartingMana = 500;
 
     [Fact]
     public async Task APartyCleanseAimedAtTheAreaLiftsEveryMembersCurses()
@@ -48,15 +51,39 @@ public class MagicPartyCleanseTests : GameTestBase
         stranger.ActiveBuffs.Should().ContainKey(Curse, "a player outside the party keeps their curse");
     }
 
+    [Fact]
+    public async Task ACureOnTheOtherNationInATownLandsWithTheManaItTakes()
+    {
+        using var provider = CreateProvider(_ => { }, Cleanse);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var caster = CreatePlayer(sessionManager, 903, x: 100, z: 100);
+        var stranger = CreatePlayer(sessionManager, 904, x: 104, z: 104);
+        stranger.Nation = AccountNation.ElMorad;
+        stranger.SetBuff(Curse, new ActiveBuff
+        {
+            MagicId = Curse, CasterId = 777, BuffType = BuffType.Blind, ExpireTicks = DateTime.UtcNow.AddMinutes(1).Ticks,
+        });
+
+        await Cast(provider, caster, Cure, stranger.CharacterId);
+
+        caster.Mp.Should().Be((short)(StartingMana - CureMana), "the client sends this cure in town, and the server takes it");
+        stranger.ActiveBuffs.Should().NotContainKey(Curse, "a cure whose mana was taken lands: the town's other nation is not hostile");
+    }
+
     private static void Cleanse(IGameDataService gameData)
     {
         gameData.GetMagic(BlessOfGod).Returns(new MagicData
         {
             Id = BlessOfGod, Type1 = 5, Moral = (byte)SkillMoral.PartyAll, Range = 0,
         });
+        gameData.GetMagic(Cure).Returns(new MagicData
+        {
+            Id = Cure, Type1 = 5, Moral = (byte)SkillMoral.FriendWithMe, Range = 0, Msp = CureMana,
+        });
         gameData.MagicType5Table.Returns(new Dictionary<int, MagicType5Data>
         {
             [BlessOfGod] = new() { Id = BlessOfGod, Type = RemoveBuffSubtype },
+            [Cure] = new() { Id = Cure, Type = RemoveBuffSubtype },
         });
     }
 
@@ -76,14 +103,15 @@ public class MagicPartyCleanseTests : GameTestBase
         player.Z = z;
         player.Hp = 500;
         player.MaxHp = 500;
-        player.Mp = 500;
-        player.MaxMp = 500;
+        player.Mp = StartingMana;
+        player.MaxMp = StartingMana;
         sessionManager.Regions.AddToRegion(player);
         return player;
     }
 
     private static async Task Cast(ServiceProvider provider, UserSession caster, int skillId, int targetId)
     {
+        TakeTheClassOf(caster, skillId);
         var packet = new Packet(GameOpcodes.GS_MAGIC_PROCESS);
         packet.WriteByte((byte)MagicProcessOpcode.Effecting);
         packet.WriteInt(skillId);

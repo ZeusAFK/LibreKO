@@ -112,8 +112,11 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
 
     public async Task RestoreAsync(UserSession session)
     {
-        var enemy = EnemyOf(session.KnightsId);
-        session.ClanBattleEnemy = enemy;
+        var enemy = session.WithLock(s =>
+        {
+            s.ClanBattleEnemy = EnemyOf(s.KnightsId);
+            return s.ClanBattleEnemy;
+        });
         if (enemy != 0)
             await session.Client.SendPacket(ClanBattlePacketWriter.Begun(enemy));
     }
@@ -147,8 +150,15 @@ public sealed class ClanBattleService(SessionManager sessionManager, TimeProvide
     {
         foreach (var member in sessionManager.GetAll().Where(s => s.KnightsId == clanId))
         {
-            member.ClanBattleEnemy = enemy;
-            await member.Client.SendPacket(packet);
+            var stillMember = member.WithLock(m =>
+            {
+                if (m.KnightsId != clanId)
+                    return false;
+                m.ClanBattleEnemy = enemy;
+                return true;
+            });
+            if (stillMember)
+                await member.Client.SendPacket(packet);
         }
     }
 

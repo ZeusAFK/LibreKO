@@ -36,6 +36,13 @@ public class WarehousePacketCoordinator(
         var sub = (WarehouseSubOpcode)packet.ReadByte();
         logger.LogDebug("Warehouse operation {Sub} by {Name}", sub, session.Name);
 
+        if ((session.IsBusy && sub is WarehouseSubOpcode.Input or WarehouseSubOpcode.Output or WarehouseSubOpcode.InventoryMove)
+            || !AtWarehouseKeeper(session))
+        {
+            await session.Client.SendPacket(WarehousePacketWriter.Result(sub, WarehousePacketWriter.Failed));
+            return;
+        }
+
         switch (sub)
         {
             case WarehouseSubOpcode.Open:
@@ -127,19 +134,10 @@ public class WarehousePacketCoordinator(
             }
 
             var destination = s.Warehouse[realDst];
-            if (!CanMergeOrPlace(itemData, destination, itemId, count))
+            if (!ItemTransfer.Fits(source, destination, itemData, count))
                 return false;
 
-            var destinationWasEmpty = destination.IsEmpty;
-            destination.ItemId = itemId;
-            destination.Count += (ushort)count;
-            destination.Flag = source.Flag;
-            if (destinationWasEmpty)
-                destination.Durability = source.Durability;
-
-            source.Count -= (ushort)count;
-            if (source.Count == 0)
-                source.Clear();
+            ItemTransfer.Move(source, destination, count);
 
             var coefficient = gameDataService.GetCoefficient(s.Class);
             if (coefficient != null)
@@ -208,19 +206,10 @@ public class WarehousePacketCoordinator(
                 return false;
 
             var destination = s.Inventory[absDst];
-            if (!CanMergeOrPlace(itemData, destination, itemId, count))
+            if (!ItemTransfer.Fits(source, destination, itemData, count))
                 return false;
 
-            var destinationWasEmpty = destination.IsEmpty;
-            destination.ItemId = itemId;
-            destination.Count += (ushort)count;
-            destination.Flag = source.Flag;
-            if (destinationWasEmpty)
-                destination.Durability = source.Durability;
-
-            source.Count -= (ushort)count;
-            if (source.Count == 0)
-                source.Clear();
+            ItemTransfer.Move(source, destination, count);
 
             var coefficient = gameDataService.GetCoefficient(s.Class);
             if (coefficient != null)
@@ -263,11 +252,7 @@ public class WarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         });
 
@@ -299,30 +284,33 @@ public class WarehousePacketCoordinator(
             if (source.ItemId != itemId || !destination.IsEmpty)
                 return false;
 
-            destination.ItemId = source.ItemId;
-            destination.Durability = source.Durability;
-            destination.Count = source.Count;
-            destination.Flag = source.Flag;
-            source.Clear();
+            ItemTransfer.Move(source, destination, source.Count);
             return true;
         });
 
         await session.Client.SendPacket(WarehousePacketWriter.Result(WarehouseSubOpcode.InventoryMove, moved ? WarehousePacketWriter.Succeeded : WarehousePacketWriter.Failed));
     }
 
+    private bool AtWarehouseKeeper(UserSession session)
+    {
+        if (IsKeeperBeside(session, session.Quest.EventNpcUniqueId))
+            session.WarehouseKeeperId = session.Quest.EventNpcUniqueId;
+        return IsKeeperBeside(session, session.WarehouseKeeperId);
+    }
+
+    private bool IsKeeperBeside(UserSession session, int npcUniqueId)
+    {
+        if (sessionManager.Regions.GetNpc(npcUniqueId) is not { NpcType: NpcData.TypeWarehouse } keeper
+            || keeper.ZoneId != session.ZoneId)
+            return false;
+
+        var dx = session.X - keeper.X;
+        var dz = session.Z - keeper.Z;
+        return dx * dx + dz * dz <= GameConstants.MaxNpcInteractionRangeSq;
+    }
+
     internal static bool Storable(ItemData itemData) =>
         itemData.Race != NonStorableRace
         && itemData.Race is < VaultTicketRaceFirst or > VaultTicketRaceLast
         && itemData.Num is < NonStorableIdFirst or > NonStorableIdLast;
-
-    private static bool CanMergeOrPlace(ItemData itemData, ItemSlot destination, int itemId, int count)
-    {
-        if (destination.IsEmpty)
-            return true;
-
-        if (destination.ItemId != itemId || itemData.Countable == 0)
-            return false;
-
-        return destination.Count + count <= 9999;
-    }
 }
