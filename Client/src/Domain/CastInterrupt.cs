@@ -17,4 +17,8 @@ public static class CastInterrupt
         if (!hasCastPhase || released) return CastInterruptAction.Ignore;
         return rangedDraw && pastRangedCommit ? CastInterruptAction.ReleaseEarly : CastInterruptAction.Cancel;
     }
+
+    // The server refuses a row that plays an action while its caster is stunned or frozen.
+    public static IEnumerable<int> OnStun(IEnumerable<int> casting, Func<int, bool?> isNonAction) =>
+        casting.Where(skillId => isNonAction(skillId) == false).Distinct();
 }

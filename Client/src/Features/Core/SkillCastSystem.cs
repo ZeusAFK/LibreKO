@@ -48,11 +48,13 @@ internal sealed class SkillCastSystem : IFeature
     public void Build()
     {
         entities.EntityRemoved += ForgetRemoteCast;
+        buff.SelfStunned += CancelActionCasts;
     }
 
     public void Dispose()
     {
         entities.EntityRemoved -= ForgetRemoteCast;
+        buff.SelfStunned -= CancelActionCasts;
     }
 
     internal void Tick(double now)
@@ -1056,6 +1058,12 @@ internal sealed class SkillCastSystem : IFeature
         EndCast(skillId);
         avatar.ActionUntil = 0;
         avatar.Clip = null;
+    }
+
+    private void CancelActionCasts()
+    {
+        var casting = PendingCasts.Select(c => c.SkillId).Append(castingSkillId);
+        foreach (int skill in CastInterrupt.OnStun(casting, id => SkillData.Get(id)?.IsNonAction).ToArray()) CancelSelfCast(skill);
     }
 
     internal void CancelAllSelfCasts()
