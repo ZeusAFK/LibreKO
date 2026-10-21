@@ -29,6 +29,8 @@ public class MagicWarpTests : GameTestBase
     private const short BlinkRadius = 20;
     private const byte Moradon = 21;
     private const short BindEventIndex = 7;
+    private const int StunRow = 110560;
+    private const int HeldSeconds = 2;
 
     [Fact]
     public async Task EscapeSendsTheCasterToTheirBindPoint()
@@ -212,6 +214,69 @@ public class MagicWarpTests : GameTestBase
         await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
 
         friend.X.Should().BeApproximately(700, 0.5f);
+    }
+
+    public enum Hold { Stunned, Frozen, Fighting }
+
+    [Theory]
+    [InlineData(Hold.Stunned)]
+    [InlineData(Hold.Frozen)]
+    [InlineData(Hold.Fighting)]
+    public async Task SummonFriendLeavesAHeldOrFightingMemberWhereTheyAre(Hold hold)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+            Warp(gameData, SummonFriendId, SkillMoral.Party, MagicWarpType.SummonInZone));
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        caster.X = 250;
+        caster.Z = 260;
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 700, z: 700);
+        caster.PartyIndex = friend.PartyIndex = 1;
+        HoldDown(friend, hold);
+
+        await Cast(provider, client, SummonFriendId, caster, friend.CharacterId);
+
+        friend.X.Should().BeApproximately(700, 0.5f, "no one is pulled out of a stun, a freeze or a fight");
+    }
+
+    [Theory]
+    [InlineData(Hold.Stunned)]
+    [InlineData(Hold.Frozen)]
+    [InlineData(Hold.Fighting)]
+    public async Task EscapeLeavesAHeldOrFightingMemberWhereTheyAre(Hold hold)
+    {
+        using var provider = CreateProvider(_ => { }, gameData =>
+        {
+            Warp(gameData, EscapeId, SkillMoral.PartyAll, MagicWarpType.BindPoint);
+            StartAt(gameData, karusX: 512, elmoradX: 512);
+        });
+        var (sessionManager, caster, client) = CreateCaster(provider);
+        var friend = CreateOther(sessionManager, AccountNation.Karus, x: 800, z: 800);
+        var party = sessionManager.Parties.CreateParty((short)caster.CharacterId);
+        party.MemberIds[1] = (short)friend.CharacterId;
+        caster.PartyIndex = party.Index;
+        caster.IsPartyLeader = true;
+        friend.PartyIndex = party.Index;
+        HoldDown(friend, hold);
+
+        await Cast(provider, client, EscapeId, caster, caster.CharacterId);
+
+        friend.X.Should().BeApproximately(800, 0.5f, "no one is taken out of a stun, a freeze or a fight");
+        caster.X.Should().BeApproximately(512, 0.5f);
+    }
+
+    private static void HoldDown(UserSession player, Hold hold)
+    {
+        if (hold == Hold.Fighting)
+        {
+            player.LastCombatTicks = Environment.TickCount64;
+            return;
+        }
+
+        player.SetBuff(StunRow, new ActiveBuff
+        {
+            MagicId = StunRow, CasterId = 1, BuffType = hold == Hold.Stunned ? BuffType.Stun : BuffType.Freeze,
+            Duration = HeldSeconds, ExpireTicks = DateTime.UtcNow.AddSeconds(HeldSeconds).Ticks,
+        });
     }
 
     [Fact]

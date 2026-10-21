@@ -86,8 +86,8 @@ public class MagicMovementEffectService(
                 continue;
 
             var member = sessionManager.GetByCharacterId(memberId);
-            if (member == null || member.Hp <= 0 || !member.CanTeleport || member.CarriesManes
-                || (member != caster && member.IsBusy))
+            if (member == null || member.Hp <= 0
+                || (member == caster ? !member.CanTeleport || member.CarriesManes : !member.MayBeMovedByOthers))
                 continue;
 
             warped |= await SendHomeAsync(member);
@@ -120,16 +120,12 @@ public class MagicMovementEffectService(
     private async Task<bool> SummonToCasterAsync(UserSession caster, MagicData magic, int targetId)
     {
         var target = sessionManager.GetByCharacterId(targetId);
-        // A trade, a stall or gathering counts on the player staying where they are.
         if (target == null
             || target.CharacterId == caster.CharacterId
-            || target.IsBusy
-            || target.IsWarping
-            || !target.CanTeleport
+            || !target.MayBeMovedByOthers
             || target.ZoneId != caster.ZoneId
             || target.Room != caster.Room
-            || !MaySummon(caster, target, (SkillMoral)magic.Moral)
-            || target.CarriesManes)
+            || !MaySummon(caster, target, (SkillMoral)magic.Moral))
             return false;
 
         await worldMovementService.WarpAsync(target, (ushort)caster.GetPosX, (ushort)caster.GetPosZ);
