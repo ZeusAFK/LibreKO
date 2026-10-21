@@ -41,8 +41,6 @@ public class MailService(
     SealGates sealGates,
     ILogger<MailService> logger) : IMailService
 {
-    private static readonly TimeSpan SentAtSlack = TimeSpan.FromSeconds(1);
-
     private const string BusySender = "You cannot send mail while trading, keeping a stall, gathering or dead.";
     private const string NotThatMuchGold = "You do not carry that much gold.";
     private const string CannotAttach = "That item cannot be attached.";
@@ -164,6 +162,7 @@ public class MailService(
         var taken = new List<(int Slot, ExchangeItem Item)>();
         string? refusal = null;
         Mail? sent = null;
+        var twins = 0;
         using var turn = await sealGates.EnterAsync(recipient.Id);
         var outcome = await statePersister.CommitAsync(session, async unitOfWork =>
         {
@@ -177,10 +176,13 @@ public class MailService(
             if (refusal != null)
                 return false;
 
-            sent = NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player);
-            unitOfWork.Mails.Add(sent);
+            // Counted before sent is set, so a count that fails never reads as this mail written.
+            var mail = NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player);
+            twins = await TwinsAsync(unitOfWork, mail);
+            sent = unitOfWork.Mails.Add(mail).Entity;
             return true;
-        }, () => session.WithLock(s => GiveBackAttachments(s, gold, taken)), landed: db => sent == null ? Task.FromResult(false) : StoredAsync(db, sent));
+        }, () => session.WithLock(s => GiveBackAttachments(s, gold, taken)),
+            landed: async db => sent != null && await TwinsAsync(db, sent) > twins);
         if (outcome != StateCommit.Saved)
         {
             await Fail(session, refusal ?? "The mail could not be sent.");
@@ -210,11 +212,10 @@ public class MailService(
             await NotifyNewMailAsync(online, session.Name, db);
     }
 
-    // The send time matches within a second.
-    private static Task<bool> StoredAsync(AppDbContext db, Mail mail) =>
-        db.Mails.AnyAsync(stored => stored.SenderCharacterId == mail.SenderCharacterId && stored.RecipientCharacterId == mail.RecipientCharacterId
-            && stored.Subject == mail.Subject && stored.Body == mail.Body
-            && stored.SentAt >= mail.SentAt - SentAtSlack && stored.SentAt <= mail.SentAt + SentAtSlack);
+    // Only the sender's own commits add mail from them, one at a time, so one more twin than before is this mail.
+    private static Task<int> TwinsAsync(AppDbContext db, Mail mail) =>
+        db.Mails.CountAsync(stored => stored.SenderCharacterId == mail.SenderCharacterId && stored.RecipientCharacterId == mail.RecipientCharacterId
+            && stored.Subject == mail.Subject && stored.Body == mail.Body);
 
     private static Task<bool> IsSealedAsync(AppDbContext db, int characterId) =>
         db.Characters.Where(character => character.Id == characterId).Select(character => character.Sealed).FirstOrDefaultAsync();

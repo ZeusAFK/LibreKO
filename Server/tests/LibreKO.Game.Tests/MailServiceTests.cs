@@ -874,6 +874,57 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task ATextMailThatWasNotWrittenIsNotTakenForItsTwin()
+    {
+        var faults = new MailSaveFaults { Armed = false };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Hello", "Only words", 0, []);
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var stored = await db.Characters.SingleAsync(c => c.Id == AliceId);
+            (stored.Money, stored.Items) = (alice.Money, alice.SavedItems);
+            await db.SaveChangesAsync();
+        }
+
+        aliceSent.Clear();
+        faults.Armed = true;
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Hello", "Only words", 0, []);
+
+        (await MailCountAsync(provider)).Should().Be(1);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(0, "the same words sent a moment earlier are not this mail");
+    }
+
+    [Fact]
+    public async Task AMailWithItemsThatWasNotWrittenIsNotTakenForItsTwin()
+    {
+        var faults = new MailSaveFaults { Armed = false };
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        var mail = provider.GetRequiredService<IMailService>();
+        await mail.SendAsync(alice, "Bob", "Apples", "Enjoy them.", 0, []);
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var stored = await db.Characters.SingleAsync(c => c.Id == AliceId);
+            (stored.Money, stored.Items) = (alice.Money, alice.SavedItems);
+            await db.SaveChangesAsync();
+        }
+        var apples = alice.Inventory[InventoryConstants.InventoryStart];
+        (apples.ItemId, apples.Count) = (Apple, 3);
+        aliceSent.Clear();
+        faults.Armed = true;
+
+        await mail.SendAsync(alice, "Bob", "Apples", "Enjoy them.", 0, [new MailItemPick((byte)InventoryConstants.InventoryStart, 3)]);
+
+        (await MailCountAsync(provider)).Should().Be(1);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(0,
+            "apples picked up since the last save leave a bag that looks unchanged, so only the count of twins can tell");
+        alice.Inventory.Where(slot => slot.ItemId == Apple).Sum(slot => slot.Count).Should().Be(3);
+    }
+
+    [Fact]
     public async Task TheExpirySweepWaitsForThePlayersLock()
     {
         using var provider = Provider();
@@ -937,12 +988,13 @@ public class MailServiceTests : GameTestBase
 
     private sealed class MailSaveFaults : SaveChangesInterceptor
     {
+        public bool Armed { get; set; } = true;
         public Action Meanwhile { get; set; } = () => { };
 
         public override ValueTask<InterceptionResult<int>> SavingChangesAsync(
             DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
-            if (eventData.Context?.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added) != true)
+            if (!Armed || eventData.Context?.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added) != true)
                 return base.SavingChangesAsync(eventData, result, cancellationToken);
 
             Meanwhile();
