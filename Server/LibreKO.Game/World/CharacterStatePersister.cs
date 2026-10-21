@@ -13,7 +13,7 @@ public interface ICharacterStatePersister
     Task<bool> SaveAsync(UserSession session, CancellationToken cancellationToken = default);
     Task<bool> SaveAndSealAsync(UserSession session, CancellationToken cancellationToken = default);
     Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null);
     Task SetOnlineStateAsync(int characterId, bool isOnline, CancellationToken cancellationToken = default);
 
     Task SaveQuestStateAsync(UserSession session, CancellationToken cancellationToken = default);
@@ -117,8 +117,9 @@ public class CharacterStatePersister(
         return true;
     }
 
+    // A change that moves neither the purse nor the bag tells whether it was written through landed.
     public async Task<StateCommit> CommitAsync(UserSession session, Func<AppDbContext, Task<bool>> change, Action undo,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, Func<AppDbContext, Task<bool>>? landed = null)
     {
         await session.CharacterPersistenceGate.WaitAsync(cancellationToken);
         try
@@ -150,12 +151,12 @@ public class CharacterStatePersister(
                     ApplyToCharacter(active, character, mapper);
                     mapper.ApplyToWarehouse(active, warehouse);
                 });
-                await SaveOnceAsync(db, character, stored, cancellationToken);
+                await SaveOnceAsync(db, character, stored, landed, cancellationToken);
                 return StateCommit.Saved;
             }
             catch (Exception exception)
             {
-                if (await WasWrittenAsync(character, stored))
+                if (await WasWrittenAsync(character, stored, landed))
                 {
                     logger.LogWarning(exception, "The commit of {Name} reported a failure but was written; the change stands", session.Name);
                     return StateCommit.Saved;
@@ -173,7 +174,8 @@ public class CharacterStatePersister(
     }
 
     // A store that retries a save runs it in a transaction and first asks whether a lost answer was a write.
-    private async Task SaveOnceAsync(AppDbContext db, Character character, (int Money, byte[] Items) stored, CancellationToken cancellationToken)
+    private async Task SaveOnceAsync(AppDbContext db, Character character, (int Money, byte[] Items) stored,
+        Func<AppDbContext, Task<bool>>? landed, CancellationToken cancellationToken)
     {
         var strategy = db.Database.CreateExecutionStrategy();
         if (!strategy.RetriesOnFailure)
@@ -184,21 +186,25 @@ public class CharacterStatePersister(
 
         await strategy.ExecuteInTransactionAsync(
             token => db.SaveChangesAsync(acceptAllChangesOnSuccess: false, token),
-            _ => WasWrittenAsync(character, stored),
+            _ => WasWrittenAsync(character, stored, landed),
             cancellationToken);
         db.ChangeTracker.AcceptAllChanges();
     }
 
     // A save can be written and still report a failure; undoing it then would duplicate what it moved.
-    private async Task<bool> WasWrittenAsync(Character written, (int Money, byte[] Items) before)
+    private async Task<bool> WasWrittenAsync(Character written, (int Money, byte[] Items) before, Func<AppDbContext, Task<bool>>? landed)
     {
-        if (written.Money == before.Money && written.Items.AsSpan().SequenceEqual(before.Items))
+        var moved = written.Money != before.Money || !written.Items.AsSpan().SequenceEqual(before.Items);
+        if (!moved && landed == null)
             return false;
 
         try
         {
             using var scope = scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            if (!moved)
+                return await landed!(db);
+
             var now = await db.Characters.AsNoTracking()
                 .Where(c => c.Id == written.Id)
                 .Select(c => new { c.Money, c.Items })

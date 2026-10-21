@@ -851,6 +851,29 @@ public class MailServiceTests : GameTestBase
     }
 
     [Fact]
+    public async Task ATextMailWrittenButReportedAsFailedIsReportedAsSent()
+    {
+        var faults = new FailsAfterWriting(context => context.ChangeTracker.Entries<Mail>().Any(entry => entry.State == EntityState.Added));
+        using var provider = Provider(services => services.ConfigureDbContext<AppDbContext>(options => options.AddInterceptors(faults)));
+        var (alice, aliceSent) = Online(provider, AliceId, "Alice");
+        using (var scope = provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var stored = await db.Characters.SingleAsync(c => c.Id == AliceId);
+            (stored.Money, stored.Items) = (alice.Money, alice.SavedItems);
+            await db.SaveChangesAsync();
+        }
+
+        faults.Armed = true;
+
+        await provider.GetRequiredService<IMailService>().SendAsync(alice, "Bob", "Hello", "Only words", 0, []);
+
+        (await MailCountAsync(provider)).Should().Be(1);
+        MailPacket(aliceSent, MailPacketWriter.SubSend).ReadByte().Should().Be(1,
+            "a mail that moves neither gold nor items is looked for in the store, so a retry would not send it twice");
+    }
+
+    [Fact]
     public async Task TheExpirySweepWaitsForThePlayersLock()
     {
         using var provider = Provider();

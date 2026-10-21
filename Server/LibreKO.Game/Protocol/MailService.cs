@@ -41,6 +41,8 @@ public class MailService(
     SealGates sealGates,
     ILogger<MailService> logger) : IMailService
 {
+    private static readonly TimeSpan SentAtSlack = TimeSpan.FromSeconds(1);
+
     private const string BusySender = "You cannot send mail while trading, keeping a stall, gathering or dead.";
     private const string NotThatMuchGold = "You do not carry that much gold.";
     private const string CannotAttach = "That item cannot be attached.";
@@ -161,6 +163,7 @@ public class MailService(
         var drafts = new List<MailAttachmentDraft>();
         var taken = new List<(int Slot, ExchangeItem Item)>();
         string? refusal = null;
+        Mail? sent = null;
         using var turn = await sealGates.EnterAsync(recipient.Id);
         var outcome = await statePersister.CommitAsync(session, async unitOfWork =>
         {
@@ -174,9 +177,10 @@ public class MailService(
             if (refusal != null)
                 return false;
 
-            unitOfWork.Mails.Add(NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player));
+            sent = NewMail(session.CharacterId, session.Name, recipient.Id, subject, body, drafts, MailKind.Player);
+            unitOfWork.Mails.Add(sent);
             return true;
-        }, () => session.WithLock(s => GiveBackAttachments(s, gold, taken)));
+        }, () => session.WithLock(s => GiveBackAttachments(s, gold, taken)), landed: db => sent == null ? Task.FromResult(false) : StoredAsync(db, sent));
         if (outcome != StateCommit.Saved)
         {
             await Fail(session, refusal ?? "The mail could not be sent.");
@@ -205,6 +209,12 @@ public class MailService(
         if (online != null)
             await NotifyNewMailAsync(online, session.Name, db);
     }
+
+    // The send time matches within a second.
+    private static Task<bool> StoredAsync(AppDbContext db, Mail mail) =>
+        db.Mails.AnyAsync(stored => stored.SenderCharacterId == mail.SenderCharacterId && stored.RecipientCharacterId == mail.RecipientCharacterId
+            && stored.Subject == mail.Subject && stored.Body == mail.Body
+            && stored.SentAt >= mail.SentAt - SentAtSlack && stored.SentAt <= mail.SentAt + SentAtSlack);
 
     private static Task<bool> IsSealedAsync(AppDbContext db, int characterId) =>
         db.Characters.Where(character => character.Id == characterId).Select(character => character.Sealed).FirstOrDefaultAsync();
