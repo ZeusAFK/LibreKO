@@ -56,6 +56,7 @@ public class AdminPacketCoordinator(
     IVanguardService vanguardService,
     IClanMatchService clanMatchService,
     ILogger<AdminPacketCoordinator> logger,
+    IBowlEventService? bowlEventService = null,
     TimeProvider? timeProvider = null) : IAdminPacketCoordinator
 {
     private const int MaxGmSummonCount = 50;
@@ -543,6 +544,65 @@ public class AdminPacketCoordinator(
                 else
                 {
                     await SendNoticeAsync(session, "Usage: +bifrost start [minutes] | close | enter | winner <karus|elmorad>");
+                }
+                break;
+            }
+
+            case "bowl":
+            {
+                if (bowlEventService == null)
+                {
+                    await SendNoticeAsync(session, "Bowl event service is not available.");
+                    break;
+                }
+
+                var sub = arg.Trim().ToLowerInvariant();
+                var bowlParts = sub.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var subcmd = bowlParts.Length > 0 ? bowlParts[0] : "";
+
+                if (subcmd is "on" or "start" or "enable")
+                {
+                    int? duration = null;
+                    if (bowlParts.Length > 1 && int.TryParse(bowlParts[1], out var parsedMinutes) && parsedMinutes > 0)
+                    {
+                        duration = parsedMinutes;
+                    }
+
+                    await bowlEventService.StartEventAsync(duration, announce: true);
+                    var durationText = duration ?? bowlEventService.DefaultDurationMinutes;
+                    await SendNoticeAsync(session, $"[Bowl Event] Event ENABLED for {durationText} minutes (Interval: {bowlEventService.IntervalSeconds}s, MinLevel: {bowlEventService.MinLevel}, Zone: {bowlEventService.ZoneId}).");
+                }
+                else if (subcmd is "off" or "stop" or "disable")
+                {
+                    await bowlEventService.StopEventAsync(announce: true);
+                    await SendNoticeAsync(session, "[Bowl Event] Event DISABLED.");
+                }
+                else if (subcmd is "status" or "info")
+                {
+                    var status = bowlEventService.IsActive ? "ACTIVE" : "INACTIVE";
+                    var serverNowStr = DateTime.Now.ToString("HH:mm:ss");
+                    var endsAtStr = bowlEventService.IsActive && bowlEventService.EndTimeServer.HasValue
+                        ? bowlEventService.EndTimeServer.Value.ToString("HH:mm:ss")
+                        : "N/A";
+                    var remaining = bowlEventService.IsActive && bowlEventService.EndTimeServer.HasValue
+                        ? $"{bowlEventService.RemainingSeconds / 60}m {bowlEventService.RemainingSeconds % 60}s"
+                        : "N/A";
+                    await SendNoticeAsync(session, $"[Bowl Event] Status: {status} | Server Time: {serverNowStr} | Ends at: {endsAtStr} | Remaining: {remaining} | Players in Bowl: {bowlEventService.ActivePlayersInBowl} | Interval: {bowlEventService.IntervalSeconds}s (Server Time) | KC: {bowlEventService.KnightCash} | NP: {bowlEventService.Loyalty}");
+                }
+                else if (subcmd == "interval" && bowlParts.Length > 1 && int.TryParse(bowlParts[1], out var newInterval) && newInterval >= 5)
+                {
+                    bowlEventService.IntervalSeconds = newInterval;
+                    await SendNoticeAsync(session, $"[Bowl Event] Interval set to {newInterval} seconds.");
+                }
+                else if (subcmd == "notice" && bowlParts.Length > 1)
+                {
+                    var noticeText = string.Join(' ', bowlParts.Skip(1));
+                    await bowlEventService.BroadcastScreenNoticeAsync($"[Bowl Event] {noticeText}");
+                    await SendNoticeAsync(session, "[Bowl Event] Screen notice broadcasted to all players.");
+                }
+                else
+                {
+                    await SendNoticeAsync(session, "Usage: +bowl on [minutes] | off | status | interval <seconds> | notice <message>");
                 }
                 break;
             }
