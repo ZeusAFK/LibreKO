@@ -245,15 +245,17 @@ public class CharacterStatePersister(
             return;
         }
 
+        // A check that cannot read throws, so the store retries the check, not the save.
         await strategy.ExecuteInTransactionAsync(
             token => db.SaveChangesAsync(acceptAllChangesOnSuccess: false, token),
-            _ => WasWrittenAsync(character, stored, landed),
+            _ => WasWrittenAsync(character, stored, landed, rethrow: true),
             cancellationToken);
         db.ChangeTracker.AcceptAllChanges();
     }
 
     // A save can be written and still report a failure; undoing it then would duplicate what it moved.
-    private async Task<bool> WasWrittenAsync(Character written, (int Money, byte[] Items) before, Func<AppDbContext, Task<bool>>? landed)
+    private async Task<bool> WasWrittenAsync(Character written, (int Money, byte[] Items) before, Func<AppDbContext, Task<bool>>? landed,
+        bool rethrow = false)
     {
         var moved = written.Money != before.Money || !written.Items.AsSpan().SequenceEqual(before.Items);
         if (!moved && landed == null)
@@ -272,7 +274,7 @@ public class CharacterStatePersister(
                 .FirstOrDefaultAsync();
             return now != null && now.Money == written.Money && now.Items.AsSpan().SequenceEqual(written.Items);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch (Exception exception) when (exception is not OperationCanceledException && !rethrow)
         {
             logger.LogError(exception, "Could not check whether character {CharacterId}'s commit was written", written.Id);
             return false;
