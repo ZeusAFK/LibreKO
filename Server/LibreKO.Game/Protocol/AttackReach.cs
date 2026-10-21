@@ -9,7 +9,6 @@ public static class AttackReach
     public const float Melee = 6f;
     public const float PlayerBodyRadius = 1f;
     public const float RangeUnitsPerMetre = 10f;
-    // Every reach check on a skill, before and after it is paid, uses this one slack.
     public const float SkillSlack = 20f;
     private const float SpeedUnitsPerMetre = 10f;
 

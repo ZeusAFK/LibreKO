@@ -25,7 +25,7 @@ internal sealed partial class ScenerySystem : IFeature, ITerrainQueries
         return Terrain.SampleHeight(mapX, mapZ, out float gy) ? Terrain.MapToWorld(mapX, gy, mapZ).Y : null;
     }
 
-    internal float? FxGroundHeight(float worldX, float worldZ) => GroundHeight(new Vector3(worldX, 0f, worldZ));
+    internal float? FxGroundHeight(Vector3 near) => Terrain == null ? null : FollowGroundY(near);
 
     public void Build()
     {
@@ -53,6 +53,7 @@ internal sealed partial class ScenerySystem : IFeature, ITerrainQueries
     internal event Action<IReadOnlyList<MapObject>>? ObjectsPlaced;
     internal event Action<MapObject, Node3D>? ObjectBuilt;
     internal event Action? MapFxReset;
+    internal event Action? MapFxBuilt;
     internal MapObject? PickedObject { get; private set; }
     internal Node3D? ObjRoot { get; private set; }
 
@@ -96,6 +97,7 @@ internal sealed partial class ScenerySystem : IFeature, ITerrainQueries
         public GeometryInstance3D[]? SunShafts;
         public float ShaftFade = -1f;
         public bool Awake;
+        public bool SwitchedOff;
     }
 
     internal List<FxInfo> MapFx { get; } = new();
@@ -317,6 +319,25 @@ internal sealed partial class ScenerySystem : IFeature, ITerrainQueries
         return Terrain != null
             ? Terrain.MapToWorld(mapX, y + lift, mapZ)
             : Coord.ToGodot(mapX, y + lift, mapZ);
+    }
+
+    internal Vector3? WalkableHitAlong(Vector3 from, Vector3 to) =>
+        FloorRayHit(from, to, SelfProbeExclude(), out var at, out var normal) && normal.Y >= FloorNormalMin ? at : null;
+
+    private const float FollowStepUp = 0.7f;
+    private const float FollowProbeBelow = 0.5f;
+
+    internal float FollowGroundY(Vector3 feet)
+    {
+        if (Terrain == null) return feet.Y;
+        var (mapX, mapZ) = Terrain.WorldToMap(feet);
+        if (!Terrain.SampleHeight(mapX, mapZ, out float terrainMapY)) return feet.Y;
+        float terrainY = Terrain.MapToWorld(mapX, terrainMapY, mapZ).Y;
+        var from = new Vector3(feet.X, feet.Y + FollowStepUp, feet.Z);
+        var to = new Vector3(feet.X, Mathf.Min(terrainY, feet.Y) - FollowProbeBelow, feet.Z);
+        if (FloorRayHit(from, to, SelfProbeExclude(), out var at, out var normal) && normal.Y >= FloorNormalMin && at.Y > terrainY)
+            return at.Y;
+        return terrainY;
     }
 
     private const float RestingProbeUp = 2f;
@@ -832,6 +853,14 @@ internal sealed partial class ScenerySystem : IFeature, ITerrainQueries
             placed++;
         }
         CullMapFx(int.MaxValue);
+        MapFxBuilt?.Invoke();
+    }
+
+    internal void SwitchMapFx(FxInfo info, bool on)
+    {
+        if (info.SwitchedOff == !on) return;
+        info.SwitchedOff = !on;
+        CullMapFx();
     }
 
     private readonly ViewFrustum mapFxFrustum = new();
@@ -859,7 +888,7 @@ internal sealed partial class ScenerySystem : IFeature, ITerrainQueries
             float margin = awake ? MapFxFrustumSleepMargin : MapFxFrustumMargin;
             bool inFrustum = mapFxFrustum.Contains(pos, margin);
             float far = awake ? sleepFar2 : far2;
-            bool show = Config.FxAmbient
+            bool show = !info.SwitchedOff && Config.FxAmbient
                 && ((d2 <= far && (d2 <= near2 || inFrustum)) || node == PickedFx?.Node);
             if (info.SunShafts != null)
             {

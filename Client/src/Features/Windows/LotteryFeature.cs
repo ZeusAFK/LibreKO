@@ -85,6 +85,10 @@ internal sealed class LotteryFeature : IFeature, IClosableWindow
         };
         window.SetBackgroundAlpha(UiTheme.TranslucentWindowAlpha);
         window.Closed += () => shown = false;
+        window.MinimizedChanged += folded =>
+        {
+            if (State is { Active: true }) lottery.Window.SetFolded(WindowKey(State.LotteryId), folded);
+        };
         layer.AddChild(window);
 
         var body = window.Body;
@@ -364,11 +368,15 @@ internal sealed class LotteryFeature : IFeature, IClosableWindow
         topIcons.RefreshLottery(this.State?.Active == true);
         Render();
 
-        if (state.Active && wasInactive)
-        {
-            Open();
-        }
+        if (!state.Active) return;
+        string key = WindowKey(state.LotteryId);
+        bool newRun = lottery.Window.Observe(key, FrameClock.Now(), state.RemainingSeconds);
+        if (!newRun && (!wasInactive || lottery.Window.Hidden(key))) return;
+        Open();
+        window.SetMinimized(lottery.Window.Folded(key));
     }
+
+    private string WindowKey(int lotteryId) => $"{self.MyCharId}:{lotteryId}";
 
     private void Render()
     {
@@ -473,6 +481,7 @@ internal sealed class LotteryFeature : IFeature, IClosableWindow
     {
         shown = true;
         window.Visible = true;
+        if (State is { Active: true }) lottery.Window.SetHidden(WindowKey(State.LotteryId), false);
         requests.StateRequest();
         Render();
     }
@@ -481,5 +490,6 @@ internal sealed class LotteryFeature : IFeature, IClosableWindow
     {
         shown = false;
         window.Visible = false;
+        if (State is { Active: true }) lottery.Window.SetHidden(WindowKey(State.LotteryId), true);
     }
 }

@@ -1,6 +1,5 @@
 ﻿namespace LibreKO.Game.World;
 
-// Sealing a character and sending it mail or a letter take turns.
 public sealed class SealGates
 {
     private const int Stripes = 64;

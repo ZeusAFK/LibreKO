@@ -742,6 +742,7 @@ internal sealed class GenieFeature : IFeature, ILateTickFeature, IClosableWindow
             geniePotions.UsePotion(HealTarget.Hp);
         if (Genie.Has(GenieMode.MpPotion) && GenieRecovery.Below(self.Vitals.Mp, self.Vitals.MaxMp, Genie.MpPercent))
             geniePotions.UsePotion(HealTarget.Mp);
+        skillCast.CancelCastsAtTheDead();
         if (skillCast.SelfCasting(now)) return;
         if (CureCurse(now)) return;
         if (Recover(now)) return;
@@ -965,14 +966,18 @@ internal sealed class GenieFeature : IFeature, ILateTickFeature, IClosableWindow
         bool lowHp = GenieRecovery.Below(self.Vitals.Hp, self.Vitals.MaxHp, Genie.RecoveryPercent);
         bool lowMp = GenieRecovery.Below(self.Vitals.Mp, self.Vitals.MaxMp, Genie.RecoveryPercent);
         if ((lowHp || lowMp) && RecoveryCast(context.Self.CharId, lowHp, lowMp, now)) return true;
-        foreach (var member in party.Members)
-            if (member.CharId != context.Self.CharId && member.Hp > 0 && context.Entities.Views.TryGetValue(member.CharId, out var ally)
-                && !ally.Dead && !ally.Attackable && GenieRecovery.Below(member.Hp, member.MaxHp, Genie.RecoveryPercent)
-                && RecoveryCast(member.CharId, true, false, now)) return true;
-        return false;
+        var lowest = party.Members
+            .Where(member => member.CharId != context.Self.CharId && member.Hp > 0
+                && context.Entities.Views.TryGetValue(member.CharId, out var ally) && !ally.Dead && !ally.Attackable
+                && GenieRecovery.Below(member.Hp, member.MaxHp, Genie.RecoveryPercent))
+            .OrderBy(member => (float)member.Hp / Math.Max(1, member.MaxHp))
+            .Select(member => member.CharId)
+            .DefaultIfEmpty(-1)
+            .First();
+        return lowest >= 0 && RecoveryCast(lowest, true, false, now, walkWhenFar: true);
     }
 
-    private bool RecoveryCast(int target, bool hp, bool mp, double now)
+    private bool RecoveryCast(int target, bool hp, bool mp, double now, bool walkWhenFar = false)
     {
         foreach (int id in Genie.Recovery)
         {
@@ -980,9 +985,17 @@ internal sealed class GenieFeature : IFeature, ILateTickFeature, IClosableWindow
             if (skill == null || !((hp && RestoresHp(skill)) || (mp && RestoresMp(skill)))) continue;
             if (!self.SkillLearned(skill) || !skillCast.SkillReady(skill, now) || SkillHeld(skill.Id, now) || !skillCast.CanCastWithGear(skill)) continue;
             if (target == context.Self.CharId && skill.Moral is not (SkillTarget.Self or SkillTarget.FriendWithMe or SkillTarget.Party or SkillTarget.PartyAll)) continue;
-            if (target != context.Self.CharId && (skill.Moral == SkillTarget.Self || !skillCast.InSkillRange(target, skill))) continue;
+            if (target != context.Self.CharId && skill.Moral == SkillTarget.Self) continue;
             if (skill.FirstDamage <= 0 && skillCast.SelfBuffActive(skill, now)) continue;
             if (genieSupportAt.TryGetValue((skill.Id, target), out var next) && now < next) continue;
+            if (target != context.Self.CharId && !skillCast.InSkillRange(target, skill))
+            {
+                if (!walkWhenFar || !context.Entities.Views.TryGetValue(target, out var far)) continue;
+                context.Movement.MoveTo(far.Body.GlobalPosition);
+                moving = true;
+                return true;
+            }
+            if (moving) { context.Movement.CancelMoveTo(); moving = false; }
             if (target == context.Self.CharId && HealStrikes(skill)) skillCast.CastSkill(skill.Id);
             else CastOn(target, skill.Id);
             genieSupportAt[(skill.Id, target)] = now + SupportRetryInterval;

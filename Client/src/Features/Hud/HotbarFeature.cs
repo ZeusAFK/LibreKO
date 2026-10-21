@@ -54,7 +54,17 @@ internal sealed partial class HotbarFeature : IFeature, ILateTickFeature
 
     internal int[] Slots { get; } = new int[HotTotal];
     internal int HotPage { get; private set; }
-    internal int HotSelected { get; set; } = -1;
+    private int hotSelected = -1;
+
+    internal int HotSelected
+    {
+        get => hotSelected;
+        set
+        {
+            hotSelected = value;
+            combat.SelectedHotSlot = (self.MyCharId, value);
+        }
+    }
     private bool hotLoadedFromServer;
 
     private CanvasLayer layer = null!;
@@ -79,12 +89,14 @@ internal sealed partial class HotbarFeature : IFeature, ILateTickFeature
 
     public void Build()
     {
+        int keptSelection = combat.SelectedHotSlot.Owner == self.MyCharId ? combat.SelectedHotSlot.Slot : -1;
         BuildHotbar();
         combat.SkillDataEvent += OnSkillData;
         combat.SkillBarClearEvent += OnSkillBarClear;
         Config.HotbarLookChanged += OnLookChanged;
 
         LoadLocal();
+        hotSelected = keptSelection;
         Refresh();
         ApplyChaos();
         ApplyFullMoon();

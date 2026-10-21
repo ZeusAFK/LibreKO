@@ -27,6 +27,7 @@ internal sealed partial class SkillWindowFeature : IFeature
         develop.SkillPointChangeEvent += OnMasteryReject;
         skillPreset.SkillPlanApplied += RefreshMasteryUI;
         develop.SkillResetEvent += OnSkillReset;
+        self.TransformChanged += RebuildSkillWindow;
     }
 
     public void Dispose()
@@ -34,6 +35,7 @@ internal sealed partial class SkillWindowFeature : IFeature
         skillPreset.SkillPlanApplied -= RefreshMasteryUI;
         develop.SkillPointChangeEvent -= OnMasteryReject;
         develop.SkillResetEvent -= OnSkillReset;
+        self.TransformChanged -= RebuildSkillWindow;
     }
 
     internal event System.Action? SkillsRebuilt;
@@ -105,7 +107,7 @@ internal sealed partial class SkillWindowFeature : IFeature
         tabBar.AddThemeConstantOverride("separation", 4);
         root.AddChild(tabBar);
 
-        skillPages = SkillData.Pages(self.Class, context.Self.TransformModel());
+        skillPages = SkillData.Pages(self.Class, context.Self.TransformModel(), SkillData.Get(self.TransformSkill), self.Nation);
         foreach (var page in skillPages)
         {
             int tab = page.Category;

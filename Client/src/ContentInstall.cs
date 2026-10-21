@@ -144,7 +144,12 @@ public sealed class ContentInstall
                 return;
             }
             var channel = ContentChannel.Parse(channelJson);
-            if (channel == null) { Set(ContentStage.Failed, "Patch server sent an unreadable channel"); return; }
+            if (channel == null)
+            {
+                if (Packs.ContentReady) Set(ContentStage.Done, "Ready");
+                else Set(ContentStage.Failed, "Patch server sent an unreadable channel");
+                return;
+            }
 
             if (Build.ApkBuild < channel.MinApkBuild)
             {
@@ -157,8 +162,20 @@ public sealed class ContentInstall
                 return;
             }
 
-            var manifest = ContentManifest.Parse(await GetQuickly(http, BaseUrl + channel.Manifest, token));
-            if (manifest == null) { Set(ContentStage.Failed, "Patch server sent an unreadable content list"); return; }
+            string manifestJson;
+            try { manifestJson = await GetQuickly(http, BaseUrl + channel.Manifest, token); }
+            catch (Exception e) when (Packs.ContentReady && !token.IsCancellationRequested && Transient(e))
+            {
+                Set(ContentStage.Done, "Ready");
+                return;
+            }
+            var manifest = ContentManifest.Parse(manifestJson);
+            if (manifest == null)
+            {
+                if (Packs.ContentReady) Set(ContentStage.Done, "Ready");
+                else Set(ContentStage.Failed, "Patch server sent an unreadable content list");
+                return;
+            }
 
             int installed = ContentState.InstalledBuild();
             if (installed == manifest.Build && Packs.ContentReady)

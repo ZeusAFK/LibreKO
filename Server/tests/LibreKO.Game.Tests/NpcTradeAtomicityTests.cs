@@ -9,7 +9,6 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// An NPC purchase or sale checks every line before it changes anything.
 public class NpcTradeAtomicityTests : GameTestBase
 {
     private const byte Buy = 1;

@@ -236,9 +236,19 @@ public sealed class SelfSession
         NationRanksEvent?.Invoke();
     }
 
-    internal void WearTransform(int skillId) => TransformSkill = skillId;
+    public event Action? TransformChanged;
 
-    internal void EndTransform() => TransformSkill = 0;
+    internal void WearTransform(int skillId)
+    {
+        TransformSkill = skillId;
+        TransformChanged?.Invoke();
+    }
+
+    internal void EndTransform()
+    {
+        TransformSkill = 0;
+        TransformChanged?.Invoke();
+    }
 
     public bool IsWindowOpen(string key) => openWindows.Contains(key);
 
@@ -260,6 +270,8 @@ public sealed class SelfSession
 
     public SkillLearnInfo SkillLearnOf(SkillData.Skill s)
     {
+        if (SiegeSkills.RequiredLook(s.Level) is var look and > 0)
+            return new SkillLearnInfo(look == (SkillData.Get(TransformSkill)?.TransformModelId ?? 0) ? SkillLearnState.Learned : SkillLearnState.Locked, 0, 0, false);
         int mastery = SkillData.MasteryType(s.Tree);
         return SkillLearn.For(mastery, s.Level, Mastery.InTree(mastery), Class, Sheet.Level);
     }
@@ -277,6 +289,13 @@ public sealed class SelfSession
     {
         if (absSlot < 0) return;
         Inventory.Put(absSlot, item);
+        RefreshGearFor(absSlot);
+    }
+
+    public void SetInventoryDurability(int absSlot, short durability)
+    {
+        if (absSlot < 0) return;
+        Inventory.SetDurability(absSlot, durability);
         RefreshGearFor(absSlot);
     }
 

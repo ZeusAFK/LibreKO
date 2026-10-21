@@ -144,7 +144,7 @@ public partial class ReconnectDialog : PanelContainer
 
     public void SetReconnecting(int attempt)
     {
-        headline.Text = "The connection to the server was lost.";
+        headline.Text = Net.ConnectionLostText;
         status.Text = $"Reconnecting — attempt {Mathf.Max(1, attempt)} of {ReconnectSupervisor.MaxAttempts}";
         attempts.Value = Mathf.Max(1, attempt);
         attempts.Visible = true;

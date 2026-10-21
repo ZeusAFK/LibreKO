@@ -40,7 +40,6 @@ public class ZoneTransitionService(
     public event Func<UserSession, byte, Task>? PlayerLeavingZone;
     public event Func<UserSession, Task>? ZoneAbilitySent;
 
-    // A merchant bot stays where its stall was set up.
     public async Task ChangeZoneAsync(UserSession session, byte newZone, float x, float z)
     {
         if (session.IsWarping || session.IsBot)
@@ -55,7 +54,6 @@ public class ZoneTransitionService(
         if (session.IsGathering && mining != null)
             await mining.StopGatheringAsync(session);
 
-        // Leaving the zone closes a stall, its held gold included.
         if (session.ZoneId != newZone && merchantLifecycle != null
             && (session.Trade.IsMerchanting || session.Trade.IsMerchantPreparing || session.Trade.BuyMerchantGold > 0))
             await merchantLifecycle.CloseAsync(session, MerchantInOut.StallClosed);

@@ -32,6 +32,8 @@ public interface IGameConnection
 
     void ReturnToCharSelect();
 
+    void LeaveToLogin(string message);
+
     void AcknowledgeWorldLoaded();
 
     void RebuildWorldInPlace(float x, float z, float y);

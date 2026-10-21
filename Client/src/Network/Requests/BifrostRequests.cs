@@ -8,6 +8,7 @@ public interface IBifrostRequests
     void Disband();
     void DrakiRankList();
     void DrakiEnter(int certificateItem, int chapter);
+    void DrakiTown();
 }
 
 public sealed class BifrostRequests : IBifrostRequests
@@ -24,6 +25,13 @@ public sealed class BifrostRequests : IBifrostRequests
     }
 
     public void DrakiEnter(int certificateItem, int chapter) => sink.Send(DrakiWire.Enter(certificateItem, chapter));
+
+    public void DrakiTown()
+    {
+        var p = new Packet(GameOpcodes.GS_EVENT);
+        p.WriteByte((byte)TempleSubOpcode.DrakiTown);
+        sink.Send(p);
+    }
 
     public void FullMoonEnter()
     {

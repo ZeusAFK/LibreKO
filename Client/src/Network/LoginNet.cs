@@ -103,8 +103,20 @@ public partial class LoginNet : Node, ILoginConnection
             ErrorEvent?.Invoke(conn.LastError ?? "connection failed");
         }
         while (conn.Incoming.TryDequeue(out var p))
-            Handle(p);
+        {
+            try
+            {
+                Handle(p);
+            }
+            catch (Exception e)
+            {
+                Diag.Report($"login packet 0x{p.GetOpcode():X2}", e);
+                ErrorEvent?.Invoke(UnreadableReplyText);
+            }
+        }
     }
+
+    private const string UnreadableReplyText = "the login server sent a reply this client cannot read";
 
     private void SendCryptionHandshake() => conn.Send(new Packet(LoginOpcodes.LS_CRYPTION));
 

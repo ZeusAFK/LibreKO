@@ -2,6 +2,8 @@
 
 public sealed class LotterySession
 {
+    public EventWindowMemory Window { get; } = new();
+
     public event Action<LotteryState>? LotteryStateEvent;
 
     internal void RaiseLotteryState(LotteryState lotteryState) => LotteryStateEvent?.Invoke(lotteryState);

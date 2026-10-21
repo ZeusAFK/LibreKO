@@ -162,6 +162,11 @@ public partial class NationSelect : Control
 
     private void Choose(int nation)
     {
+        if (!Game.Connection.Connected)
+        {
+            Game.Connection.LeaveToLogin(Net.ConnectionLostText);
+            return;
+        }
         karus.Disabled = elmorad.Disabled = true;
         status.Text = "Selecting nation…";
         Game.Requests.PreGame.SelectNation(nation);
@@ -181,6 +186,11 @@ public partial class NationSelect : Control
 
     private void OnError(string e)
     {
+        if (!Game.Connection.Connected)
+        {
+            Game.Connection.LeaveToLogin(Net.ConnectionLostText);
+            return;
+        }
         karus.Disabled = elmorad.Disabled = false;
         status.Text = "";
         Notice.Show(this, "Error: " + e);

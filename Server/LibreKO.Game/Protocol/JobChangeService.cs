@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities.GameData;
+using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
@@ -69,7 +69,6 @@ public class JobChangeService(
         Job? before = null;
         Job? after = null;
         var tiedUp = false;
-        // The token and the new job are saved together, and the job's race with them.
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var character = await db.Characters.FindAsync(session.CharacterId);
@@ -140,7 +139,6 @@ public class JobChangeService(
 
     private static Job JobOf(UserSession session) => new(session.Class, session.Race, StatsOf(session), SkillsOf(session));
 
-    // Free points come first, at FreeStats.
     private static int[] StatsOf(UserSession session) =>
         [session.StatPoints, session.Strength, session.Stamina, session.Dexterity, session.Intelligence, session.Magic];
 

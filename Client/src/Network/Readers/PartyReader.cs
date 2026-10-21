@@ -176,6 +176,15 @@ internal sealed class PartyReader : IPacketReader
             case PartySubOpcode.CommanderOrder:
                 if (p.RemainingBytes >= 1) party.RaiseCommanderOrder(p.ReadByte());
                 break;
+            case PartySubOpcode.InviteSent:
+                if (PartyInviteSent.Read(p) is { } sent) party.RaisePartyInviteSent(sent);
+                break;
+            case PartySubOpcode.InviteClosed:
+                if (PartyInviteClosed.Read(p) is { } closed) party.RaisePartyInviteClosed(closed.InviteeId);
+                break;
+            case PartySubOpcode.InviteWithdrawn:
+                if (PartyInviteWithdrawn.Read(p) is { } withdrawn) party.RaisePartyInviteWithdrawn(withdrawn.InviterId);
+                break;
         }
     }
 

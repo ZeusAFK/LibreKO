@@ -104,13 +104,26 @@ internal sealed class AdminFindTab
             setStatus("Type a name or an id to search for.", true);
             return;
         }
-        LastFindQuery = query;
+        ExpectFind(findKind.Selected, query);
         setStatus($"Searching for “{query}”…", false);
-        requests.Find(findKind.Selected, query);
+        requests.Find(sentKind, query);
     }
+
+    internal void ExpectFind(int kind, string query)
+    {
+        sentKind = kind;
+        sentQuery = query;
+    }
+
+    private int sentKind = -1;
+    private string sentQuery = "";
+    private int shownKind;
 
     internal void OnFind(int kind, int total, List<AdminFindHit> hits)
     {
+        if (kind != sentKind) return;
+        LastFindQuery = sentQuery;
+        shownKind = kind;
         findHits = hits;
         findTotal = total;
         RefreshFindList();
@@ -122,7 +135,7 @@ internal sealed class AdminFindTab
         if (findList == null || !GodotObject.IsInstanceValid(findList)) return;
         foreach (Node child in findList.GetChildren()) child.QueueFree();
 
-        string what = (AdminFindKind)findKind.Selected switch
+        string what = (AdminFindKind)shownKind switch
         {
             AdminFindKind.Players => "player",
             AdminFindKind.Monsters => "monster",
@@ -188,7 +201,7 @@ internal sealed class AdminFindTab
             CustomMinimumSize = new Vector2(FindEditWidth, 0),
             TooltipText = hit.SpawnRow > 0 ? $"Edit spawn row {hit.SpawnRow}" : "Not placed by a spawn row",
             Disabled = hit.SpawnRow <= 0,
-            Visible = (AdminFindKind)findKind.Selected != AdminFindKind.Players,
+            Visible = (AdminFindKind)shownKind != AdminFindKind.Players,
         };
         edit.AddThemeFontSizeOverride("font_size", 12);
         edit.Pressed += () =>

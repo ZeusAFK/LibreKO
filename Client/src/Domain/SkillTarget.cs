@@ -16,10 +16,12 @@ public static class SkillTarget
     public const int AreaFriend = 11;
     public const int AreaAll = 12;
     public const int Area = 13;
+    public const int Drawbridge = 24;
     public const int DeadFriendOnly = 25;
+    public const int SiegeWeapon = 31;
 
     public static bool IsHostile(int moral) =>
-        moral is None or NpcOnly or EnemyOnly or All or AreaEnemy or Area;
+        moral is None or NpcOnly or EnemyOnly or All or AreaEnemy or Area or Drawbridge;
 
     public static bool IsFriendly(int moral) =>
         moral is FriendWithMe or FriendOnly or Party;
@@ -28,5 +30,5 @@ public static class SkillTarget
 
     public static bool IsGroundArea(int moral) => moral is AreaEnemy or AreaFriend or AreaAll;
 
-    public static bool IsCasterArea(int moral) => moral is PartyAll or Area;
+    public static bool IsCasterArea(int moral) => moral is PartyAll or Area or SiegeWeapon;
 }

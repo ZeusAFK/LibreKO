@@ -5,12 +5,10 @@ namespace LibreKO.Features.Windows;
 internal sealed class UpgradeNoticeFeature : IFeature
 {
     private readonly IWorldContext context;
-    private readonly UpgradeNoticeSession upgradeNotice;
 
-    public UpgradeNoticeFeature(IWorldContext context, UpgradeNoticeSession upgradeNotice)
+    public UpgradeNoticeFeature(IWorldContext context)
     {
         this.context = context;
-        this.upgradeNotice = upgradeNotice;
     }
 
     private CanvasLayer layer = null!;
@@ -19,17 +17,14 @@ internal sealed class UpgradeNoticeFeature : IFeature
     private int token;
 
     private static readonly Color Gold = UiTheme.GoldBright;
-    private static readonly Color Fail = new("ff8a5c");
 
     public void Build()
     {
         BuildBanner();
-        upgradeNotice.UpgradeNoticeEvent += On;
     }
 
     public void Dispose()
     {
-        upgradeNotice.UpgradeNoticeEvent -= On;
     }
 
     private void BuildBanner()
@@ -67,16 +62,5 @@ internal sealed class UpgradeNoticeFeature : IFeature
         {
             if (this.token == token) layer.Visible = false;
         });
-    }
-
-    private void On(bool ok, string name, int itemId)
-    {
-        string item = ItemData.DisplayName(itemId);
-        if (string.IsNullOrEmpty(item)) item = $"item {itemId}";
-        string verb = ok ? "successfully upgraded" : "failed to upgrade";
-        string line = $"{name} has {verb} {item}!";
-
-        ShowBanner(line, ok ? Gold : Fail);
-        context.Log.Add(line, CombatLogKind.Status);
     }
 }

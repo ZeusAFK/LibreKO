@@ -123,7 +123,6 @@ public class LootPacketCoordinator(
         var bundleId = packet.ReadInt();
         var itemId = packet.ReadInt();
         var slotId = packet.ReadUShort();
-        // A busy player's bag and purse may be counted on by a trade or a stall, so nothing lands in them.
         if (session.IsBusy)
         {
             await SendItemGetErrorAsync(session, bundleId);

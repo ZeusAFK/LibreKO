@@ -365,6 +365,8 @@ internal sealed class LootFilterFeature : IFeature
             return;
         }
         foreach (var line in list.Items) dropRows.AddChild(DropRow(line));
+        if (list.Total > list.Items.Count)
+            dropRows.AddChild(UiTheme.Text($"… and {list.Total - list.Items.Count} more not listed", 12, UiTheme.TextLo));
     }
 
     private Control DropRow(DropLine line)

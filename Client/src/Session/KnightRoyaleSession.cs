@@ -2,6 +2,18 @@
 
 public sealed class KnightRoyaleSession
 {
+    public sealed class SignUpBoardState
+    {
+        public bool Open;
+        public int Mode;
+        public int Participants;
+        public double EndsAt;
+        public bool Applied;
+        public bool Collapsed;
+    }
+
+    public SignUpBoardState Board { get; } = new();
+
     public event Action<RoyaleSignUp>? RoyaleSignUpEvent;
 
     internal void RaiseRoyaleSignUp(RoyaleSignUp royaleSignUp) => RoyaleSignUpEvent?.Invoke(royaleSignUp);

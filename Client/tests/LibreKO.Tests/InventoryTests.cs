@@ -29,6 +29,17 @@ public class InventoryTests
     }
 
     [Fact]
+    public void CountInBackpack_CountsTheMainBagOnly()
+    {
+        const int Arrow = 391010000;
+        var inv = Empty();
+        inv[Inventory.GridStart + 2] = Item(Arrow, 7);
+        inv.Put(Inventory.GridStart + Inventory.GridCount + 20, Item(Arrow, 50));
+
+        Assert.Equal(7, inv.CountInBackpack(Arrow));
+    }
+
+    [Fact]
     public void GridSlotFor_PrefersAStackWithRoom_ThenAFreeSlot()
     {
         const int Arrow = 391010000;
@@ -36,9 +47,10 @@ public class InventoryTests
         var inv = BagFullExcept(free);
         inv[stack] = Item(Arrow, Inventory.StackMax - 5);
 
-        Assert.Equal(stack, inv.GridSlotFor(Arrow, 5, stackable: true));
-        Assert.Equal(free, inv.GridSlotFor(Arrow, 6, stackable: true));
-        Assert.Equal(free, inv.GridSlotFor(Arrow, 1, stackable: false));
+        var arrows = new ItemSlot { ItemId = Arrow };
+        Assert.Equal(stack, inv.GridSlotFor(arrows, 5, stackable: true));
+        Assert.Equal(free, inv.GridSlotFor(arrows, 6, stackable: true));
+        Assert.Equal(free, inv.GridSlotFor(arrows, 1, stackable: false));
     }
 
     [Fact]

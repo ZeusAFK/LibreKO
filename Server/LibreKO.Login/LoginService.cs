@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Entities;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Gameplay;
@@ -7,6 +7,7 @@ using LibreKO.Login.Configuration;
 using LibreKO.Login.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Net;
 using System.Text;
 using LibreKO.Login.Protocol.Writers;
 
@@ -16,8 +17,7 @@ public interface ILoginService
 {
     Task<Packet> VersionCheckAsync();
     Task<Packet> DownloadInfoAsync(short version);
-    Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN,
-        LoginRequestFlags flags = LoginRequestFlags.None, string address = "");
+    Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN, LoginRequestFlags flags = LoginRequestFlags.None, IPAddress? from = null);
     Task<Packet> ServerListAsync(short echo);
     Task<Packet> NewsAsync();
     Task<Packet> UnknownF7Async();
@@ -31,6 +31,7 @@ public class LoginService(
     IPatchRepository patchRepository,
     IKingRepository kingRepository,
     IOptions<LoginServerSettings> settings,
+    AccountCreationLimiter creationLimiter,
     LoginThrottle throttle,
     ILogger<LoginService> logger) : ILoginService
 {
@@ -56,9 +57,9 @@ public class LoginService(
         return LoginPacketWriter.DownloadInfo(ftpSettings.Url, ftpSettings.Path, fileNames);
     }
 
-    public async Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN,
-        LoginRequestFlags flags = LoginRequestFlags.None, string address = "")
+    public async Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN, LoginRequestFlags flags = LoginRequestFlags.None, IPAddress? from = null)
     {
+        var address = from is null ? string.Empty : LoginThrottle.Bucket(from);
         var tooLong = login.Length > Account.MaxLoginLength;
         var locked = !tooLong && !throttle.TryAttempt(address, login);
         if (!tooLong && !locked)
@@ -80,8 +81,13 @@ public class LoginService(
         }
         else if (account == null)
         {
-            // Auto-create account if enabled
-            if (settings.Value.Account.AutoCreate)
+            if (settings.Value.Account.AutoCreate && !creationLimiter.TryTake(from, DateTime.UtcNow))
+            {
+                result = LoginResult.TooManyNewAccounts;
+                logger.LogWarning("Auto-create refused for {Login}: too many new accounts from network {Network}", login,
+                    from is null ? "unknown" : AccountCreationLimiter.NetworkOf(from));
+            }
+            else if (settings.Value.Account.AutoCreate)
             {
                 account = new Account
                 {

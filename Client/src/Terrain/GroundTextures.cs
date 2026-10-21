@@ -24,7 +24,7 @@ public sealed class GroundTextures
         using var sf = FileAccess.Open($"{root}/splat.png", FileAccess.ModeFlags.Read);
         if (sf == null) return null;
 
-        var simg = new Image();
+        using var simg = new Image();
         if (simg.LoadPngFromBuffer(sf.GetBuffer((long)sf.GetLength())) != Error.Ok ||
             simg.GetFormat() != Image.Format.Rgba8)
             return null;
@@ -52,7 +52,7 @@ public sealed class GroundTextures
         using var tf = FileAccess.Open($"{root}/tiles.png", FileAccess.ModeFlags.Read);
         if (tf == null) return null;
 
-        var timg = new Image();
+        using var timg = new Image();
         if (timg.LoadPngFromBuffer(tf.GetBuffer((long)tf.GetLength())) != Error.Ok ||
             timg.GetFormat() != Image.Format.Rgba8)
             return null;
@@ -90,6 +90,8 @@ public sealed class GroundTextures
 
         var array = new Texture2DArray();
         array.CreateFromImages(images);
+        foreach (var img in images) img.Dispose();
+        Atlas = System.Array.Empty<byte>();
         return array;
     }
 

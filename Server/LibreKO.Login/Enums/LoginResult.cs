@@ -1,4 +1,4 @@
-﻿namespace LibreKO.Login.Enums;
+namespace LibreKO.Login.Enums;
 
 public enum LoginResult : short
 {
@@ -12,4 +12,5 @@ public enum LoginResult : short
     PrepaidCardExpired = 0x0C,
     PasswordResetRequired = 0x11,
     TooManyAttempts = 0x12,
+    TooManyNewAccounts = 0x20,
 }

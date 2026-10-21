@@ -10,7 +10,6 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// A quest's gold reward stops at the coin cap instead of overflowing the purse.
 public class QuestGoldRewardTests
 {
     [Fact]

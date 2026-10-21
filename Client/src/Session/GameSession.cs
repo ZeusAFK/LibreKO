@@ -97,7 +97,6 @@ public sealed class GameSession
     public StealthSession Stealth { get; } = new();
     public TargetStateSession TargetState { get; } = new();
     public TournamentSession Tournament { get; } = new();
-    public UpgradeNoticeSession UpgradeNotice { get; } = new();
     public UserOptionSession UserOption { get; }
     public VanguardSession Vanguard { get; } = new();
     public VendorSession Vendor { get; } = new();
@@ -121,7 +120,6 @@ public sealed class GameSession
             if (type == StateChange.Stealth) Stealth.RaiseStealth(charId, (InvisibilityType)value);
             else if (type == Domain.Soccer.StateChangeTeam && charId == Self.MyCharId) Soccer.ApplyTeam(value);
         };
-        Shout.ShoutUpgradeEvent += (ok, name, itemId, _) => UpgradeNotice.RaiseUpgradeNotice(ok, name, itemId);
     }
 
     internal void EntityEntered(EntitySnapshot e)

@@ -317,7 +317,6 @@ public class NpcShopListTests : GameTestBase
         return (session, client);
     }
 
-    // The client sends the merchant's kind; the merchant it spoke to is the one that counts.
     private static void GrandMerchant(ServiceProvider provider, UserSession session, byte zone) =>
         session.Quest.EventNpcUniqueId = provider.GetRequiredService<SessionManager>().Regions.SpawnNpc(new NpcInstance
         {

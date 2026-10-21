@@ -143,7 +143,7 @@ internal sealed class ReportFeature : IFeature, IClosableWindow
     {
         if (eligible)
         {
-            gateLbl.Text = "You are a sheriff (King / GM). File reports and vote below.";
+            gateLbl.Text = "You are a sheriff. File reports and vote below.";
             gateLbl.AddThemeColorOverride("font_color", UiTheme.GoldBright);
         }
         else
@@ -200,6 +200,8 @@ internal sealed class ReportFeature : IFeature, IClosableWindow
         }
     }
 
+    private readonly List<Button> voteButtons = new();
+
     private void OnList(byte totalPages, List<ReportEntry> entries)
     {
         this.totalPages = totalPages < 1 ? (byte)1 : totalPages;
@@ -209,6 +211,7 @@ internal sealed class ReportFeature : IFeature, IClosableWindow
         nextBtn.Disabled = page + 1 >= this.totalPages;
 
         foreach (var c in voteList.GetChildren()) c.QueueFree();
+        voteButtons.Clear();
         if (entries.Count == 0)
         {
             var e = HudStyle.Label(13); e.Text = "No open reports.";
@@ -244,6 +247,8 @@ internal sealed class ReportFeature : IFeature, IClosableWindow
             var noBtn = new Button { Text = "Vote No", FocusMode = Control.FocusModeEnum.None, Disabled = !eligible };
             noBtn.Pressed += () => { requests.VoteNo(id); SetStatus("Voting no…", false); };
             btnRow.AddChild(noBtn);
+            voteButtons.Add(yesBtn);
+            voteButtons.Add(noBtn);
             vb.AddChild(btnRow);
 
             voteList.AddChild(row);
@@ -252,8 +257,11 @@ internal sealed class ReportFeature : IFeature, IClosableWindow
 
     private void OnInspector(bool open, int openCount)
     {
-        if (shown)
-            SetStatus(openCount > 0 ? $"{openCount} report(s) still open." : "No reports open.", false);
+        eligible = open || context.Self.IsGm;
+        if (!shown) return;
+        ApplyGate();
+        foreach (var button in voteButtons) button.Disabled = !eligible;
+        SetStatus(openCount > 0 ? $"{openCount} report(s) still open." : "No reports open.", false);
     }
 
     private void SetStatus(string text, bool warn)

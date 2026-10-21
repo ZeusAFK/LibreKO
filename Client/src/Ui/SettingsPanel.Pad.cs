@@ -40,6 +40,7 @@ public partial class SettingsPanel : CanvasLayer
         BindGroup? section = null;
         foreach (var entry in KeyBinds.All)
         {
+            if (KeyBinds.DevelopmentOnly(entry.Action) && !Config.Development) continue;
             if (section != entry.Group)
             {
                 section = entry.Group;

@@ -112,7 +112,6 @@ public sealed class CharacterSealService(
         return CharacterSealPacketWriter.List(slots);
     }
 
-    // The ring and the sealed character are saved together, from the scroll the bag holds once everything is read.
     private async Task<Packet> SealAsync(UserSession session, byte bagPos, int scrollId, string name, string code)
     {
         if (session.IsBusy || BagSlot(session, bagPos) == null || gameData.GetItem(scrollId)?.Kind != ScrollKind
@@ -201,7 +200,6 @@ public sealed class CharacterSealService(
         return null;
     }
 
-    // The ring leaves the bag in the same save that hands the character over.
     private async Task<Packet> UnsealAsync(UserSession session, byte bagPos, int ringId, byte slot)
     {
         var ring = BagSlot(session, bagPos);
@@ -244,7 +242,6 @@ public sealed class CharacterSealService(
         return true;
     }
 
-    // A sheet is shown only for a ring in the player's bag or in their open trade.
     private bool SeesRing(UserSession session, int uniqueId)
     {
         bool Offered(UserSession trader) =>

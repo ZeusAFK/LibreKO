@@ -41,7 +41,6 @@ public sealed class InventoryJournal(UserSession session, ILogger? logger = null
         session.Trade.MerchantItems[index] = new MerchantItem();
     }
 
-    // One of an item leaves the first slot holding it, magic bags included, or nothing does.
     public bool TakeOne(int itemId)
     {
         for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length; index++)
@@ -59,7 +58,6 @@ public sealed class InventoryJournal(UserSession session, ILogger? logger = null
         return false;
     }
 
-    // The whole count reaches the bag or none of it does: a countable item as one stack, any other one per slot.
     public bool DeliverAll(ItemData item, int count)
     {
         var countable = item.Countable != 0;
@@ -97,7 +95,6 @@ public sealed class InventoryJournal(UserSession session, ILogger? logger = null
         moneyMoved += amount;
     }
 
-    // What the change left is taken under the same lock as the change.
     public void Seal()
     {
         written.Clear();
@@ -127,7 +124,6 @@ public sealed class InventoryJournal(UserSession session, ILogger? logger = null
             Undo(change, whole);
     }
 
-    // Journals of one exchange go back together or not at all.
     public static void RestoreTogether(params InventoryJournal[] journals)
     {
         if (journals.All(journal => journal.IsWhole(journal.Split())))

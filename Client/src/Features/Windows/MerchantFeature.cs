@@ -567,7 +567,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
             (count, _) =>
             {
                 if (!shopShown || purchase != null || shopItems[merchantSlot].ItemId != item.ItemId) return;
-                int buyerSlot = self.Inventory.GridSlotFor(item.ItemId, count, stackable);
+                int buyerSlot = self.Inventory.GridSlotFor(new ItemSlot { ItemId = item.ItemId }, count, stackable);
                 if (buyerSlot < 0) { SetShopStatus("Your bags are full.", true); return; }
                 if ((long)count * item.Price > self.Sheet.Gold) { SetShopStatus("You don't have enough gold.", true); return; }
                 purchase = new MerchantUi.PendingTrade(shopTargetId, item.ItemId, count, item.Price);

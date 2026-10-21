@@ -1,7 +1,10 @@
 ﻿using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
+using LibreKO.Common.Infrastructure.Persistence;
 using LibreKO.Game.World;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 using LibreKO.Game.Protocol.Writers;
@@ -18,8 +21,12 @@ public class MagicMovementEffectService(
     IGameDataService gameDataService,
     IWorldMovementService worldMovementService,
     ISoccerService soccerService,
+    IZoneTransitionService zoneTransitionService,
+    IServiceScopeFactory scopeFactory,
     ILogger<MagicMovementEffectService> logger) : IMagicMovementEffectService
 {
+    private const int MutualFriendRows = 2;
+
     public async Task<bool> ExecuteAsync(UserSession caster, MagicData magic, int skillId, int targetId, int[] data)
     {
         if (!MagicTypeLookup.TryResolve(gameDataService.MagicType8Table, magic, skillId, out var type8Data))
@@ -38,6 +45,7 @@ public class MagicMovementEffectService(
             MagicWarpType.Rush => await RushAsync(caster, magic, targetId, data),
             MagicWarpType.Pull => await PullAsync(caster, magic, targetId, data),
             MagicWarpType.BallControl => await soccerService.KickAsync(caster, targetId, data),
+            MagicWarpType.TeleportFriend => await TeleportToFriendAsync(caster, targetId),
             _ => Unhandled(warpType, skillId, caster),
         };
 
@@ -132,6 +140,34 @@ public class MagicMovementEffectService(
         return true;
     }
 
+    private async Task<bool> TeleportToFriendAsync(UserSession caster, int targetId)
+    {
+        var target = sessionManager.GetByCharacterId(targetId);
+        if (target == null
+            || target.CharacterId == caster.CharacterId
+            || target.Hp <= 0
+            || caster.Hp <= 0
+            || !caster.CanTeleport
+            || !FriendTeleport.ZoneAllows(caster.ZoneId, caster.Nation, target.ZoneId, caster.RebirthLevel > 0)
+            || !await AreMutualFriendsAsync(caster.CharacterId, target.CharacterId))
+            return false;
+
+        if (target.ZoneId == caster.ZoneId)
+            await worldMovementService.WarpAsync(caster, (ushort)target.GetPosX, (ushort)target.GetPosZ);
+        else
+            await zoneTransitionService.ChangeZoneAsync(caster, target.ZoneId, target.X, target.Z);
+        return true;
+    }
+
+    private async Task<bool> AreMutualFriendsAsync(int characterId, int friendId)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var rows = await db.Friendships.CountAsync(f =>
+            f.CharacterId == characterId && f.FriendCharacterId == friendId
+            || f.CharacterId == friendId && f.FriendCharacterId == characterId);
+        return rows == MutualFriendRows;
+    }
     private static bool MaySummon(UserSession caster, UserSession target, SkillMoral moral) => moral switch
     {
         SkillMoral.Party or SkillMoral.PartyAll => caster.IsInParty && target.PartyIndex == caster.PartyIndex,

@@ -11,7 +11,7 @@ internal static class ModelParts
     {
         int i = nodeName.LastIndexOf("_part", System.StringComparison.Ordinal);
         if (i < 0) return -1;
-        return int.TryParse(nodeName.AsSpan(i + 5), out int n) ? n : -1;
+        return int.TryParse(nodeName.AsSpan(i + 5), out int n) ? PlayerRig.BodyPartSlot(nodeName[..i], n) : -1;
     }
 
     internal static ModelNodes.PartsIndex LoadPartsIndex()

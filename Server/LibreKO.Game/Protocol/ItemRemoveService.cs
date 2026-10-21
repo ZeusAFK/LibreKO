@@ -44,7 +44,7 @@ public class ItemRemoveService(
         }
 
         var item = session.Inventory[absolutePosition];
-        if (item.ItemId != itemId || item.State == ItemFlag.Sealed || item.IsSealedCharacter)
+        if (item.ItemId != itemId || item.State is ItemFlag.Sealed or ItemFlag.Rented || item.IsSealedCharacter)
         {
             await SendItemRemoveResponseAsync(session, 0);
             return;

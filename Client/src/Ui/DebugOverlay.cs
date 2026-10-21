@@ -220,6 +220,7 @@ public partial class DebugOverlay : CanvasLayer
 
     private bool ToggleBisect(KeyChord chord)
     {
+        if (!Config.Development) return false;
         static bool Is(KeyAction action, KeyChord chord)
         {
             var bind = KeyBinds.Get(action);

@@ -6,6 +6,9 @@ internal sealed class PartyInvitesFeature : IFeature
 {
     internal const int InvitedText = 3411;
     private const int InviteAskText = 3415;
+    private const int WaitingText = 10951;
+    private const string CancelInviteText = "Cancel invitation";
+    private const string CancelInvitesText = "Cancel invitations";
     private const string InviteByNameTitle = "Party Invite";
     private const string InviteByNamePrompt = "Invite player by name:";
     private const string InviteNamePlaceholder = "Character name";
@@ -19,6 +22,8 @@ internal sealed class PartyInvitesFeature : IFeature
 
     private CanvasLayer dialogLayer = null!;
     private ConfirmationDialog inviteAskDialog = null!;
+    private AcceptDialog inviteWaitDialog = null!;
+    private readonly List<PartyInviteSent> waiting = new();
     private bool invitePending;
     private int pendingInviterId = -1;
     private string pendingInviterName = "";
@@ -37,6 +42,9 @@ internal sealed class PartyInvitesFeature : IFeature
         BuildPrompts();
         party.PartyErrorEvent += OnError;
         party.PartyInviteEvent += OnInvite;
+        party.PartyInviteSentEvent += OnInviteSent;
+        party.PartyInviteClosedEvent += OnInviteClosed;
+        party.PartyInviteWithdrawnEvent += OnInviteWithdrawn;
         party.PartyBbsInviteEvent += OnBbsInvite;
     }
 
@@ -44,6 +52,9 @@ internal sealed class PartyInvitesFeature : IFeature
     {
         party.PartyErrorEvent -= OnError;
         party.PartyInviteEvent -= OnInvite;
+        party.PartyInviteSentEvent -= OnInviteSent;
+        party.PartyInviteClosedEvent -= OnInviteClosed;
+        party.PartyInviteWithdrawnEvent -= OnInviteWithdrawn;
         party.PartyBbsInviteEvent -= OnBbsInvite;
     }
 
@@ -65,6 +76,16 @@ internal sealed class PartyInvitesFeature : IFeature
         inviteAskDialog.Confirmed += () => AnswerInvite(true);
         inviteAskDialog.Canceled += () => AnswerInvite(false);
         dialogLayer.AddChild(inviteAskDialog);
+
+        inviteWaitDialog = new AcceptDialog
+        {
+            Title = "Party Invite",
+            OkButtonText = CancelInviteText,
+            Exclusive = false,
+        };
+        inviteWaitDialog.Confirmed += WithdrawWaiting;
+        inviteWaitDialog.Canceled += WithdrawWaiting;
+        dialogLayer.AddChild(inviteWaitDialog);
     }
 
     internal void OpenInvitePrompt() =>
@@ -77,7 +98,52 @@ internal sealed class PartyInvitesFeature : IFeature
         if (name.Length == 0) return;
         if (party.InParty) requests.Invite(name);
         else requests.Create(name);
-        context.Log.Notice($"{name} {ItemData.Text(InvitedText, "was invited into the party. Waiting for a response.")}");
+    }
+
+    private void OnInviteSent(PartyInviteSent sent)
+    {
+        waiting.RemoveAll(w => w.InviteeId == sent.InviteeId);
+        waiting.Add(sent);
+        context.Log.Notice($"{sent.InviteeName} {ItemData.Text(InvitedText, "was invited into the party. Waiting for a response.")}");
+        ShowWaiting();
+    }
+
+    private void OnInviteClosed(int inviteeId)
+    {
+        if (waiting.RemoveAll(w => w.InviteeId == inviteeId) > 0) ShowWaiting();
+    }
+
+    private void ShowWaiting()
+    {
+        if (waiting.Count == 0)
+        {
+            inviteWaitDialog.Hide();
+            return;
+        }
+        string names = string.Join(", ", waiting.Select(w => w.InviteeName));
+        inviteWaitDialog.DialogText = ItemData.Text(WaitingText, "Waiting for a response from %s.").Replace("%s", names);
+        inviteWaitDialog.OkButtonText = waiting.Count == 1 ? CancelInviteText : CancelInvitesText;
+        if (!inviteWaitDialog.Visible) inviteWaitDialog.PopupCentered();
+    }
+
+    private void WithdrawWaiting()
+    {
+        foreach (var invite in waiting)
+        {
+            requests.CancelInvite(invite.InviteeId);
+            context.Log.Notice($"You withdrew the party invitation to {invite.InviteeName}.");
+        }
+        waiting.Clear();
+    }
+
+    private void OnInviteWithdrawn(int inviterId)
+    {
+        if (!invitePending || pendingInviterId != inviterId) return;
+        context.Log.Notice($"{pendingInviterName} withdrew the party invitation.");
+        invitePending = false;
+        pendingInviterId = -1;
+        pendingInviterName = "";
+        inviteAskDialog.Hide();
     }
 
     internal void AcceptPendingInviteIf(Func<int, string, bool> accepts)

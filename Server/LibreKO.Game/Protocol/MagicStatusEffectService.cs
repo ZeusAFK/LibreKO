@@ -493,7 +493,7 @@ public class MagicStatusEffectService(
             SkillMoral.Party or SkillMoral.PartyAll => isCaster
                 || (caster.IsInParty && player.PartyIndex == caster.PartyIndex),
             SkillMoral.AreaFriend or SkillMoral.SelfArea or SkillMoral.FriendWithMe or SkillMoral.FriendExceptMe
-                => isCaster || !PvpRules.IsEnemy(caster, player),
+                or SkillMoral.SiegeWeapon => isCaster || !PvpRules.IsEnemy(caster, player),
             SkillMoral.AreaAll => isCaster || PvpRules.CanAttackPlayer(caster, player),
             _ => !isCaster && PvpRules.CanAttackPlayer(caster, player),
         };

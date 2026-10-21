@@ -144,6 +144,26 @@ public class PartyWireTests : GameTestBase
     }
 
     [Fact]
+    public async Task ASecondInviteBeforeTheFirstAnswerJoinsTheFormingParty()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var coordinator = provider.GetRequiredService<IPartyPacketCoordinator>();
+
+        var sent = new List<Packet>();
+        var leader = CreateMember(sessionManager, 514, sent);
+        var first = CreateMember(sessionManager, 515);
+        var second = CreateMember(sessionManager, 516);
+
+        await coordinator.HandleAsync(leader.Client, InviteOf(first));
+        await coordinator.HandleAsync(leader.Client, InviteOf(second));
+
+        RejectionsIn(sent).Should().BeEmpty();
+        first.InvitedToParty.Should().Be(leader.PartyIndex);
+        second.InvitedToParty.Should().Be(leader.PartyIndex);
+    }
+
+    [Fact]
     public async Task ABoardInviteRelaysTheInviterToTheTargetWithoutJoiningThem()
     {
         using var provider = CreateProvider(_ => { });
@@ -184,6 +204,50 @@ public class PartyWireTests : GameTestBase
         var party = sessionManager.Parties.GetParty(inviter.PartyIndex);
         party.Should().NotBeNull();
         party!.FindMember((short)target.CharacterId).Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    [Fact]
+    public async Task AnInviteWaitsOutsideThePartyUntilItIsAnswered()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var coordinator = provider.GetRequiredService<IPartyPacketCoordinator>();
+
+        var leader = CreateMember(sessionManager, 550);
+        var invitee = CreateMember(sessionManager, 551);
+
+        await coordinator.HandleAsync(leader.Client, InviteOf(invitee));
+
+        invitee.IsInParty.Should().BeFalse("an unanswered invite is not a membership");
+        invitee.InvitedToParty.Should().Be(leader.PartyIndex);
+
+        await coordinator.HandleAsync(invitee.Client, Permit(accept: true));
+
+        sessionManager.Parties.GetParty(leader.PartyIndex)!.FindMember((short)invitee.CharacterId).Should().BeGreaterThanOrEqualTo(0);
+        invitee.InvitedToParty.Should().Be(-1);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AStrayAnswerFromAMemberLeavesThePartyAlone(bool accept)
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var coordinator = provider.GetRequiredService<IPartyPacketCoordinator>();
+
+        var leader = CreateMember(sessionManager, 552);
+        var member = CreateMember(sessionManager, 553);
+        var party = sessionManager.Parties.CreateParty((short)leader.CharacterId);
+        party.MemberIds[1] = (short)member.CharacterId;
+        leader.PartyIndex = party.Index;
+        leader.IsPartyLeader = true;
+        member.PartyIndex = party.Index;
+
+        await coordinator.HandleAsync(member.Client, Permit(accept));
+
+        member.PartyIndex.Should().Be(party.Index);
+        party.FindMember((short)member.CharacterId).Should().BeGreaterThanOrEqualTo(0);
     }
 
     [Fact]
@@ -414,6 +478,166 @@ public class PartyWireTests : GameTestBase
         }
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TheInviterIsToldTheInviteWentOutAndWhenItWasAnswered(bool accept)
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var leaderSent = new List<Packet>();
+        var leader = CreateMember(sessionManager, 580, leaderSent);
+        var invitee = CreateMember(sessionManager, 581);
+
+        await parties.HandleAsync(leader.Client, InviteOf(invitee));
+
+        IdsIn(leaderSent, PartySubOpcode.InviteSent).Should().Equal(invitee.CharacterId);
+        IdsIn(leaderSent, PartySubOpcode.InviteClosed).Should().BeEmpty("the invite is still waiting");
+
+        await parties.HandleAsync(invitee.Client, Permit(accept));
+
+        IdsIn(leaderSent, PartySubOpcode.InviteClosed).Should().Equal(invitee.CharacterId);
+    }
+
+    [Fact]
+    public async Task TheInviterWithdrawsAnUnansweredInvite()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var leaderSent = new List<Packet>();
+        var inviteeSent = new List<Packet>();
+        var leader = CreateMember(sessionManager, 582, leaderSent);
+        var invitee = CreateMember(sessionManager, 583, inviteeSent);
+        await parties.HandleAsync(leader.Client, InviteOf(invitee));
+
+        await parties.HandleAsync(leader.Client, CancelInvite(invitee));
+
+        invitee.InvitedToParty.Should().Be(-1);
+        IdsIn(inviteeSent, PartySubOpcode.InviteWithdrawn).Should().Equal(leader.CharacterId);
+        IdsIn(leaderSent, PartySubOpcode.InviteClosed).Should().Equal(invitee.CharacterId);
+        leader.IsInParty.Should().BeFalse("the party formed for this invite had no one else to wait for");
+
+        await parties.HandleAsync(invitee.Client, Permit(accept: true));
+
+        invitee.IsInParty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task OnlyTheInviterWithdrawsAnInvite()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var leader = CreateMember(sessionManager, 584);
+        var invitee = CreateMember(sessionManager, 585);
+        var stranger = CreateMember(sessionManager, 586);
+        await parties.HandleAsync(leader.Client, InviteOf(invitee));
+
+        await parties.HandleAsync(stranger.Client, CancelInvite(invitee));
+
+        invitee.InvitedToParty.Should().Be(leader.PartyIndex);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AFormingPartyWaitsForEveryInviteStillOpen(bool withdrawn)
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var leader = CreateMember(sessionManager, 587);
+        var first = CreateMember(sessionManager, 588);
+        var second = CreateMember(sessionManager, 589);
+        await parties.HandleAsync(leader.Client, InviteOf(first));
+        await parties.HandleAsync(leader.Client, InviteOf(second));
+
+        if (withdrawn)
+            await parties.HandleAsync(leader.Client, CancelInvite(first));
+        else
+            await parties.HandleAsync(first.Client, Permit(accept: false));
+        await parties.HandleAsync(second.Client, Permit(accept: true));
+
+        second.PartyIndex.Should().Be(leader.PartyIndex);
+        sessionManager.Parties.GetParty(leader.PartyIndex)!.FindMember((short)second.CharacterId).Should().BeGreaterThanOrEqualTo(0);
+    }
+
+    [Fact]
+    public async Task AnInviteeWhoLeavesTheGameEndsTheInvitersWait()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var leaderSent = new List<Packet>();
+        var leader = CreateMember(sessionManager, 590, leaderSent);
+        var invitee = CreateMember(sessionManager, 591);
+        await parties.HandleAsync(leader.Client, InviteOf(invitee));
+
+        await parties.LeaveGameAsync(invitee);
+
+        IdsIn(leaderSent, PartySubOpcode.InviteClosed).Should().Equal(invitee.CharacterId);
+    }
+
+    [Fact]
+    public async Task AnInviterWhoLeavesTheGameWithdrawsTheInvite()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var inviteeSent = new List<Packet>();
+        var leader = CreateMember(sessionManager, 592);
+        var invitee = CreateMember(sessionManager, 593, inviteeSent);
+        await parties.HandleAsync(leader.Client, InviteOf(invitee));
+
+        await parties.LeaveGameAsync(leader);
+
+        invitee.InvitedToParty.Should().Be(-1);
+        IdsIn(inviteeSent, PartySubOpcode.InviteWithdrawn).Should().Equal(leader.CharacterId);
+    }
+
+    [Fact]
+    public async Task ADisbandWithdrawsTheInvitesToTheParty()
+    {
+        using var provider = CreateProvider(_ => { });
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var parties = provider.GetRequiredService<IPartyPacketCoordinator>();
+        var leaderSent = new List<Packet>();
+        var inviteeSent = new List<Packet>();
+        var leader = CreateMember(sessionManager, 594, leaderSent);
+        var invitee = CreateMember(sessionManager, 595, inviteeSent);
+        await parties.HandleAsync(leader.Client, InviteOf(invitee));
+
+        await parties.HandleAsync(leader.Client, Request(PartyRequest.Delete));
+
+        invitee.InvitedToParty.Should().Be(-1);
+        IdsIn(inviteeSent, PartySubOpcode.InviteWithdrawn).Should().Equal(leader.CharacterId);
+        IdsIn(leaderSent, PartySubOpcode.InviteClosed).Should().Equal(invitee.CharacterId);
+    }
+
+    private static Packet CancelInvite(UserSession invitee)
+    {
+        var packet = new Packet(GameOpcodes.GS_PARTY);
+        packet.WriteByte((byte)PartyRequest.InviteCancel);
+        packet.WriteInt(invitee.CharacterId);
+        packet.ResetOffset();
+        return packet;
+    }
+
+    private static List<int> IdsIn(List<Packet> sent, PartySubOpcode sub)
+    {
+        var ids = new List<int>();
+        lock (sent)
+            foreach (var packet in sent)
+            {
+                packet.ResetOffset();
+                if (packet.GetOpcode() == (byte)GameOpcodes.GS_PARTY && packet.ReadByte() == (byte)sub)
+                    ids.Add(packet.ReadInt());
+            }
+        return ids;
+    }
+
     private static void NoOneLeadsAPartyOfOne(SessionManager sessionManager, params UserSession[] leaders)
     {
         foreach (var leader in leaders.Where(leader => leader.IsInParty))
@@ -494,7 +718,6 @@ public class PartyWireTests : GameTestBase
         players[^1].IsInParty.Should().BeFalse("a player with no seat holds no party's index");
     }
 
-    // Each round starts one side a little later than the other.
     private static async Task AtOnceAsync(int round, Func<Task> first, Func<Task> second)
     {
         var shift = round % RaceSweep;

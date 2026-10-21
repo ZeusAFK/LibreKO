@@ -53,7 +53,7 @@ public class NameChangeTests : GameTestBase
     }
 
     [Fact]
-    public async Task AScrollInAMagicBagPaysForARename()
+    public async Task AScrollInAMagicBagDoesNotPayForARename()
     {
         using var provider = Provider();
         var (player, _) = Player(provider, ScrollOfIdentity);
@@ -62,8 +62,8 @@ public class NameChangeTests : GameTestBase
 
         await Rename(provider, player, CharacterRename, NewName);
 
-        player.Name.Should().Be(NewName, "the scroll counts wherever the item check finds it");
-        player.Inventory[InventoryConstants.MagicBagStart].IsEmpty.Should().BeTrue();
+        player.Name.Should().Be(OldName, "the item check counts the main bag only");
+        player.Inventory[InventoryConstants.MagicBagStart].ItemId.Should().Be(ScrollOfIdentity);
     }
 
     [Fact]

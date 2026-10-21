@@ -100,6 +100,11 @@ public class PartyPacketCoordinator(
                 if (packet.RemainingBytes >= sizeof(uint))
                     partySignal.Echo(session, packet.ReadUInt());
                 break;
+
+            case PartyRequest.InviteCancel:
+                if (packet.RemainingBytes >= sizeof(int))
+                    await WithdrawInviteAsync(session, packet.ReadInt());
+                break;
         }
     }
 
@@ -182,6 +187,8 @@ public class PartyPacketCoordinator(
 
     public async Task LeaveGameAsync(UserSession session)
     {
+        await CancelAsync(session);
+        await WithdrawInvitesFromAsync(session);
         var party = session.IsInParty ? sessionManager.Parties.GetParty(session.PartyIndex) : null;
         if (party != null && party.LeaderId == (short)session.CharacterId && party.MemberCount > 2
             && NextLeader(party, (short)session.CharacterId) is { } heir)
@@ -272,7 +279,7 @@ public class PartyPacketCoordinator(
             return;
 
         var created = false;
-        if ((PartyRequest)subOpcode == PartyRequest.Create)
+        if ((PartyRequest)subOpcode == PartyRequest.Create && !LeadsParty(session))
         {
             if (session.IsInParty || PartyLedBy(session, boardType) == null)
             {
@@ -299,7 +306,7 @@ public class PartyPacketCoordinator(
             }
         }
 
-        if (!target!.TryOfferPartyInvite(session.PartyIndex, PartyStands))
+        if (!target!.TryOfferPartyInvite(new PartyInvite(session.PartyIndex, session.CharacterId), PartyStands))
         {
             if (created)
                 DropUnformedParty(session, session.PartyIndex);
@@ -307,9 +314,14 @@ public class PartyPacketCoordinator(
             return;
         }
 
-        var invite = PartyPacketWriter.Invite(session.CharacterId, session.Name);
-        await target.Client.SendPacket(invite);
+        await target.Client.SendPacket(PartyPacketWriter.Invite(session.CharacterId, session.Name));
+        await session.Client.SendPacket(PartyPacketWriter.InviteSent(target.CharacterId, target.Name));
     }
+
+    private bool LeadsParty(UserSession session) =>
+        session.IsInParty
+        && sessionManager.Parties.GetParty(session.PartyIndex) is { } party
+        && party.LeaderId == (short)session.CharacterId;
 
     private bool PartyStands(int index) => sessionManager.Parties.GetParty(index) != null;
 
@@ -332,7 +344,6 @@ public class PartyPacketCoordinator(
             boardType, inviter.Name, (byte)inviter.Level, (short)inviter.Class));
     }
 
-    // A board accept answers an invite this player was sent, and only once.
     public async Task BoardAcceptAsync(UserSession target, string inviterName, byte boardType)
     {
         var inviter = sessionManager.GetByName(inviterName);
@@ -525,7 +536,6 @@ public class PartyPacketCoordinator(
             excludeSender: false);
     }
 
-    // Joining answers the invite this player was sent; a member is not a pending invitee.
     private async Task AcceptInviteAsync(UserSession session)
     {
         if (session.IsInParty)
@@ -534,25 +544,76 @@ public class PartyPacketCoordinator(
             return;
         }
 
-        var invitedTo = session.TakePartyInvite();
-        if (invitedTo < 0)
+        var invite = session.TakePartyInvite();
+        if (!invite.IsPending)
             return;
 
-        if (!session.TryEnterParty(invitedTo))
+        await CloseInviteAsync(invite, session);
+        if (!session.TryEnterParty(invite.PartyIndex))
         {
-            await DeclineAsync(invitedTo);
+            await DeclineAsync(invite.PartyIndex);
             return;
         }
 
-        await InsertAsync(session, invitedTo);
+        await InsertAsync(session, invite.PartyIndex);
     }
 
     private async Task CancelAsync(UserSession session)
     {
-        var invitedTo = session.TakePartyInvite();
-        if (invitedTo >= 0)
-            await DeclineAsync(invitedTo);
+        var invite = session.TakePartyInvite();
+        if (!invite.IsPending)
+            return;
+
+        await CloseInviteAsync(invite, session);
+        await DeclineAsync(invite.PartyIndex);
     }
+
+    private async Task CloseInviteAsync(PartyInvite invite, UserSession invitee)
+    {
+        if (sessionManager.GetByCharacterId(invite.InviterId) is { } inviter)
+            await inviter.Client.SendPacket(PartyPacketWriter.InviteClosed(invitee.CharacterId));
+    }
+
+    private async Task WithdrawInviteAsync(UserSession inviter, int inviteeId)
+    {
+        if (sessionManager.GetByCharacterId(inviteeId) is not { } invitee)
+            return;
+
+        var invite = invitee.PendingPartyInvite;
+        if (invite.InviterId != inviter.CharacterId || !invitee.TryWithdrawPartyInvite(invite))
+            return;
+
+        await inviter.Client.SendPacket(PartyPacketWriter.InviteClosed(invitee.CharacterId));
+        await invitee.Client.SendPacket(PartyPacketWriter.InviteWithdrawn(inviter.CharacterId));
+        if (sessionManager.Parties.GetParty(invite.PartyIndex) is { MemberCount: 1 } party
+            && party.LeaderId == (short)inviter.CharacterId && !HasPendingInvitees(party.Index))
+            DropUnformedParty(inviter, party.Index);
+    }
+
+    private async Task WithdrawInvitesFromAsync(UserSession inviter)
+    {
+        foreach (var invitee in sessionManager.GetAll())
+        {
+            var invite = invitee.PendingPartyInvite;
+            if (invite.InviterId == inviter.CharacterId && invitee.TryWithdrawPartyInvite(invite))
+                await invitee.Client.SendPacket(PartyPacketWriter.InviteWithdrawn(inviter.CharacterId));
+        }
+    }
+
+    private async Task EndInvitesToAsync(int index)
+    {
+        foreach (var invitee in sessionManager.GetAll())
+        {
+            var invite = invitee.PendingPartyInvite;
+            if (invite.PartyIndex != index || !invitee.TryWithdrawPartyInvite(invite))
+                continue;
+
+            await invitee.Client.SendPacket(PartyPacketWriter.InviteWithdrawn(invite.InviterId));
+            await CloseInviteAsync(invite, invitee);
+        }
+    }
+
+    private bool HasPendingInvitees(int index) => sessionManager.GetAll().Any(session => session.InvitedToParty == index);
 
     private async Task DeclineAsync(int invitedTo)
     {
@@ -560,7 +621,7 @@ public class PartyPacketCoordinator(
         if (party == null)
             return;
 
-        if (party.MemberCount == 1)
+        if (party.MemberCount == 1 && !HasPendingInvitees(party.Index))
         {
             var leader = sessionManager.GetByCharacterId(party.LeaderId);
             if (leader != null)
@@ -604,6 +665,7 @@ public class PartyPacketCoordinator(
                 member.IsPartyLeader = false;
         }
 
+        await EndInvitesToAsync(party.Index);
         partyWarBoard.PartyDeleted(party.Index);
     }
 

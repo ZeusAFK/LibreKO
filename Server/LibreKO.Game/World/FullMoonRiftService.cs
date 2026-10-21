@@ -169,7 +169,6 @@ public sealed class FullMoonRiftService : IFullMoonRiftService, IDisposable
             return false;
         }
 
-        // Each member is checked, pays and is moved with nothing in between.
         var entryTimestamp = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         var difficulty = FullMoonRules.DifficultyForPartySize(members.Count);
         var startStageId = FullMoonRules.StartingStageForDifficulty(difficulty);

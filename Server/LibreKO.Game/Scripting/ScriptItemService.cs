@@ -226,7 +226,6 @@ public class ScriptItemService(
 
     public void GoldGain(int _uid, int amount)
     {
-        // Worked out wide and capped, so a reward near the cap can neither pass it nor wrap negative.
         var gained = session.WithLock(s =>
         {
             var before = s.Money;
@@ -317,7 +316,6 @@ public class ScriptItemService(
 
     private const byte UniqueItemType = 4;
 
-    // The net gold must fit under the cap before the exchange takes any item.
     private bool GoldRewardFits(IEnumerable<(int itemId, int count)> taken, IEnumerable<(int itemId, int count)> given)
     {
         var gained = given.Where(entry => entry.itemId == InventoryConstants.ItemGold).Sum(entry => (long)entry.count);

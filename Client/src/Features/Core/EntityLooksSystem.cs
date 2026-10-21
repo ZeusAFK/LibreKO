@@ -81,22 +81,37 @@ internal sealed class EntityLooksSystem : IFeature
             gearScenes[path] = ResourceLoader.Load(path) as PackedScene;
             return true;
         }
-        if (SceneLoadInFlight == null)
+        if (!SceneLoadSettled()) return false;
+        if (gearScenes.ContainsKey(path)) return true;
+        if (ResourceLoader.LoadThreadedRequest(path) != Error.Ok)
         {
-            if (ResourceLoader.LoadThreadedRequest(path) != Error.Ok)
-            {
-                gearScenes[path] = null;
-                return true;
-            }
-            SceneLoadInFlight = path;
+            gearScenes[path] = null;
+            return true;
         }
-        if (SceneLoadInFlight != path) return false;
-        var status = ResourceLoader.LoadThreadedGetStatus(path);
+        BeginSceneLoad(path, scene => gearScenes[path] = scene);
+        return SceneLoadSettled() && gearScenes.ContainsKey(path);
+    }
+
+    private Action<PackedScene?>? storeLoadedScene;
+
+    private void BeginSceneLoad(string path, Action<PackedScene?> store)
+    {
+        SceneLoadInFlight = path;
+        storeLoadedScene = store;
+    }
+
+    private bool SceneLoadSettled()
+    {
+        if (SceneLoadInFlight == null) return true;
+        var status = ResourceLoader.LoadThreadedGetStatus(SceneLoadInFlight);
         if (status == ResourceLoader.ThreadLoadStatus.InProgress) return false;
-        gearScenes[path] = status == ResourceLoader.ThreadLoadStatus.Loaded
-            ? ResourceLoader.LoadThreadedGet(path) as PackedScene
+        var scene = status == ResourceLoader.ThreadLoadStatus.Loaded
+            ? ResourceLoader.LoadThreadedGet(SceneLoadInFlight) as PackedScene
             : null;
+        var store = storeLoadedScene;
         SceneLoadInFlight = null;
+        storeLoadedScene = null;
+        store?.Invoke(scene);
         return true;
     }
 
@@ -187,18 +202,11 @@ internal sealed class EntityLooksSystem : IFeature
         if (!index.TryGetValue(key, out var stem)) { cache[key] = null; return true; }
         string path = info.IsNpc ? $"res://assets/npcs/{stem}.glb" : $"res://assets/characters/{stem}.glb";
         if (!ResourceLoader.Exists(path)) { cache[key] = null; return true; }
-        if (SceneLoadInFlight == null)
-        {
-            if (ResourceLoader.LoadThreadedRequest(path) != Error.Ok) return true;
-            SceneLoadInFlight = path;
-        }
-        if (SceneLoadInFlight != path) return false;
-        var status = ResourceLoader.LoadThreadedGetStatus(path);
-        if (status == ResourceLoader.ThreadLoadStatus.InProgress) return false;
-        if (status == ResourceLoader.ThreadLoadStatus.Loaded)
-            cache[key] = ResourceLoader.LoadThreadedGet(path) as PackedScene;
-        SceneLoadInFlight = null;
-        return true;
+        if (!SceneLoadSettled()) return false;
+        if (cache.ContainsKey(key)) return true;
+        if (ResourceLoader.LoadThreadedRequest(path) != Error.Ok) return true;
+        BeginSceneLoad(path, scene => { if (scene != null) cache[key] = scene; });
+        return SceneLoadSettled();
     }
 
     internal PackedScene? ResolveMobScene(int modelId)

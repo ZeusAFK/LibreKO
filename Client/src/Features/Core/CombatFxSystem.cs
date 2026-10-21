@@ -10,8 +10,9 @@ internal sealed class CombatFxSystem : IFeature
     private readonly AudioSystem audio;
     private readonly EntityLooksSystem entityLooks;
     private readonly EntityStatesSystem entityStates;
+    private readonly ScenerySystem scenery;
 
-    public CombatFxSystem(IWorldContext context, EntityActionSystem entityAction, EntitySystem entities, AudioSystem audio, EntityLooksSystem entityLooks, EntityStatesSystem entityStates)
+    public CombatFxSystem(IWorldContext context, EntityActionSystem entityAction, EntitySystem entities, AudioSystem audio, EntityLooksSystem entityLooks, EntityStatesSystem entityStates, ScenerySystem scenery)
     {
         this.context = context;
         this.entityAction = entityAction;
@@ -19,6 +20,7 @@ internal sealed class CombatFxSystem : IFeature
         this.audio = audio;
         this.entityLooks = entityLooks;
         this.entityStates = entityStates;
+        this.scenery = scenery;
     }
 
     public void Build()
@@ -102,8 +104,13 @@ internal sealed class CombatFxSystem : IFeature
     private Vector3? AreaImpactPoint(short[] data, int casterId)
     {
         if (data.Length <= 2) return null;
-        if (data[0] == 0 || data[2] == 0) return entities.WorldPosOf(casterId);
-        return context.Terrain.GroundPos(data[0], data[2], 0f, 0f);
+        var caster = entities.WorldPosOf(casterId);
+        if (caster == null && (data[0] == 0 || data[2] == 0)) return null;
+        var (casterX, casterZ) = caster is { } at ? scenery.WorldToMap(at) : (0f, 0f);
+        float mapX = data[0] != 0 ? data[0] : casterX;
+        float mapZ = data[2] != 0 ? data[2] : casterZ;
+        float nearY = data[1] != 0 ? data[1] : caster?.Y ?? ScenerySystem.NoServerHeight;
+        return scenery.FloorGroundPos(mapX, mapZ, nearY, 0f, login: false);
     }
 
     private double ProjectileTravelTime(int casterId, int targetId, string? fxName, Vector3? impact = null)

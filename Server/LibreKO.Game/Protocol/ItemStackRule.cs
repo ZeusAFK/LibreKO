@@ -40,4 +40,5 @@ public static class ItemStackRule
         && source.UniqueId == 0
         && destination.UniqueId == 0
         && source.Count + destination.Count <= InventoryConstants.MaxStackCount;
+
 }

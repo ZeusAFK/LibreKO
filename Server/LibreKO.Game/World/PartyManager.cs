@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 
 namespace LibreKO.Game.World;
 
@@ -58,7 +58,6 @@ public class PartyGroup
         return -1;
     }
 
-    // A player joins once, into a free slot of a party that still stands.
     public bool TryJoin(short memberId)
     {
         lock (sync)
@@ -123,6 +122,5 @@ public class PartyManager
         return party;
     }
 
-    // The members at the moment the party came down, or null when it was already gone; no one joins after.
     public short[]? DeleteParty(int index) => parties.TryRemove(index, out var party) ? party.Disband() : null;
 }

@@ -35,9 +35,11 @@ public interface IGameWhispers
     void SetLook(int size, float alpha);
     void ShowPlayerMenu(string name);
     void OpenWith(string name);
+    void SetCollapsed(string name, bool collapsed);
 
     event Action<string, GameWhisperLine>? LineAdded;
     event Action? Changed;
+    event Action<string>? CollapseRequested;
 }
 
 public readonly record struct GameWarBoardRow(int Rank, string Name, int Class, int Share);
@@ -134,6 +136,7 @@ public sealed partial class PluginGame
 
     internal void RaiseWhispers() => whispers.Raise();
     internal void RaiseWhisperLine(string name, GameWhisperLine line) => whispers.RaiseLine(name, line);
+    internal void RaiseWhisperCollapse(string name) => whispers.RaiseCollapse(name);
     internal void RaiseParty() => party.Raise();
     internal void RaiseTrade() => trade.Raise();
 
@@ -142,8 +145,11 @@ public sealed partial class PluginGame
         public IGameWhispers? Source;
         public event Action<string, GameWhisperLine>? LineAdded;
         public event Action? Changed;
+        public event Action<string>? CollapseRequested;
         internal void Raise() => Changed?.Invoke();
         internal void RaiseLine(string name, GameWhisperLine line) => LineAdded?.Invoke(name, line);
+        internal void RaiseCollapse(string name) => CollapseRequested?.Invoke(name);
+        public void SetCollapsed(string name, bool collapsed) => Source?.SetCollapsed(name, collapsed);
 
         public IReadOnlyList<string> Open => Source?.Open ?? Array.Empty<string>();
         public IReadOnlyList<GameWhisperLine> History(string name) => Source?.History(name) ?? Array.Empty<GameWhisperLine>();

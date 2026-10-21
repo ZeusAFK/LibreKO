@@ -375,8 +375,14 @@ internal sealed class EntityStatesSystem : IFeature
         else if (context.Entities.Views.TryGetValue(charId, out var e))
         {
             e.TransformSkill = skillId;
-            e.RigAnim ??= e.Anim;
+            if (e.RigAnim == null)
+            {
+                e.RigAnim = e.Anim;
+                e.RigCrowd = e.Crowd;
+            }
             e.Anim = anim;
+            e.Crowd = CrowdAnimator.Create(anim, monster, scene.ResourcePath);
+            RestartAnimationClock(e);
             e.Clip = null;
             DressEntityLook(e);
         }
@@ -412,10 +418,25 @@ internal sealed class EntityStatesSystem : IFeature
         else if (context.Entities.Views.TryGetValue(charId, out var e))
         {
             e.TransformSkill = 0;
-            if (e.RigAnim != null) { e.Anim = e.RigAnim; e.RigAnim = null; }
+            if (e.RigAnim != null)
+            {
+                if (e.Crowd != e.RigCrowd) e.Crowd?.Release();
+                e.Anim = e.RigAnim;
+                e.Crowd = e.RigCrowd;
+                e.RigAnim = null;
+                e.RigCrowd = null;
+                RestartAnimationClock(e);
+            }
             e.Clip = null;
             DressEntityLook(e);
         }
+    }
+
+    private static void RestartAnimationClock(EntityView e)
+    {
+        e.Crowd?.Resume();
+        e.AnimActive = true;
+        if (e.Anim != null) e.Anim.CallbackModeProcess = AnimationMixer.AnimationCallbackModeProcess.Idle;
     }
 
     private AnimationPlayer? selfRigAnim;
@@ -654,7 +675,7 @@ internal sealed class EntityStatesSystem : IFeature
 
     private void OnGenieAura(int entityId, bool on)
     {
-        if (entityId != context.Self.CharId) ShowGenieAura(entityId, on);
+        if (entityId != context.Self.CharId) context.Entities.GenieAura(entityId, on);
     }
 
     internal void ShowGenieAura(int entityId, bool on)

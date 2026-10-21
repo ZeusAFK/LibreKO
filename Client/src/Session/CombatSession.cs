@@ -2,6 +2,8 @@
 
 public sealed class CombatSession
 {
+    public (int Owner, int Slot) SelectedHotSlot { get; set; } = (-1, -1);
+
     public event System.Action<int>? BuffExpiredEvent;
 
     internal void RaiseBuffExpired(int value) => BuffExpiredEvent?.Invoke(value);

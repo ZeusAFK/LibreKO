@@ -196,6 +196,8 @@ internal sealed partial class ChatSystem
 
         root.AddChild(BuildTabBar());
         BuildLogPanel();
+        ClaimKeptLog(self.MyCharId);
+        if (store.Count > 0) RebuildLog();
         BuildInputRow();
         SetInputRowActive(false);
 

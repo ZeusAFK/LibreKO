@@ -210,7 +210,6 @@ public class MailService(
             await NotifyNewMailAsync(online, session.Name, db);
     }
 
-    // The send time matches within a second.
     private static Task<bool> StoredAsync(AppDbContext db, Mail mail) =>
         db.Mails.AnyAsync(stored => stored.SenderCharacterId == mail.SenderCharacterId && stored.RecipientCharacterId == mail.RecipientCharacterId
             && stored.Subject == mail.Subject && stored.Body == mail.Body
@@ -219,7 +218,6 @@ public class MailService(
     private static Task<bool> IsSealedAsync(AppDbContext db, int characterId) =>
         db.Characters.Where(character => character.Id == characterId).Select(character => character.Sealed).FirstOrDefaultAsync();
 
-    // Checked and taken in one locked step.
     private string? TakeAttachments(UserSession session, int gold, IReadOnlyList<MailItemPick> items,
         List<MailAttachmentDraft> drafts, List<(int Slot, ExchangeItem Item)> taken)
     {
@@ -314,7 +312,6 @@ public class MailService(
 
     private async Task ClaimAsync(UserSession session, int mailId, int? attachmentIndex)
     {
-        // A busy player's bag and purse may be counted on by a trade or a stall, so nothing lands in them.
         if (session.IsBusy)
         {
             await session.Client.SendPacket(MailPacketWriter.ClaimResult(false, mailId, "You cannot claim mail while trading, keeping a stall, gathering or dead."));
@@ -323,7 +320,6 @@ public class MailService(
 
         var journal = new InventoryJournal(session, logger);
         var claim = new MailClaim();
-        // The bag, the purse and the mail are saved together.
         var outcome = await statePersister.CommitAsync(session, async db =>
         {
             var mail = await InboxQuery(db, session.CharacterId).FirstOrDefaultAsync(m => m.Id == mailId);
@@ -378,7 +374,6 @@ public class MailService(
             await userNotificationService.SendWeightChangeAsync(session);
         }
 
-        // Only the attachments this claim tried are named.
         var room = (claim.ItemsWaiting, claim.GoldWaiting) switch
         {
             (true, true) => "room in your inventory and your purse",
@@ -428,7 +423,6 @@ public class MailService(
             switch (attachment.Kind)
             {
                 case MailAttachmentKind.Gold:
-                    // Only what fits under the coin cap is claimed; the rest waits in the mail.
                     var take = (int)Math.Clamp(ExchangePacketConstants.CoinMax - (long)session.Money, 0, attachment.Remaining);
                     if (take > 0)
                     {

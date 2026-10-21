@@ -14,6 +14,7 @@ public static class ChatSender
 
     public static int MaskText(int zone, bool selfIsGm, int selfNation, int selfId, ChatType type, int senderNation, int senderId)
     {
+        if (senderId < 0) return 0;
         if (ZoneLooks.IsPathosZone(zone)) return PathoistText;
         if (selfIsGm || type == ChatType.GameMaster) return 0;
         if (Array.IndexOf(HeroZones, zone) >= 0)

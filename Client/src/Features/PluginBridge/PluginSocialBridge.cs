@@ -56,6 +56,10 @@ internal sealed class PluginSocialBridge(WarpFeature warp, WhispersFeature whisp
 
     void IGameWhispers.OpenWith(string name) => whispers.OpenWhisperWith(name);
 
+    void IGameWhispers.SetCollapsed(string name, bool collapsed) => whispers.ReportThemedFold(name, collapsed);
+
+    event Action<string>? IGameWhispers.CollapseRequested { add { } remove { } }
+
     void IGameWhispers.ToggleBlock() => whispers.ToggleWhisperBlock();
 
     void IGameWhispers.SetLook(int size, float alpha) => Config.SetWhisperLook((WhisperSize)size, alpha);

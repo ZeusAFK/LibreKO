@@ -167,7 +167,7 @@ public partial class Net : Node, IGameConnection, IReconnectHost, IPreGameHost
             Requests.PreGame.VersionCheck();
         }
         bool dropped = !conn.Connected && connectedFired;
-        DrainIncoming();
+        DrainIncoming(drainAll: dropped);
         if (dropped && connectedFired)
         {
             conn.Close();
@@ -192,16 +192,41 @@ public partial class Net : Node, IGameConnection, IReconnectHost, IPreGameHost
 
     internal void Handle(Packet p) => dispatcher.Dispatch(p);
 
-    private void DrainIncoming()
+    private void DrainIncoming(bool drainAll)
     {
+        int backlog = conn.Incoming.Count;
+        if (!drainAll && backlog > BacklogReconnectAbove)
+        {
+            DropConnection("the client fell too far behind the server");
+            return;
+        }
+        double budgetMs = (Platform.Android ? PhoneDrainBudgetMs : DrainBudgetMs) * Math.Min(MaxBudgetScale, 1 + backlog / BacklogPerBudgetStep);
+        long frameStart = System.Diagnostics.Stopwatch.GetTimestamp();
         while (conn.Incoming.TryDequeue(out var p))
         {
             long started = System.Diagnostics.Stopwatch.GetTimestamp();
             int size = p.RemainingBytes;
             try { Handle(p); }
-            catch (Exception e) { Diag.Report($"packet 0x{p.GetOpcode():X2}", e); }
+            catch (Exception e) { ReportPacketError(p.GetOpcode(), e); }
             Diag.Hitch($"packet 0x{p.GetOpcode():X2} ({size} bytes)", started);
+            if (!drainAll && System.Diagnostics.Stopwatch.GetElapsedTime(frameStart).TotalMilliseconds >= budgetMs) break;
         }
+    }
+
+    private const double DrainBudgetMs = 16.0;
+    private const double PhoneDrainBudgetMs = 6.0;
+    private const int BacklogPerBudgetStep = 1000;
+    private const int MaxBudgetScale = 4;
+    private const int BacklogReconnectAbove = 15000;
+    private const double PacketReportEverySeconds = 60.0;
+    private readonly Dictionary<byte, double> packetReportedAt = new();
+
+    private void ReportPacketError(byte opcode, Exception e)
+    {
+        double now = Time.GetTicksMsec() / 1000.0;
+        if (packetReportedAt.TryGetValue(opcode, out double last) && now - last < PacketReportEverySeconds) return;
+        packetReportedAt[opcode] = now;
+        Diag.Report($"packet 0x{opcode:X2}", e);
     }
 
     private void SendLogout()
@@ -253,7 +278,9 @@ public partial class Net : Node, IGameConnection, IReconnectHost, IPreGameHost
         DropConnection("the server stopped responding");
     }
 
-    private void LeaveToLogin(string message)
+    public const string ConnectionLostText = "The connection to the server was lost.";
+
+    public void LeaveToLogin(string message)
     {
         Session.AccountLock.ApplyEvicted(true);
         reconnect.AutoReconnect = false;

@@ -141,12 +141,7 @@ public static partial class CharacterPreview
         return ok;
     }
 
-    private static int PartNodeIndex(string nodeName)
-    {
-        int i = nodeName.LastIndexOf("_part", StringComparison.Ordinal);
-        if (i < 0) return -1;
-        return int.TryParse(nodeName.AsSpan(i + 5), out int n) ? n : -1;
-    }
+    private static int PartNodeIndex(string nodeName) => Presentation.ModelParts.PartNodeIndex(nodeName);
 
     private static int ArmorResource(int itemId) =>
         armorItems != null

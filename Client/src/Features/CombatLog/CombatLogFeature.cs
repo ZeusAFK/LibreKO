@@ -31,7 +31,8 @@ internal sealed class CombatLogFeature : IFeature, ICombatLog
     private readonly IWorldContext context;
     private readonly ChatSession chat;
     private readonly VanguardSession vanguard;
-    private readonly TabbedLog log = new(MaxLines);
+    private static TabbedLog log = new(MaxLines);
+    private static int logOwner = -1;
     private readonly List<string> dropped = new();
     private VBoxContainer frame = null!;
     private PanelContainer root = null!;
@@ -60,6 +61,11 @@ internal sealed class CombatLogFeature : IFeature, ICombatLog
 
     public void Build()
     {
+        if (logOwner != context.Self.CharId)
+        {
+            log = new TabbedLog(MaxLines);
+            logOwner = context.Self.CharId;
+        }
         var layer = new CanvasLayer { Layer = UiLayers.HudButtons };
         context.Root.AddChild(layer);
         context.Hud.PluginSeam(layer, HudPart.CombatLog);
@@ -129,6 +135,7 @@ internal sealed class CombatLogFeature : IFeature, ICombatLog
         text.AddThemeFontSizeOverride("normal_font_size", FontSize);
         text.AddThemeColorOverride("default_color", new Color(TextColour));
         root.AddChild(text);
+        if (log.ShownLines.Count > 0) text.Text = string.Join("\n", log.ShownLines);
         text.MetaHoverStarted += meta => MetaHoverStarted?.Invoke(meta);
         text.MetaHoverEnded += _ => context.Tooltips.Hide();
 

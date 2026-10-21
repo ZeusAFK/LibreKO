@@ -170,6 +170,7 @@ public partial class Login : Control
         continueButton.Disabled = true;
         sessionStatus.Text = "Signing in…";
         Game.LoginServer.ConnectToLoginServer();
+        WatchWait();
     }
 
     private void OnContinue()
@@ -339,7 +340,7 @@ public partial class Login : Control
         }
 
         loginPending = true;
-        busy = Notice.Busy(this, $"Connecting to {Config.ServerHost}:{Config.ServerPort} …");
+        ShowBusy($"Connecting to {Config.ServerHost}:{Config.ServerPort} …");
         Game.LoginServer.ConnectToLoginServer();
     }
 
@@ -353,6 +354,7 @@ public partial class Login : Control
             return;
         }
         busy?.SetMessage($"Server online (v{v}). Signing in…");
+        WatchWait();
         Game.LoginServer.Login(user.Text.StripEdges(), pass.Text);
     }
 
@@ -402,7 +404,7 @@ public partial class Login : Control
     private void KickThenSignIn(AccountInUse info)
     {
         loginPending = true;
-        busy = Notice.Busy(this, $"Closing the session on {info.Where}…");
+        ShowBusy($"Closing the session on {info.Where}…");
         var (account, password) = Game.LoginServer.Credentials();
         AccountKick.Request(this, Config.GameHostFor(info.Host), info.Port, account, password,
             code => OnLoginServerKickResult(code, info));
@@ -410,11 +412,12 @@ public partial class Login : Control
 
     private void OnLoginServerKickResult(AccountKickCode? code, AccountInUse info)
     {
+        if (!loginPending) return;
         CloseBusy();
 
         if (code is AccountKickCode.Done or AccountKickCode.NotOnline)
         {
-            busy = Notice.Busy(this, "Signing in…");
+            ShowBusy("Signing in…");
             Game.LoginServer.RetryLogin();
             return;
         }
@@ -433,7 +436,7 @@ public partial class Login : Control
             () =>
             {
                 loginPending = true;
-                busy = Notice.Busy(this, "Signing in…");
+                ShowBusy("Signing in…");
                 Game.LoginServer.RetryLogin(LoginRequestFlags.IgnoreOnlineClaim);
             },
             null,
@@ -448,7 +451,7 @@ public partial class Login : Control
             "Disconnect it", "Cancel",
             () =>
             {
-                busy = Notice.Busy(this, "Closing the other session…");
+                ShowBusy("Closing the other session…");
                 Game.Requests.PreGame.KickOut();
             },
             () => Game.Connection.Disconnect(expected: true),
@@ -461,7 +464,7 @@ public partial class Login : Control
 
         if (code is AccountKickCode.Done or AccountKickCode.NotOnline)
         {
-            busy = Notice.Busy(this, "Signing in…");
+            ShowBusy("Signing in…");
             Game.Requests.PreGame.RetryLogin();
             return;
         }
@@ -492,7 +495,7 @@ public partial class Login : Control
 
     private void Pick(ServerListEntry server)
     {
-        busy = Notice.Busy(this, $"Connecting to {server.Name}…");
+        ShowBusy($"Connecting to {server.Name}…");
         var (account, password) = Game.LoginServer.Credentials();
         Game.LoginServer.Disconnect(expected: true);
         Game.Connection.BeginGameLogin(Config.GameHostFor(server.Address), server.Port, account, password);
@@ -565,6 +568,42 @@ public partial class Login : Control
     {
         busy?.Close();
         busy = null;
+    }
+
+    private const double WaitTimeoutSeconds = 25.0;
+    private const string NoAnswerText = "The server did not answer.";
+    private int waitId;
+
+    private void ShowBusy(string message)
+    {
+        busy = Notice.Busy(this, message);
+        WatchWait();
+    }
+
+    private void WatchWait()
+    {
+        int id = ++waitId;
+        GetTree().CreateTimer(WaitTimeoutSeconds).Timeout += () =>
+        {
+            if (IsInstanceValid(this) && id == waitId) OnWaitTimedOut();
+        };
+    }
+
+    private void OnWaitTimedOut()
+    {
+        if (busy == null && !(resuming && loginPending)) return;
+        loginPending = false;
+        CloseBusy();
+        Game.LoginServer.Disconnect(expected: true);
+        Game.Connection.Disconnect(expected: true);
+        if (resuming && session.Visible)
+        {
+            sessionStatus.Text = NoAnswerText;
+            continueButton.Text = "Try again";
+            continueButton.Disabled = false;
+            return;
+        }
+        Notice.Show(this, NoAnswerText);
     }
 
     private void OnExit() => _ = Diag.Guard("login-exit", () => Shutdown.Begin(this, 240));

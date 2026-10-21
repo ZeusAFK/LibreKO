@@ -41,9 +41,27 @@ internal sealed partial class ChatSystem
             new(ChatCategory.Whisper, (ChatType)WhisperChannel, side, name, nation, gm, text, "");
     }
 
-    private readonly LinkedList<ChatEntry> store = new();
-    private readonly Queue<GameChatLine> published = new();
-    private long seq;
+    private sealed class KeptLog
+    {
+        public int Owner = -1;
+        public readonly LinkedList<ChatEntry> Store = new();
+        public readonly Queue<GameChatLine> Published = new();
+        public long Seq;
+    }
+
+    private static readonly KeptLog kept = new();
+
+    private LinkedList<ChatEntry> store => kept.Store;
+    private Queue<GameChatLine> published => kept.Published;
+
+    private void ClaimKeptLog(int owner)
+    {
+        if (kept.Owner == owner) return;
+        kept.Owner = owner;
+        kept.Store.Clear();
+        kept.Published.Clear();
+        kept.Seq = 0;
+    }
     private int missed;
     private int shownLines;
     private readonly StringBuilder pendingLog = new();
@@ -169,7 +187,7 @@ internal sealed partial class ChatSystem
 
     private void AddEntry(ChatEntry entry)
     {
-        entry = entry with { Seq = ++seq, Time = DateTime.Now };
+        entry = entry with { Seq = ++kept.Seq, Time = DateTime.Now };
         string bbcode = Render(entry);
         Publish(new GameChatLine(bbcode, entry.Category));
 

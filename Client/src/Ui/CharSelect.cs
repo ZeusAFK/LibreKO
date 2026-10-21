@@ -382,6 +382,11 @@ public partial class CharSelect : Node3D
             AskRequiredName(selected);
             return;
         }
+        if (!Game.Connection.Connected)
+        {
+            Game.Connection.LeaveToLogin(Net.ConnectionLostText);
+            return;
+        }
         status.Text = $"Entering world as {selected.Name}…";
         SetActionsDisabled(true);
 
@@ -517,6 +522,11 @@ public partial class CharSelect : Node3D
     private void OnError(string error)
     {
         CancelEnteringOverlay();
+        if (!returningToServers && !Game.Connection.Connected)
+        {
+            Game.Connection.LeaveToLogin(Net.ConnectionLostText);
+            return;
+        }
         if (!returningToServers)
         {
             SetActionsDisabled(false);

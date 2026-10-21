@@ -336,7 +336,6 @@ public class ExchangeTransferService(
         return delivered;
     }
 
-    // A trade, a stall, a sale to a buying stall or a sealed character takes no trade-locked race or number, held-back item or timed item.
     internal static bool MayChangeHands(ItemData itemData, ItemSlot slot) =>
         !itemData.IsTradeLocked && slot.IsTradable && !slot.Expires && !MerchantPacketConstants.IsNoTradeItem(slot.ItemId);
 

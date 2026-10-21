@@ -26,6 +26,7 @@ public static class TouchControls
     public const float TeleportButtonAngle = -10f;
     public const float UserButtonAngle = -40f;
     public const float MarketButtonAngle = -70f;
+    public const float GatherButtonAngle = 110f;
     public const float PrimarySize = 78f;
     public const float PrimaryAngle = 136f;
     public const float PrimaryOrbit = 194f;
@@ -115,7 +116,8 @@ public static class TouchControls
                                               Action? onAnvilOpen = null,
                                               Action? onTeleportOpen = null,
                                               Action<Vector2>? onUserOpen = null,
-                                              Action? onMarketBrowse = null)
+                                              Action? onMarketBrowse = null,
+                                              Action? onGather = null)
     {
         var orbs = new Orb[ActionSlots + 3 + PotionAngles.Length];
         orbs[0] = new Orb(0f, 0f, LookStickSize);
@@ -221,10 +223,12 @@ public static class TouchControls
             userButton.GetGlobalRect().Position + new Vector2(userButton.Size.X, 0));
         var marketButton = InteractionButton(interactionCluster, interactionHub, MarketButtonAngle,
             "storefront", "Browse player shop", onMarketBrowse);
+        var gatherButton = InteractionButton(interactionCluster, interactionHub, GatherButtonAngle,
+            "gem", "Mine or fish here", onGather);
 
         var bar = new TouchActionBar(cluster, slots, iconFor, BuildPageIndicator(parent),
                                     attack, attackGlyph, hub, npcButton, lootButton,
-                                    anvilButton, teleportButton, userButton, marketButton);
+                                    anvilButton, teleportButton, userButton, marketButton, gatherButton);
         bar.Refresh();
         return bar;
     }
@@ -240,6 +244,7 @@ public static class TouchControls
             new Orb(TeleportButtonAngle, InteractionOrbit, InteractButtonSize),
             new Orb(UserButtonAngle, InteractionOrbit, InteractButtonSize),
             new Orb(MarketButtonAngle, InteractionOrbit, InteractButtonSize),
+            new Orb(GatherButtonAngle, InteractionOrbit, InteractButtonSize),
         };
         Vector2 min = Vector2.Inf, max = -Vector2.Inf;
         foreach (var orb in orbs)
@@ -656,6 +661,7 @@ public sealed class TouchActionBar
     private readonly Godot.Button teleportButton;
     private readonly Godot.Button userButton;
     private readonly Godot.Button marketButton;
+    private readonly Godot.Button gatherButton;
     private readonly Vector2 hub;
     private int attackState = -1;
 
@@ -665,7 +671,7 @@ public sealed class TouchActionBar
                             PageIndicator indicator, Godot.Button attack, Control attackGlyph,
                             Vector2 hub, Godot.Button npcButton, Godot.Button lootButton,
                             Godot.Button anvilButton, Godot.Button teleportButton,
-                            Godot.Button userButton, Godot.Button marketButton)
+                            Godot.Button userButton, Godot.Button marketButton, Godot.Button gatherButton)
     {
         Root = root;
         this.slots = slots;
@@ -679,8 +685,9 @@ public sealed class TouchActionBar
         this.teleportButton = teleportButton;
         this.userButton = userButton;
         this.marketButton = marketButton;
+        this.gatherButton = gatherButton;
         this.hub = hub;
-        SetInteractionVisibility(false, false, false, false, false, false);
+        SetInteractionVisibility(false, false, false, false, false, false, false);
         SetAutoAttack(false, false);
     }
 
@@ -696,7 +703,7 @@ public sealed class TouchActionBar
 
     public void SetInteractionVisibility(bool npcNearby, bool lootNearby,
                                          bool anvilNearby, bool teleportNearby,
-                                         bool userNearby, bool marketNearby)
+                                         bool userNearby, bool marketNearby, bool gatherHere)
     {
         if (npcButton.Visible != npcNearby) npcButton.Visible = npcNearby;
         if (lootButton.Visible != lootNearby) lootButton.Visible = lootNearby;
@@ -704,6 +711,7 @@ public sealed class TouchActionBar
         if (teleportButton.Visible != teleportNearby) teleportButton.Visible = teleportNearby;
         if (userButton.Visible != userNearby) userButton.Visible = userNearby;
         if (marketButton.Visible != marketNearby) marketButton.Visible = marketNearby;
+        if (gatherButton.Visible != gatherHere) gatherButton.Visible = gatherHere;
     }
 
     public void SetAutoAttack(bool hasTarget, bool attacking)

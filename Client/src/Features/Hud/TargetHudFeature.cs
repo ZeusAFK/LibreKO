@@ -190,7 +190,7 @@ internal sealed class TargetHudFeature : IFeature
             polledId = selection.SelectedId;
             targetHpPollAt = 0;
         }
-        if (selection.SelectedId < 0 || now < targetHpPollAt) return;
+        if (selection.SelectedId < 0 || now < targetHpPollAt || Game.Connection.Reconnect.InProgress) return;
         targetHpPollAt = now + TargetHpPollInterval;
         if (context.Entities.Views.TryGetValue(selection.SelectedId, out var e) && !e.Dead)
             combatRequests.TargetHpRequest(selection.SelectedId);

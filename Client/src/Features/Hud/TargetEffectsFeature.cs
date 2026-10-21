@@ -51,7 +51,7 @@ internal sealed class TargetEffectsFeature : IFeature
 
     internal void PollTick(double now)
     {
-        if (context.Selection.SelectedId < 0 || now < pollAt) return;
+        if (context.Selection.SelectedId < 0 || now < pollAt || Game.Connection.Reconnect.InProgress) return;
         pollAt = now + PollInterval;
         if (context.Entities.Views.TryGetValue(context.Selection.SelectedId, out var e) && !e.Dead && context.Selection.SelectedId != context.Self.CharId)
             stateRequests.TargetEffectsRequest(context.Selection.SelectedId);

@@ -21,6 +21,9 @@ public enum PartySubOpcode : byte
     SignalProbe = 65,
     SignalTable = 66,
     LevelProgress = 67,
+    InviteSent = 68,
+    InviteClosed = 69,
+    InviteWithdrawn = 70,
 }
 
 public enum PartyBbsSubOpcode : byte

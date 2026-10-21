@@ -70,6 +70,10 @@ internal sealed class CollectionRaceFeature : IFeature
             Visible = false
         };
         CrWindow.SetBackgroundAlpha(UiTheme.TranslucentWindowAlpha);
+        CrWindow.MinimizedChanged += folded =>
+        {
+            if (crState != null) collectionRace.Window.SetFolded(WindowKey(crState.RaceId), folded);
+        };
         crLayer.AddChild(CrWindow);
 
         var body = CrWindow.Body;
@@ -163,8 +167,13 @@ internal sealed class CollectionRaceFeature : IFeature
         RenderRewards();
         PaintWinners();
 
+        string key = WindowKey(state.RaceId);
+        collectionRace.Window.Observe(key, FrameClock.Now(), state.RemainingSeconds);
         CrWindow.Visible = true;
+        CrWindow.SetMinimized(collectionRace.Window.Folded(key));
     }
+
+    private string WindowKey(int raceId) => $"{context.Self.CharId}:{raceId}";
 
     private void OnWinners(int raceId, int winners, int maxWinners)
     {

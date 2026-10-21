@@ -1,4 +1,4 @@
-﻿using LibreKO.Common.Domain.Services;
+using System.Net;
 using LibreKO.Common.Gameplay;
 using LibreKO.Common.Infrastructure.Network;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,7 +23,7 @@ public class LoginPacketHandler(IServiceProvider serviceProvider) : IPacketHandl
         using var scope = serviceProvider.CreateScope();
         var loginService = scope.ServiceProvider.GetRequiredService<ILoginService>();
 
-        var response = await DispatchCommand(loginService, opcode, packet, LoginThrottle.AddressOf(client));
+        var response = await DispatchCommand(loginService, opcode, packet, RemoteAddress(client));
         if (response != null)
         {
             await client.SendPacket(response);
@@ -39,14 +39,26 @@ public class LoginPacketHandler(IServiceProvider serviceProvider) : IPacketHandl
         client.EnableLoginCrypto(keyBytes);
     }
 
-    private static Task<Packet> DispatchCommand(ILoginService loginService, LoginOpcodes opcode, Packet packet, string address)
+    private static IPAddress? RemoteAddress(IClient client)
+    {
+        try
+        {
+            return (client.Socket?.RemoteEndPoint as IPEndPoint)?.Address;
+        }
+        catch (ObjectDisposedException)
+        {
+            return null;
+        }
+    }
+
+    private static Task<Packet> DispatchCommand(ILoginService loginService, LoginOpcodes opcode, Packet packet, IPAddress? from)
     {
         return opcode switch
         {
             LoginOpcodes.LS_VERSION_REQ => loginService.VersionCheckAsync(),
             LoginOpcodes.LS_DOWNLOADINFO_REQ => loginService.DownloadInfoAsync(packet.ReadShort()),
-            LoginOpcodes.LS_LOGIN => Login(loginService, packet, LoginOpcodes.LS_LOGIN, address),
-            LoginOpcodes.LS_MGAME_LOGIN => Login(loginService, packet, LoginOpcodes.LS_MGAME_LOGIN, address),
+            LoginOpcodes.LS_LOGIN => Login(loginService, packet, LoginOpcodes.LS_LOGIN, from),
+            LoginOpcodes.LS_MGAME_LOGIN => Login(loginService, packet, LoginOpcodes.LS_MGAME_LOGIN, from),
             LoginOpcodes.LS_SERVERLIST => loginService.ServerListAsync(packet.ReadShort()),
             LoginOpcodes.LS_NEWS => loginService.NewsAsync(),
             LoginOpcodes.LS_UNKNOWN_F7 => loginService.UnknownF7Async(),
@@ -56,11 +68,11 @@ public class LoginPacketHandler(IServiceProvider serviceProvider) : IPacketHandl
         };
     }
 
-    private static Task<Packet> Login(ILoginService loginService, Packet packet, LoginOpcodes responseOpcode, string address)
+    private static Task<Packet> Login(ILoginService loginService, Packet packet, LoginOpcodes responseOpcode, IPAddress? from)
     {
         var login = packet.ReadString();
         var password = packet.ReadString();
-        return loginService.LoginAsync(login, password, responseOpcode, ReadLoginFlags(packet), address);
+        return loginService.LoginAsync(login, password, responseOpcode, ReadLoginFlags(packet), from);
     }
 
     private static LoginRequestFlags ReadLoginFlags(Packet packet)

@@ -179,7 +179,7 @@ internal sealed partial class PartyFeature : IFeature, ITickFeature, IPartyPick
 
     private static string StatusName(byte type) => type switch
     {
-        1 => "dot", 2 => "poison", 3 => "disease", 4 => "blind", 5 => "low hp", _ => "",
+        1 => "dot", 2 => "poison", 3 => "disease", 4 => "blind", (byte)PartyStatusIcon.GreyHealth => "grey hp", _ => "",
     };
 
     private const string HudLayoutId = "hud_party";

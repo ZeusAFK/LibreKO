@@ -29,6 +29,10 @@ internal sealed class PluginBridgeFeature : IFeature, IPluginNotices
     void IPluginNotices.Drops(int targetId) => NotifyDrops(targetId);
     void IPluginNotices.Whispers() => NotifyWhispers();
     void IPluginNotices.WhisperLine(string name, RoomPost post) => NotifyWhisperLine(name, post);
+    void IPluginNotices.WhisperCollapse(string name)
+    {
+        if (Adapters != null) PluginHost.Game.RaiseWhisperCollapse(name);
+    }
 
     internal PluginAdapters? Adapters { get; private set; }
 
@@ -46,7 +50,10 @@ internal sealed class PluginBridgeFeature : IFeature, IPluginNotices
 
     internal void NotifyDrops(int targetId) => Adapters?.Target.RaiseDrops(targetId);
 
-    internal List<GameLogLine> Log { get; } = new();
+    private static readonly List<GameLogLine> keptLog = new();
+    private static int keptLogOwner = -1;
+
+    internal List<GameLogLine> Log => keptLog;
     private const int LogMax = 200;
     internal static readonly Color SystemLineColor = new("#9fd3ff");
     internal const string ClanWindowId = "clan";
@@ -63,6 +70,11 @@ internal sealed class PluginBridgeFeature : IFeature, IPluginNotices
 
     public void Build()
     {
+        if (keptLogOwner != self.MyCharId)
+        {
+            keptLog.Clear();
+            keptLogOwner = self.MyCharId;
+        }
         if (PluginHost.Ui.ExtraHud.Count > 0)
         {
             var layer = new CanvasLayer { Layer = UiLayers.Hud };

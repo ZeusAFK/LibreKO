@@ -40,7 +40,6 @@ public class KingSystemRuntimeService(
     private readonly SemaphoreSlim writes = new(1, 1);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<(byte Nation, string Property), TaskCompletionSource> queued = new();
 
-    // The treasury, tax and tribute change only under one lock.
     public static bool TrySpendTreasury(KingSystemData kingData, int amount)
     {
         lock (Purses)
@@ -102,7 +101,6 @@ public class KingSystemRuntimeService(
         return waiting.Task;
     }
 
-    // Writes run one at a time, each storing the value as it stands when it runs.
     private async Task StoreAsync<TProperty>((byte Nation, string Property) key, TaskCompletionSource write,
         KingSystemData kingData, Expression<Func<KingSystemData, TProperty>> propertySelector)
     {

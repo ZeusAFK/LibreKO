@@ -270,23 +270,22 @@ internal sealed partial class WarehouseFeature : IFeature, IClosableWindow
         return self.Inventory.InMainBag(abs) && Storable(self.Inventory[abs].ItemId) ? BagFit.Normal : BagFit.Unfit;
     }
 
-    private bool FitsIn(int whIdx, int itemId, int count) =>
-        StorageDestination.Fits(StoredItems[whIdx], itemId, count, UiKit.IsStackable(itemId));
+    private bool FitsIn(int whIdx, ItemSlot source, int count) =>
+        StorageDestination.Fits(StoredItems[whIdx], source, count, UiKit.IsStackable(source.ItemId));
 
-    internal bool FitsInBag(int abs, int itemId, int count) =>
-        self.Inventory.InMainBag(abs) && (self.Inventory[abs].IsEmpty
-        || (self.Inventory[abs].ItemId == itemId && UiKit.IsStackable(itemId) && self.Inventory[abs].Count + count <= Inventory.StackMax));
+    internal bool FitsInBag(int abs, ItemSlot source, int count) =>
+        self.Inventory.InMainBag(abs) && StorageDestination.Fits(self.Inventory[abs], source, count, UiKit.IsStackable(source.ItemId));
 
-    private int WarehouseDestination(int itemId, int count, out bool merge)
+    private int WarehouseDestination(ItemSlot source, int count, out bool merge)
     {
-        int whIdx = StorageDestination.Find(StoredItems, itemId, count, UiKit.IsStackable(itemId));
+        int whIdx = StorageDestination.Find(StoredItems, source, count, UiKit.IsStackable(source.ItemId));
         merge = whIdx >= 0 && !StoredItems[whIdx].IsEmpty;
         return whIdx;
     }
 
-    internal int BagDestination(int itemId, int count, out bool merge)
+    internal int BagDestination(ItemSlot source, int count, out bool merge)
     {
-        int abs = self.Inventory.GridSlotFor(itemId, count, UiKit.IsStackable(itemId));
+        int abs = self.Inventory.GridSlotFor(source, count, UiKit.IsStackable(source.ItemId));
         merge = abs >= 0 && !self.Inventory[abs].IsEmpty;
         return abs;
     }
@@ -344,13 +343,13 @@ internal sealed partial class WarehouseFeature : IFeature, IClosableWindow
         bool merge;
         if (target >= 0)
         {
-            if (!FitsIn(target, slot.ItemId, count)) { Status.Status("That slot is taken.", bad: true); return; }
+            if (!FitsIn(target, slot, count)) { Status.Status("That slot is taken.", bad: true); return; }
             whIdx = target;
             merge = !StoredItems[target].IsEmpty;
         }
         else
         {
-            whIdx = WarehouseDestination(slot.ItemId, count, out merge);
+            whIdx = WarehouseDestination(slot, count, out merge);
             if (whIdx < 0) { Status.Status("Warehouse is full.", bad: true); return; }
         }
         pending = new Pending { Op = OpInput, Merge = merge, InvAbs = abs, WhIdx = whIdx, Count = count };
@@ -387,13 +386,13 @@ internal sealed partial class WarehouseFeature : IFeature, IClosableWindow
         bool merge;
         if (target >= 0)
         {
-            if (!FitsInBag(target, slot.ItemId, count)) { Status.Status("That slot is taken.", bad: true); return; }
+            if (!FitsInBag(target, slot, count)) { Status.Status("That slot is taken.", bad: true); return; }
             dest = target;
             merge = !self.Inventory[target].IsEmpty;
         }
         else
         {
-            dest = BagDestination(slot.ItemId, count, out merge);
+            dest = BagDestination(slot, count, out merge);
             if (dest < 0) { Status.Status("Your bags are full.", bad: true); return; }
         }
         pending = new Pending { Op = OpOutput, Merge = merge, InvAbs = dest, WhIdx = whIdx, Count = count };

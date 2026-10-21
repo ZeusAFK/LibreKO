@@ -14,7 +14,6 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// An offer leaves the bag for escrow and comes back, or goes across, as the same item.
 public class TradeEscrowTests : GameTestBase
 {
     private const int GiverId = 92001;
@@ -80,7 +79,6 @@ public class TradeEscrowTests : GameTestBase
 
         await SendAsync(provider, giverClient, AddPacket(PotionPos, Potion, PotionStack));
 
-        // A pickup lands in the slot the offer freed.
         var filled = BagSlot(giver, PotionPos);
         filled.ItemId = Pickup;
         filled.Count = 1;
@@ -117,7 +115,6 @@ public class TradeEscrowTests : GameTestBase
         StockPotions(giver);
         StockSword(giver);
 
-        // The taker already carries potions that expire; fresh ones must not join that stack.
         var expiring = BagSlot(taker, 0);
         expiring.ItemId = Potion;
         expiring.Count = 2;
@@ -172,7 +169,6 @@ public class TradeEscrowTests : GameTestBase
         giver.Money = 1_000;
 
         await SendAsync(provider, giverClient, AddPacket(0, InventoryConstants.ItemGold, 1_000));
-        // Gold reached the purse by some route while the offer was held.
         giver.Money = ExchangePacketConstants.CoinMax - 100;
         await SendAsync(provider, giverClient, CancelPacket());
 
@@ -193,7 +189,6 @@ public class TradeEscrowTests : GameTestBase
         StockPotions(taker);
 
         await SendAsync(provider, takerClient, AddPacket(PotionPos, Potion, PotionStack));
-        // The same potion, but timed, lands in the freed slot; the offer must not join it.
         var filled = BagSlot(taker, PotionPos);
         filled.ItemId = Potion;
         filled.Count = 1;
@@ -282,7 +277,6 @@ public class TradeEscrowTests : GameTestBase
         StockPotions(giver);
         await SendAsync(provider, giverClient, AddPacket(PotionPos, Potion, 3));
 
-        // The partner walks off; the next offer finds them out of range and the server cancels.
         taker.X += 1_000f;
         await SendAsync(provider, giverClient, AddPacket(PotionPos, Potion, 1));
 
@@ -339,7 +333,6 @@ public class TradeEscrowTests : GameTestBase
         StockSword(giver);
 
         await SendAsync(provider, giverClient, AddPacket(SwordPos, Sword, 1));
-        // Killed by something that did not end the trade, then gone.
         giver.Hp = 0;
         await provider.GetRequiredService<ISessionTerminationService>().LogoutAsync(giverClient);
 

@@ -38,7 +38,6 @@ public static class ClanRules
 
     private static readonly Lock Funds = new();
 
-    // A clan's point fund changes only under one lock.
     public static void AddToFund(KnightsEntity clan, long amount)
     {
         lock (Funds)

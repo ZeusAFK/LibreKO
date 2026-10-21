@@ -22,7 +22,7 @@ public sealed class Heightmap
         using var f = FileAccess.Open($"res://assets/terrain/{stem}/heightmap.png", FileAccess.ModeFlags.Read);
         if (f == null)
             return null;
-        var img = new Image();
+        using var img = new Image();
         if (img.LoadPngFromBuffer(f.GetBuffer((long)f.GetLength())) != Error.Ok)
             return null;
         if (img.GetFormat() != Image.Format.Rgba8)

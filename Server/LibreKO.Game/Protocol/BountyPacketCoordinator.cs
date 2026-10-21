@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Enums;
@@ -382,7 +382,6 @@ public class BountyPacketCoordinator(
         return true;
     }
 
-    // Loaded whole or not at all.
     private async Task<bool> TryLoadAsync()
     {
         try
@@ -427,7 +426,6 @@ public class BountyPacketCoordinator(
         }
     }
 
-    // Kills on one target are recorded in the order they happened.
     private async Task RecordQueuedKillsAsync()
     {
         while (kills.TryDequeue(out var queued))

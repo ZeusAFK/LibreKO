@@ -9,7 +9,6 @@ using NSubstitute;
 
 namespace LibreKO.Game.Tests;
 
-// Trading, a stall and gathering never overlap: each counts on the bag.
 public class TradeStallOverlapTests : GameTestBase
 {
     private const int AskerId = 97001;

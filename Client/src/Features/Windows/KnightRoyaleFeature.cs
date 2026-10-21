@@ -39,9 +39,7 @@ internal sealed partial class KnightRoyaleFeature : IFeature, ITickFeature
     internal Label? RoyaleSurvivors { get; private set; }
     internal Label? RoyaleNextGas { get; private set; }
     internal Label? RoyaleGasTime { get; private set; }
-    private double royaleBoardEndsAt;
-    private bool royaleBoardOpen;
-    private bool royaleBoardCollapsed;
+    private KnightRoyaleSession.SignUpBoardState Board => knightRoyale.Board;
     private readonly List<(float X, float Z, double Until, bool Delegate)> royalePings = new();
     private double royaleReturnBoxAt = double.PositiveInfinity;
 
@@ -58,6 +56,7 @@ internal sealed partial class KnightRoyaleFeature : IFeature, ITickFeature
         knightRoyale.RoyaleRewardEvent += OnRoyaleReward;
         knightRoyale.RoyaleWinnerEvent += OnRoyaleWinner;
         knightRoyale.RoyaleRestoreEvent += OnRoyaleRestore;
+        if (Board.Open && Board.EndsAt > context.Now) ShowRoyaleBoard();
     }
 
     internal string? ChatRefusal() => InRoyaleZone ? ItemData.Text(KnightRoyale.ChatBlockedText, "Cannot be used while in chat restriction status.") : null;
@@ -82,8 +81,9 @@ internal sealed partial class KnightRoyaleFeature : IFeature, ITickFeature
                 OpenRoyaleBoard(signUp.Mode, signUp.Participants, signUp.Seconds);
                 return;
             case KnightRoyaleSignUpResult.Count:
+                Board.Participants = signUp.Participants;
                 if (royaleBoardCount != null) royaleBoardCount.Text = signUp.Participants.ToString();
-                if (royaleBoardOpen && RoyaleBoard is { Visible: false }) RoyaleBoard.Visible = true;
+                if (Board.Open && RoyaleBoard is { Visible: false }) RoyaleBoard.Visible = true;
                 return;
         }
         int text = KnightRoyale.SignUpText(signUp.Result);
@@ -93,18 +93,30 @@ internal sealed partial class KnightRoyaleFeature : IFeature, ITickFeature
 
     internal void OpenRoyaleBoard(int mode, int participants, int seconds)
     {
-        EnsureRoyaleBoard();
-        royaleBoardTitle!.Text = ItemData.Text(KnightRoyale.TitleFor(mode), "Knight Royale");
-        royaleBoardCount!.Text = participants.ToString();
-        royaleBoardEndsAt = context.Now + seconds;
-        royaleBoardOpen = true;
-        SetRoyaleApplied(false);
-        RoyaleBoard!.Visible = true;
+        Board.Mode = mode;
+        Board.Participants = participants;
+        Board.EndsAt = context.Now + seconds;
+        Board.Open = true;
+        Board.Applied = false;
+        Board.Collapsed = false;
+        ShowRoyaleBoard();
         Audio.PlayUi(Sfx.InventoryOpen);
+    }
+
+    private void ShowRoyaleBoard()
+    {
+        EnsureRoyaleBoard();
+        royaleBoardTitle!.Text = ItemData.Text(KnightRoyale.TitleFor(Board.Mode), "Knight Royale");
+        royaleBoardCount!.Text = Board.Participants.ToString();
+        SetRoyaleApplied(Board.Applied);
+        royaleBoardBody!.Visible = !Board.Collapsed;
+        RoyaleBoard!.Visible = true;
+        RoyaleBoard.ResetSize();
     }
 
     private void SetRoyaleApplied(bool applied)
     {
+        Board.Applied = applied;
         if (royaleApply == null || royaleCancel == null) return;
         royaleApply.Visible = !applied;
         royaleCancel.Visible = applied;
@@ -128,8 +140,8 @@ internal sealed partial class KnightRoyaleFeature : IFeature, ITickFeature
         var strip = new Button { Flat = true, FocusMode = Control.FocusModeEnum.None };
         strip.Pressed += () =>
         {
-            royaleBoardCollapsed = !royaleBoardCollapsed;
-            royaleBoardBody!.Visible = !royaleBoardCollapsed;
+            Board.Collapsed = !Board.Collapsed;
+            royaleBoardBody!.Visible = !Board.Collapsed;
             RoyaleBoard.ResetSize();
         };
         var head = new HBoxContainer { MouseFilter = Control.MouseFilterEnum.Ignore };
@@ -194,7 +206,7 @@ internal sealed partial class KnightRoyaleFeature : IFeature, ITickFeature
 
     private void OnRoyaleEntry(RoyaleEntry entry)
     {
-        royaleBoardOpen = false;
+        Board.Open = false;
         if (RoyaleBoard != null && GodotObject.IsInstanceValid(RoyaleBoard)) RoyaleBoard.Visible = false;
         EnsureRoyaleScore();
         RoyaleScore!.Visible = true;
@@ -243,13 +255,13 @@ internal sealed partial class KnightRoyaleFeature : IFeature, ITickFeature
 
     private void KnightRoyaleTick()
     {
-        if (royaleBoardOpen && RoyaleBoardTime != null)
+        if (Board.Open && RoyaleBoardTime != null)
         {
-            int left = (int)Mathf.Max(0, (float)(royaleBoardEndsAt - context.Now));
+            int left = (int)Mathf.Max(0, (float)(Board.EndsAt - context.Now));
             RoyaleBoardTime.Text = KnightRoyale.Clock(left);
             if (left <= 0)
             {
-                royaleBoardOpen = false;
+                Board.Open = false;
                 RoyaleBoard!.Visible = false;
             }
         }

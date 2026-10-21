@@ -40,7 +40,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
     internal float Fade;
     internal Vector2 AtlasOffset;
 
-    public static System.Func<float, float, float?>? GroundHeight;
+    public static System.Func<Vector3, float?>? GroundHeight;
 
     private static readonly Dictionary<FxPartKey, FxBillboard> prototypes = Shutdown.Track(new Dictionary<FxPartKey, FxBillboard>());
 
@@ -473,7 +473,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
 
     private static float GroundY(float wx, float wz, float fallback)
     {
-        var hgt = GroundHeight?.Invoke(wx, wz);
+        var hgt = GroundHeight?.Invoke(new Vector3(wx, fallback, wz));
         return hgt ?? fallback;
     }
 }

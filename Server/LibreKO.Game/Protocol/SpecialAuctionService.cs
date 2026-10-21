@@ -164,7 +164,6 @@ public class SpecialAuctionService(
         var answer = SpecialAuctionPacketWriter.Busy;
         try
         {
-            // The coins, the checks and the bid are saved together.
             var outcome = await statePersister.CommitAsync(session, async db =>
             {
                 var lotBids = await db.AuctionBids
@@ -233,7 +232,6 @@ public class SpecialAuctionService(
         long coins = 0;
         try
         {
-            // The bid closes in the same save that brings its coins and checks back.
             var outcome = await statePersister.CommitAsync(session, async db =>
             {
                 var bid = await db.AuctionBids.FirstOrDefaultAsync(b => b.Channel == Channel && b.CharacterId == session.CharacterId
@@ -265,7 +263,6 @@ public class SpecialAuctionService(
     private static bool IsStakedCheck(ItemSlot slot) =>
         slot.ItemId == MythrilCheck && slot.Count > 0 && slot.IsTradable && !slot.Expires;
 
-    // The stake leaves the bag only as it was checked.
     private static short TakeStake(UserSession session, InventoryJournal journal, List<int> checkSlots, long coins)
     {
         if (coins > session.Money)
@@ -342,7 +339,6 @@ public class SpecialAuctionService(
         var answer = SpecialAuctionPacketWriter.NoWin;
         try
         {
-            // The whole lot reaches the bag in the same save that closes the bid, or nothing does.
             var outcome = await statePersister.CommitAsync(session, async db =>
             {
                 var bid = await db.AuctionBids

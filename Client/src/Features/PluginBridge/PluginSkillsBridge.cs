@@ -5,7 +5,7 @@ internal sealed class PluginSkillsBridge(SkillCastSystem skillCast, SkillWindowF
     event Action? IGameSkills.Changed { add { } remove { } }
 
     public IReadOnlyList<GameSkillTab> Tabs =>
-        SkillData.Pages(self.Class, skillCast.SelfTransformModel()).Select(p => new GameSkillTab(p.Category, p.Label)).ToList();
+        SkillData.Pages(self.Class, skillCast.SelfTransformModel(), SkillData.Get(self.TransformSkill), self.Nation).Select(p => new GameSkillTab(p.Category, p.Label)).ToList();
 
     public int MasteryPool => self.Mastery.Pool;
 
@@ -27,7 +27,7 @@ internal sealed class PluginSkillsBridge(SkillCastSystem skillCast, SkillWindowF
     public IReadOnlyList<GameSkill> Skills(int category)
     {
         var list = new List<GameSkill>();
-        foreach (var page in SkillData.Pages(self.Class, skillCast.SelfTransformModel()))
+        foreach (var page in SkillData.Pages(self.Class, skillCast.SelfTransformModel(), SkillData.Get(self.TransformSkill), self.Nation))
         {
             if (page.Category != category) continue;
             foreach (var s in page.Skills)

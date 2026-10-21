@@ -89,7 +89,6 @@ public class LotteryService : ILotteryService
     {
         ActiveLottery? current;
         Dictionary<int, int>? refundSnapshot = null;
-        // Whoever takes the lottery off the board settles it, once.
         lock (stateLock)
         {
             current = active;

@@ -271,6 +271,11 @@ public static partial class KeyBinds
 
     public static IReadOnlyList<Entry> All => Table;
 
+    public static bool DevelopmentOnly(KeyAction action) => action
+        is KeyAction.PerfSkipPoses or KeyAction.PerfSkipMove or KeyAction.PerfSkipPlates or KeyAction.PerfSkipEmitters
+        or KeyAction.PerfSkipAudio or KeyAction.PerfSkipFx or KeyAction.PerfSkipLamps or KeyAction.PerfCensus
+        or KeyAction.PerfAutoBisect or KeyAction.PerfEngineProfile or KeyAction.PerfHudSweep or KeyAction.PerfSceneSweep;
+
     public static KeyChord Get(KeyAction action)
     {
         Load();

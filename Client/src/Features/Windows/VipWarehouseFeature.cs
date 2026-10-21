@@ -381,19 +381,14 @@ internal sealed partial class VipWarehouseFeature : IFeature, IClosableWindow
         return $"{left.Seconds}s";
     }
 
-    private bool FitsInVault(int vipIdx, int itemId, int count) =>
-        StoredItems[vipIdx].IsEmpty
-        || (StoredItems[vipIdx].ItemId == itemId && UiKit.IsStackable(itemId) && StoredItems[vipIdx].Count + count <= Inventory.StackMax);
+    private bool FitsInVault(int vipIdx, ItemSlot source, int count) =>
+        StorageDestination.Fits(StoredItems[vipIdx], source, count, UiKit.IsStackable(source.ItemId));
 
-    private int VaultDestination(int itemId, int count, out bool merge)
+    private int VaultDestination(ItemSlot source, int count, out bool merge)
     {
-        merge = false;
-        if (UiKit.IsStackable(itemId))
-            for (int i = 0; i < Slots; i++)
-                if (StoredItems[i].ItemId == itemId && StoredItems[i].Count + count <= Inventory.StackMax)
-                { merge = true; return i; }
-        for (int i = 0; i < Slots; i++) if (StoredItems[i].IsEmpty) return i;
-        return -1;
+        int vipIdx = StorageDestination.Find(StoredItems, source, count, UiKit.IsStackable(source.ItemId));
+        merge = vipIdx >= 0 && !StoredItems[vipIdx].IsEmpty;
+        return vipIdx;
     }
 
     private bool CanDropOnVault(int vipIdx, Variant data)
@@ -443,13 +438,13 @@ internal sealed partial class VipWarehouseFeature : IFeature, IClosableWindow
         bool merge;
         if (target >= 0)
         {
-            if (!FitsInVault(target, slot.ItemId, count)) { Status.Status("That slot is taken.", bad: true); return; }
+            if (!FitsInVault(target, slot, count)) { Status.Status("That slot is taken.", bad: true); return; }
             vipIdx = target;
             merge = !StoredItems[target].IsEmpty;
         }
         else
         {
-            vipIdx = VaultDestination(slot.ItemId, count, out merge);
+            vipIdx = VaultDestination(slot, count, out merge);
             if (vipIdx < 0) { Status.Status("The vault is full.", bad: true); return; }
         }
         pending = new WhPending { Op = VipWarehouseSubOpcode.Input, Merge = merge, InvAbs = abs, VipIdx = vipIdx, Count = count };
@@ -478,13 +473,13 @@ internal sealed partial class VipWarehouseFeature : IFeature, IClosableWindow
         bool merge;
         if (target >= 0)
         {
-            if (!warehouse.FitsInBag(target, slot.ItemId, count)) { Status.Status("That slot is taken.", bad: true); return; }
+            if (!warehouse.FitsInBag(target, slot, count)) { Status.Status("That slot is taken.", bad: true); return; }
             dest = target;
             merge = !self.Inventory[target].IsEmpty;
         }
         else
         {
-            dest = warehouse.BagDestination(slot.ItemId, count, out merge);
+            dest = warehouse.BagDestination(slot, count, out merge);
             if (dest < 0) { Status.Status("Your bags are full.", bad: true); return; }
         }
         pending = new WhPending { Op = VipWarehouseSubOpcode.Output, Merge = merge, InvAbs = dest, VipIdx = vipIdx, Count = count };

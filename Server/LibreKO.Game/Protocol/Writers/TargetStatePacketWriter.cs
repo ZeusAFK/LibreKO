@@ -39,6 +39,7 @@ public static class TargetStatePacketWriter
             packet.WriteInt(line.ItemId);
             packet.WriteByte((byte)line.Band);
         }
+        packet.WriteUShort((ushort)Math.Min(summary.Total, ushort.MaxValue));
         return packet;
     }
 

@@ -213,6 +213,7 @@ internal sealed class SkillCastSystem : IFeature
         var limits = CrowdModes.Of(Config.Crowd);
         if (limits.StrangerFxPerSecond == CrowdModes.Unlimited) return true;
         if (!context.Entities.Views.TryGetValue(casterId, out var caster) || !caster.OnScreen || context.Self.Body == null) return false;
+        if (caster.IsNpc) return true;
         if (Coord.FlatDistance(caster.Body.GlobalPosition, context.Self.Body.GlobalPosition) > limits.StrangerFxRange) return false;
         return strangerFxBudget.Take(limits.StrangerFxPerSecond, FrameClock.Now());
     }
@@ -330,6 +331,11 @@ internal sealed class SkillCastSystem : IFeature
                     else if (awaited && s != null) LogSkillRefused(s, sub);
                     castLogged.Remove(skillId);
                 }
+                break;
+
+            case MagicSub.DurationExpired:
+                if (targetId == context.Self.CharId || (targetId == 0 && casterId == context.Self.CharId))
+                    buff.DropBuffChip(skillId);
                 break;
         }
     }
@@ -915,9 +921,11 @@ internal sealed class SkillCastSystem : IFeature
     }
 
     private const int BasicRangedSkillIndex = 3;
+    private const int KnightRoyaleArchery = 490356;
 
     private int BasicRangedSkillId()
     {
+        if (KnightRoyale.IsZone(context.Zone)) return SkillData.Get(KnightRoyaleArchery) != null ? KnightRoyaleArchery : 0;
         if (CharacterClassCatalog.Family(self.Class) != CharacterClassCatalog.FamilyRogue) return 0;
         int id = SkillData.ClassSkillId(self.Class, BasicRangedSkillIndex);
         return SkillData.Get(id) != null ? id : 0;
@@ -1062,6 +1070,15 @@ internal sealed class SkillCastSystem : IFeature
     {
         foreach (int skill in PendingCasts.Select(c => c.SkillId).Distinct().ToArray()) CancelSelfCast(skill);
         if (castingSkillId != 0) CancelSelfCast(castingSkillId);
+    }
+
+    internal void CancelCastsAtTheDead()
+    {
+        foreach (var pending in PendingCasts.ToArray())
+            if (pending.TargetId >= 0 && pending.TargetId != context.Self.CharId
+                && context.Entities.Views.TryGetValue(pending.TargetId, out var target) && target.Dead
+                && SkillData.Get(pending.SkillId) is { IsEnemy: true } && !Gestures.IsCorpseSkill(pending.SkillId))
+                CancelSelfCast(pending.SkillId);
     }
 
     internal void CancelSelfCast(int skillId)

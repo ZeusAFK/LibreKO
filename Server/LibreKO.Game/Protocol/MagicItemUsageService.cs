@@ -90,7 +90,7 @@ public class MagicItemUsageService(
 
         var spendsDurability = itemData.IsChargeItem;
         var remaining = count;
-        for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length && remaining > 0; index++)
+        for (var index = InventoryConstants.InventoryStart; index < MainBagEnd(session) && remaining > 0; index++)
         {
             var slot = session.Inventory[index];
             if (slot.ItemId != itemId)
@@ -140,7 +140,7 @@ public class MagicItemUsageService(
             return true;
 
         var remaining = count;
-        for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length && remaining > 0; index++)
+        for (var index = InventoryConstants.InventoryStart; index < MainBagEnd(session) && remaining > 0; index++)
         {
             var slot = session.Inventory[index];
             if (slot.IsEmpty)
@@ -162,7 +162,7 @@ public class MagicItemUsageService(
             return false;
 
         var remaining = count;
-        for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length && remaining > 0; index++)
+        for (var index = InventoryConstants.InventoryStart; index < MainBagEnd(session) && remaining > 0; index++)
         {
             var slot = session.Inventory[index];
             if (slot.IsEmpty)
@@ -198,10 +198,13 @@ public class MagicItemUsageService(
         return true;
     }
 
+    private static int MainBagEnd(UserSession session) =>
+        Math.Min(InventoryConstants.InventoryStart + InventoryConstants.HaveMax, session.Inventory.Length);
+
     private static int CountItem(UserSession session, int itemId, bool useDurability)
     {
         var total = 0;
-        for (var index = InventoryConstants.InventoryStart; index < session.Inventory.Length; index++)
+        for (var index = InventoryConstants.InventoryStart; index < MainBagEnd(session); index++)
         {
             if (session.Inventory[index].ItemId == itemId)
             {

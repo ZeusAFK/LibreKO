@@ -35,6 +35,7 @@ internal sealed partial class QuestFeature : IFeature
     private VBoxContainer listBox = null!;
     private ScrollContainer listScroll = null!;
     private string search = "";
+    private LineEdit searchInput = null!;
     private bool scrollTop;
     private int filter = FilterActive;
     private QuestData.Kind? kind;
@@ -149,7 +150,7 @@ internal sealed partial class QuestFeature : IFeature
             kindBtns[label] = b;
             kindBar.AddChild(b);
         }
-        var searchInput = new LineEdit
+        searchInput = new LineEdit
         {
             PlaceholderText = "Search quests",
             ClearButtonEnabled = true,
@@ -280,15 +281,16 @@ internal sealed partial class QuestFeature : IFeature
     private void SetFilter(int filter)
     {
         this.filter = filter;
-        string label = filter switch
-        {
-            FilterCompleted => "Completed",
-            FilterAvailable => "Available",
-            _ => "In Progress",
-        };
-        if (subBtns.TryGetValue(label, out var b)) b.ButtonPressed = true;
+        if (subBtns.TryGetValue(FilterLabel(filter), out var b)) b.ButtonPressed = true;
         RefreshLog();
     }
+
+    private static string FilterLabel(int filter) => filter switch
+    {
+        FilterCompleted => "Completed",
+        FilterAvailable => "Available",
+        _ => "In Progress",
+    };
 
     private void SetKind(QuestData.Kind? kind)
     {
@@ -473,7 +475,27 @@ internal sealed partial class QuestFeature : IFeature
     private void OnTrackerPick(int questId)
     {
         context.MainWindows.Show("Quests");
+        Reveal(questId);
         Select(questId);
+    }
+
+    private void Reveal(int questId)
+    {
+        int state = book.StateOf(questId);
+        filter = state == QuestStates.Completed ? FilterCompleted
+            : state is QuestStates.Active or QuestStates.ReadyToTurnIn ? FilterActive
+            : FilterAvailable;
+        if (subBtns.TryGetValue(FilterLabel(filter), out var status)) status.ButtonPressed = true;
+        if (kind is { } kindFilter && QuestInfo.Facts(book, questId).Kind != kindFilter)
+        {
+            kind = null;
+            if (kindBtns.TryGetValue("All", out var all)) all.ButtonPressed = true;
+        }
+        if (search.Length > 0 && !QuestJournalRules.Matches(QuestInfo.Name(book, questId, self.LastEnter.Name ?? ""), search))
+        {
+            search = "";
+            searchInput.Text = "";
+        }
     }
 
     internal void Select(int questId)

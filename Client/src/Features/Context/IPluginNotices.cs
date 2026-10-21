@@ -20,6 +20,8 @@ internal interface IPluginNotices
 
     void WhisperLine(string name, RoomPost post);
 
+    void WhisperCollapse(string name);
+
     void Hotbar();
 
     void HotbarReady(int[] ready);

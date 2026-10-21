@@ -351,6 +351,11 @@ internal sealed partial class ExchangeFeature : IFeature, IEscapable
 
     internal void BeginTradeRequest(int charId, string name)
     {
+        if (TradeHoldsInput)
+        {
+            context.Log.Notice("You are already trading.");
+            return;
+        }
         if (genie.GenieRunning)
         {
             TradeRefusalLine(TextTradeOwnGenie, "You cannot trade while using Genie.");
