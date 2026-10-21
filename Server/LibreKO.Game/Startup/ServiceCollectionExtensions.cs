@@ -279,6 +279,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IMerchantBotService, MerchantBotService>();
         services.AddSingleton<ISlaveMerchantService, SlaveMerchantService>();
         services.AddSingleton<ISlaveMerchantPacketCoordinator, SlaveMerchantPacketCoordinator>();
+        services.AddSingleton<IBowlEventService, BowlEventService>();
         services.AddSingleton<IScriptEffectApplier, ScriptEffectApplier>();
         services.AddSingleton<LibreKO.Quests.Localization.IQuestTranslations>(provider =>
             QuestTranslationLoader.Load(provider));

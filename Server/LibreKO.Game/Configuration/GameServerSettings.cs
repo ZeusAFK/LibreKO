@@ -33,6 +33,7 @@ public class GameServerSettings
     public PartyVoteSettings PartyVote { get; set; } = new();
     public JackpotSettings Jackpot { get; set; } = new();
     public ChatRoomSettings ChatRooms { get; set; } = new();
+    public BowlEventSettings BowlEvent { get; set; } = new();
 
     public PublicDemoSettings PublicDemo { get; set; } = new();
 
@@ -186,4 +187,40 @@ public class EventSettings
     public int[] BifrostStartHours { get; set; } = [1, 5, 13, 17, 20];
 
     public bool ChaosNeedsMap { get; set; }
+}
+
+public class BowlEventSettings
+{
+    public bool Enabled { get; set; } = true;
+
+    [Range(5, int.MaxValue)]
+    public int IntervalSeconds { get; set; } = 60;
+
+    [Range(1, int.MaxValue)]
+    public int DefaultDurationMinutes { get; set; } = 60;
+
+    public byte ZoneId { get; set; } = 71;
+
+    [Range(1, 83)]
+    public byte MinLevel { get; set; } = 60;
+
+    public float CenterX { get; set; } = 1014.0f;
+    public float CenterZ { get; set; } = 1007.0f;
+    public float Radius { get; set; } = 131.0f;
+
+    public bool AntiAfkEnabled { get; set; } = true;
+
+    [Range(0, int.MaxValue)]
+    public int KnightCash { get; set; } = 5;
+
+    [Range(0, int.MaxValue)]
+    public int Loyalty { get; set; } = 50;
+
+    [Range(0, int.MaxValue)]
+    public int Gold { get; set; } = 50000;
+
+    [Range(0, long.MaxValue)]
+    public long Exp { get; set; } = 250000;
+
+    public ushort VisualEffectId { get; set; } = 1;
 }

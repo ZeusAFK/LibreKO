@@ -32,7 +32,8 @@ public class EventSchedulerService(
     INereidMonumentService nereidMonuments,
     IGameDataService gameDataService,
     ScheduleClock scheduleClock,
-    ILogger<EventSchedulerService> logger) : BackgroundService
+    ILogger<EventSchedulerService> logger,
+    IBowlEventService? bowlEventService = null) : BackgroundService
 {
     private DateTime lastWarOpen = DateTime.MinValue;
     private bool banishPending;
@@ -98,6 +99,8 @@ public class EventSchedulerService(
                 await underTheCastleService.TickAsync();
                 await forgottenTempleService.TickAsync();
                 await krowazService.TickAsync();
+                if (bowlEventService != null)
+                    await bowlEventService.TickAsync();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
