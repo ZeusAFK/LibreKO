@@ -9,7 +9,7 @@ namespace LibreKO.Common.Domain.Services;
 public sealed class LoginThrottle(TimeProvider? clock = null)
 {
     public const int MaxFailuresPerName = 5;
-    public const int MaxFailuresPerAddress = 20;
+    public const int AddressFailuresBeforeSlowing = 20;
     public const int FailuresBeforeSlowing = 25;
     private const int WindowMinutes = 15;
     private const int SlowdownStepMilliseconds = 500;
@@ -45,7 +45,7 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
 
     public int Tracked => Volatile.Read(ref byAddressAndName.Size) + Volatile.Read(ref byAddress.Size) + Volatile.Read(ref byName.Size);
 
-    // An attempt counts before its password is checked; an address over a limit waits out the window and adds nothing while it waits.
+    // An attempt counts before its password is checked; a name over its limit from one address waits out the window and adds nothing while it waits.
     public bool TryAttempt(string address, string login)
     {
         if (login.Length > Account.MaxLoginLength)
@@ -55,12 +55,12 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         if (address.Length > 0)
         {
             var key = Key(address, name);
-            if (Over(byAddress, address, MaxFailuresPerAddress) || Over(byAddressAndName, key, MaxFailuresPerName))
+            if (Over(byAddressAndName, key, MaxFailuresPerName))
                 return false;
 
             var forName = Count(byAddressAndName, key);
-            var forAddress = Count(byAddress, address);
-            if (forName > MaxFailuresPerName || forAddress > MaxFailuresPerAddress)
+            Count(byAddress, address);
+            if (forName > MaxFailuresPerName)
                 return false;
         }
 
@@ -68,17 +68,24 @@ public sealed class LoginThrottle(TimeProvider? clock = null)
         return true;
     }
 
-    // A name guessed from many addresses is answered more slowly but never locked.
-    public TimeSpan SlowdownFor(string login)
+    // A name guessed from many addresses, or an address that guesses many names, is answered more slowly but never locked out.
+    public TimeSpan SlowdownFor(string address, string login)
     {
-        if (!byName.Entries.TryGetValue(Normal(login), out var failures))
+        var forName = Slowdown(byName, Normal(login), FailuresBeforeSlowing);
+        var forAddress = address.Length == 0 ? TimeSpan.Zero : Slowdown(byAddress, address, AddressFailuresBeforeSlowing);
+        return forName > forAddress ? forName : forAddress;
+    }
+
+    private TimeSpan Slowdown(Table table, string key, int free)
+    {
+        if (!table.Entries.TryGetValue(key, out var failures))
             return TimeSpan.Zero;
 
         lock (failures)
         {
-            if (Now - failures.Since >= Window || failures.Count <= FailuresBeforeSlowing)
+            if (Now - failures.Since >= Window || failures.Count <= free)
                 return TimeSpan.Zero;
-            var steps = failures.Count - FailuresBeforeSlowing;
+            var steps = failures.Count - free;
             return TimeSpan.FromTicks(Math.Min(SlowdownStep.Ticks * steps, MaxSlowdown.Ticks));
         }
     }

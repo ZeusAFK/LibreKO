@@ -59,18 +59,24 @@ public class LoginService(
     public async Task<Packet> LoginAsync(string login, string password, LoginOpcodes responseOpcode = LoginOpcodes.LS_LOGIN,
         LoginRequestFlags flags = LoginRequestFlags.None, string address = "")
     {
-        var locked = !throttle.TryAttempt(address, login);
-        if (!locked)
-            await Task.Delay(throttle.SlowdownFor(login));
-        var account = locked ? null : await accountRepository.GetByLogin(login);
+        var tooLong = login.Length > Account.MaxLoginLength;
+        var locked = !tooLong && !throttle.TryAttempt(address, login);
+        if (!tooLong && !locked)
+            await Task.Delay(throttle.SlowdownFor(address, login));
+        var account = tooLong || locked ? null : await accountRepository.GetByLogin(login);
         short remainingPremiumHours = 0;
         Server? occupiedServer = null;
 
         LoginResult result;
-        if (locked)
+        if (tooLong)
         {
-            result = LoginResult.InvalidPassword;
-            logger.LogDebug("Login from {Address} refused without checking: too many failures, or a name longer than any account's", address);
+            result = LoginResult.IdNotFound;
+            logger.LogDebug("Login from {Address} names no account: the name is longer than any account's", address);
+        }
+        else if (locked)
+        {
+            result = LoginResult.TooManyAttempts;
+            logger.LogDebug("Login for {Login} from {Address} refused without checking: too many failures", login, address);
         }
         else if (account == null)
         {

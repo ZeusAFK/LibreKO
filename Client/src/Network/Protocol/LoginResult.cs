@@ -11,6 +11,7 @@ public enum LoginResult : short
     PrepaidCardEmpty = 0x0B,
     PrepaidCardExpired = 0x0C,
     PasswordResetRequired = 0x11,
+    TooManyAttempts = 0x12,
 }
 
 public static class LoginResults
@@ -25,6 +26,7 @@ public static class LoginResults
         LoginResult.PrepaidCardEmpty => "There is no play time left on this account.",
         LoginResult.PrepaidCardExpired => "The play time on this account has expired.",
         LoginResult.PasswordResetRequired => "This password has to be reset on the web site before you can sign in.",
+        LoginResult.TooManyAttempts => "Too many failed sign-ins to this account from here. Wait a few minutes and try again.",
         _ => $"Sign-in failed (code {result}).",
     };
 }

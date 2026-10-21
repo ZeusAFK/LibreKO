@@ -78,7 +78,7 @@ public class LoginTests : ServerTest
     }
 
     [Fact]
-    public async Task LS_LOGIN_AfterFiveMissesIsRefusedEvenWithThePassword()
+    public async Task LS_LOGIN_AfterFiveMissesIsRefusedEvenWithThePasswordAndSaysWhy()
     {
         await StartServerAsync();
         var (_, stream) = await ConnectAsync();
@@ -86,8 +86,17 @@ public class LoginTests : ServerTest
         for (var miss = 0; miss < LoginThrottle.MaxFailuresPerName; miss++)
             (await LoginResultAsync(stream, "user", "wrong_password")).Should().Be(LoginResult.InvalidPassword);
 
-        (await LoginResultAsync(stream, "user", "password")).Should().Be(LoginResult.InvalidPassword,
-            "an address that keeps missing waits out the window before its passwords are checked");
+        (await LoginResultAsync(stream, "user", "password")).Should().Be(LoginResult.TooManyAttempts,
+            "a name that keeps missing from one address waits out the window, and the player is told so rather than that the password is wrong");
+    }
+
+    [Fact]
+    public async Task LS_LOGIN_ANameLongerThanAnyAccountIsNotFound()
+    {
+        await StartServerAsync();
+        var (_, stream) = await ConnectAsync();
+
+        (await LoginResultAsync(stream, new string('x', Account.MaxLoginLength + 1), "password")).Should().Be(LoginResult.IdNotFound);
     }
 
     private async Task<LoginResult> LoginResultAsync(System.Net.Sockets.NetworkStream stream, string userName, string password)

@@ -54,11 +54,11 @@ public class PreGameService(
     {
         if (!throttle.TryAttempt(address, login))
         {
-            logger.LogDebug("Login from {Address} refused without checking: too many failures, or a name longer than any account's", address);
+            logger.LogDebug("Login for {Login} from {Address} refused without checking: too many failures, or a name longer than any account's", login, address);
             return new(0, 0, false);
         }
 
-        await Task.Delay(throttle.SlowdownFor(login));
+        await Task.Delay(throttle.SlowdownFor(address, login));
         var account = await accountRepository.GetByLogin(login);
         if (account == null || !PasswordHasher.Verify(password, account.Password))
         {

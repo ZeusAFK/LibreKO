@@ -58,15 +58,28 @@ public class LoginThrottleTests
     }
 
     [Fact]
-    public void ManyMissesFromOneAddressLockEveryName()
+    public void ManyMissesFromOneAddressSlowItDownButLockNoOneOut()
+    {
+        var throttle = new LoginThrottle();
+        for (var name = 0; name < LoginThrottle.AddressFailuresBeforeSlowing; name++)
+            throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
+        throttle.SlowdownFor(Address, "fresh").Should().Be(TimeSpan.Zero);
+
+        throttle.TryAttempt(Address, "fresh").Should().BeTrue("everyone behind a shared address still gets their password checked");
+
+        throttle.SlowdownFor(Address, "anyone").Should().Be(LoginThrottle.SlowdownStep, "one address that keeps missing is answered more slowly");
+        throttle.SlowdownFor(OtherAddress, "anyone").Should().Be(TimeSpan.Zero);
+    }
+
+    [Fact]
+    public void AnAddressSlowdownStopsAtItsCeiling()
     {
         var throttle = new LoginThrottle();
 
-        for (var name = 0; name < LoginThrottle.MaxFailuresPerAddress; name++)
+        for (var name = 0; name < Flood; name++)
             throttle.TryAttempt(Address, $"guess{name}").Should().BeTrue();
 
-        throttle.TryAttempt(Address, "fresh").Should().BeFalse("one address cannot try a password on account after account");
-        throttle.TryAttempt(OtherAddress, "fresh").Should().BeTrue();
+        throttle.SlowdownFor(Address, "anyone").Should().Be(LoginThrottle.MaxSlowdown);
     }
 
     [Fact]
@@ -91,15 +104,15 @@ public class LoginThrottleTests
         var throttle = new LoginThrottle();
         for (var guess = 0; guess < LoginThrottle.FailuresBeforeSlowing; guess++)
             throttle.TryAttempt($"192.0.2.{guess}", "victim");
-        throttle.SlowdownFor("victim").Should().Be(TimeSpan.Zero);
+        throttle.SlowdownFor(string.Empty, "victim").Should().Be(TimeSpan.Zero);
 
         throttle.TryAttempt("192.0.2.200", "victim");
 
-        throttle.SlowdownFor("Victim").Should().Be(LoginThrottle.SlowdownStep);
+        throttle.SlowdownFor(string.Empty, "Victim").Should().Be(LoginThrottle.SlowdownStep);
         throttle.TryAttempt(OtherAddress, "victim").Should().BeTrue("the owner still gets in, only more slowly");
         for (var guess = 0; guess < LoginThrottle.FailuresBeforeSlowing; guess++)
             throttle.TryAttempt($"198.18.0.{guess}", "victim");
-        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.MaxSlowdown);
+        throttle.SlowdownFor(string.Empty, "victim").Should().Be(LoginThrottle.MaxSlowdown);
     }
 
     [Fact]
@@ -110,7 +123,7 @@ public class LoginThrottleTests
         for (var guess = 0; guess < 2 * LoginThrottle.FailuresBeforeSlowing; guess++)
             throttle.TryAttempt(Address, "victim");
 
-        throttle.SlowdownFor("victim").Should().Be(TimeSpan.Zero, "only attempts that reach the password count against the name");
+        throttle.SlowdownFor(string.Empty, "victim").Should().Be(TimeSpan.Zero, "only attempts that reach the password count against the name");
     }
 
     [Fact]
@@ -127,22 +140,20 @@ public class LoginThrottleTests
     public void AnUnknownAddressSharesNoBucket()
     {
         var throttle = new LoginThrottle();
-        for (var miss = 0; miss < LoginThrottle.MaxFailuresPerAddress; miss++)
+        for (var miss = 0; miss < LoginThrottle.AddressFailuresBeforeSlowing; miss++)
             throttle.TryAttempt(string.Empty, "someone");
 
         throttle.TryAttempt(string.Empty, "anyone").Should().BeTrue();
     }
 
     [Fact]
-    public void AnAddressOverItsLimitStoresNothingMore()
+    public void ANameOverItsLimitFromOneAddressStoresNothingMore()
     {
         var throttle = new LoginThrottle();
-        for (var name = 0; name <= LoginThrottle.MaxFailuresPerAddress; name++)
-            throttle.TryAttempt(Address, $"guess{name}");
+        Attempts(throttle, Address, "victim", LoginThrottle.MaxFailuresPerName + 1);
         var tracked = throttle.Tracked;
 
-        for (var name = 0; name < Flood; name++)
-            throttle.TryAttempt(Address, $"flood{name}").Should().BeFalse();
+        Attempts(throttle, Address, "victim", Flood).Should().OnlyContain(allowed => !allowed);
 
         throttle.Tracked.Should().Be(tracked, "a refused attempt must not cost the server memory");
     }
@@ -187,7 +198,7 @@ public class LoginThrottleTests
             throttle.Succeeded(Address, $"new{name}");
         }
 
-        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.SlowdownStep, "a login that let its player in leaves nothing behind to crowd out a guessed name");
+        throttle.SlowdownFor(string.Empty, "victim").Should().Be(LoginThrottle.SlowdownStep, "a login that let its player in leaves nothing behind to crowd out a guessed name");
     }
 
     [Fact]
@@ -202,7 +213,7 @@ public class LoginThrottleTests
         for (var guess = 0; guess < LoginThrottle.FailuresBeforeSlowing; guess++)
             throttle.TryAttempt(string.Empty, "victim");
 
-        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.SlowdownStep,
+        throttle.SlowdownFor(string.Empty, "victim").Should().Be(LoginThrottle.SlowdownStep,
             "an attempt that looked its entry up just before a success dropped it still counts");
     }
 
@@ -220,7 +231,7 @@ public class LoginThrottleTests
 
         throttle.TryAttempt(string.Empty, "newcomer");
 
-        throttle.SlowdownFor("victim").Should().Be(LoginThrottle.SlowdownStep, "a full table drops its oldest entries, not the newest");
+        throttle.SlowdownFor(string.Empty, "victim").Should().Be(LoginThrottle.SlowdownStep, "a full table drops its oldest entries, not the newest");
     }
 
     [Fact]
