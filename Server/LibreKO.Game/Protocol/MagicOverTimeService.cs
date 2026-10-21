@@ -44,7 +44,6 @@ public class MagicOverTimeService(
             return false;
         }
 
-        // A second type rides on the first type's reagent, which that type has checked and spent.
         if (isPrimary && magic.UseItem != 0)
         {
             if ((magic.ItemGroup == PotionItemGroup && !caster.CanUsePotions)

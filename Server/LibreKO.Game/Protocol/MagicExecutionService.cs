@@ -99,7 +99,6 @@ public class MagicExecutionService(
 
     private int AreaRadius(MagicData magic, int skillId) => magic.PrimaryType switch
     {
-        // The client takes a melee row's radius from the over-time row with the same id.
         MagicSkillType.Melee when gameDataService.MagicType3Table.TryGetValue(skillId, out var melee) => melee.Radius,
         MagicSkillType.OverTime when MagicTypeLookup.TryResolve(gameDataService.MagicType3Table, magic, skillId, out var type3) => type3.Radius,
         MagicSkillType.Buff when MagicTypeLookup.TryResolve(gameDataService.MagicType4Table, magic, skillId, out var type4) => type4.Radius,
