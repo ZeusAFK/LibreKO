@@ -55,14 +55,16 @@ public class AdminPacketCoordinator(
     ICastleSiegeService castleSiegeService,
     IVanguardService vanguardService,
     IClanMatchService clanMatchService,
+    IBowlEventService bowlEventService,
     ILogger<AdminPacketCoordinator> logger,
-    IBowlEventService? bowlEventService = null,
     TimeProvider? timeProvider = null) : IAdminPacketCoordinator
 {
     private const int MaxGmSummonCount = 50;
     public const string GmNoticeFrame = "#### NOTICE : {0} ####";
     private const string ItemUsage = "+item <itemId> [count] | <name> - Give yourself an item, or search items by name";
     private const string TerrainUsage = "+terrain <0-4> - Show yourself a terrain effect: 0 none, 1 hay, 2 swamp, 3 water, 4 slowing swamp";
+    private const string BowlUsage = "+bowl on [minutes] | off | status | interval <seconds> - Run the Bowl event in Ronark Land";
+    private const string BowlTag = "[Bowl Event]";
 
     public async Task HandleOperatorAsync(IClient client, Packet packet)
     {
@@ -549,63 +551,8 @@ public class AdminPacketCoordinator(
             }
 
             case "bowl":
-            {
-                if (bowlEventService == null)
-                {
-                    await SendNoticeAsync(session, "Bowl event service is not available.");
-                    break;
-                }
-
-                var sub = arg.Trim().ToLowerInvariant();
-                var bowlParts = sub.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                var subcmd = bowlParts.Length > 0 ? bowlParts[0] : "";
-
-                if (subcmd is "on" or "start" or "enable")
-                {
-                    int? duration = null;
-                    if (bowlParts.Length > 1 && int.TryParse(bowlParts[1], out var parsedMinutes) && parsedMinutes > 0)
-                    {
-                        duration = parsedMinutes;
-                    }
-
-                    await bowlEventService.StartEventAsync(duration, announce: true);
-                    var durationText = duration ?? bowlEventService.DefaultDurationMinutes;
-                    await SendNoticeAsync(session, $"[Bowl Event] Event ENABLED for {durationText} minutes (Interval: {bowlEventService.IntervalSeconds}s, MinLevel: {bowlEventService.MinLevel}, Zone: {bowlEventService.ZoneId}).");
-                }
-                else if (subcmd is "off" or "stop" or "disable")
-                {
-                    await bowlEventService.StopEventAsync(announce: true);
-                    await SendNoticeAsync(session, "[Bowl Event] Event DISABLED.");
-                }
-                else if (subcmd is "status" or "info")
-                {
-                    var status = bowlEventService.IsActive ? "ACTIVE" : "INACTIVE";
-                    var serverNowStr = DateTime.Now.ToString("HH:mm:ss");
-                    var endsAtStr = bowlEventService.IsActive && bowlEventService.EndTimeServer.HasValue
-                        ? bowlEventService.EndTimeServer.Value.ToString("HH:mm:ss")
-                        : "N/A";
-                    var remaining = bowlEventService.IsActive && bowlEventService.EndTimeServer.HasValue
-                        ? $"{bowlEventService.RemainingSeconds / 60}m {bowlEventService.RemainingSeconds % 60}s"
-                        : "N/A";
-                    await SendNoticeAsync(session, $"[Bowl Event] Status: {status} | Server Time: {serverNowStr} | Ends at: {endsAtStr} | Remaining: {remaining} | Players in Bowl: {bowlEventService.ActivePlayersInBowl} | Interval: {bowlEventService.IntervalSeconds}s (Server Time) | KC: {bowlEventService.KnightCash} | NP: {bowlEventService.Loyalty}");
-                }
-                else if (subcmd == "interval" && bowlParts.Length > 1 && int.TryParse(bowlParts[1], out var newInterval) && newInterval >= 5)
-                {
-                    bowlEventService.IntervalSeconds = newInterval;
-                    await SendNoticeAsync(session, $"[Bowl Event] Interval set to {newInterval} seconds.");
-                }
-                else if (subcmd == "notice" && bowlParts.Length > 1)
-                {
-                    var noticeText = string.Join(' ', bowlParts.Skip(1));
-                    await bowlEventService.BroadcastScreenNoticeAsync($"[Bowl Event] {noticeText}");
-                    await SendNoticeAsync(session, "[Bowl Event] Screen notice broadcasted to all players.");
-                }
-                else
-                {
-                    await SendNoticeAsync(session, "Usage: +bowl on [minutes] | off | status | interval <seconds> | notice <message>");
-                }
+                await HandleBowlAsync(session, arg);
                 break;
-            }
 
             case "jrcancel":
             case "templecancel":
@@ -1032,6 +979,60 @@ public class AdminPacketCoordinator(
     }
 
     private static string PlaceText(byte place) => place == NationRanks.Unranked ? "none" : place.ToString();
+
+    private async Task HandleBowlAsync(UserSession session, string arg)
+    {
+        var parts = arg.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var sub = parts.Length > 0 ? parts[0].ToLowerInvariant() : string.Empty;
+        switch (sub)
+        {
+            case "on" or "start" or "enable":
+            {
+                int? minutes = parts.Length > 1 && int.TryParse(parts[1], out var parsed) && parsed > 0 ? parsed : null;
+                if (!await bowlEventService.StartAsync(minutes))
+                {
+                    await SendNoticeAsync(session, $"{BowlTag} The event is turned off in the server settings.");
+                    return;
+                }
+
+                var bowl = bowlEventService.Settings;
+                await SendNoticeAsync(session,
+                    $"{BowlTag} Started for {minutes ?? bowl.DefaultDurationMinutes} minutes, a reward every {bowlEventService.IntervalSeconds}s from level {bowl.MinLevel}.");
+                return;
+            }
+
+            case "off" or "stop" or "disable":
+                await bowlEventService.StopAsync();
+                await SendNoticeAsync(session, $"{BowlTag} Stopped.");
+                return;
+
+            case "status" or "info":
+                await SendNoticeAsync(session, BowlStatus());
+                return;
+
+            case "interval" when parts.Length > 1
+                && int.TryParse(parts[1], out var seconds) && seconds >= BowlEventService.MinIntervalSeconds:
+                bowlEventService.IntervalSeconds = seconds;
+                await SendNoticeAsync(session, $"{BowlTag} Interval set to {seconds} seconds.");
+                return;
+
+            default:
+                await SendNoticeAsync(session, BowlUsage);
+                return;
+        }
+    }
+
+    private string BowlStatus()
+    {
+        var bowl = bowlEventService.Settings;
+        var rewards = $"KC {bowl.KnightCash:N0}, NP {bowl.Loyalty:N0}, Noah {bowl.Gold:N0}, EXP {bowl.Exp:N0}";
+        if (!bowlEventService.IsActive)
+            return $"{BowlTag} Not running | Interval: {bowlEventService.IntervalSeconds}s | {rewards}";
+
+        var left = bowlEventService.Remaining;
+        return $"{BowlTag} Running, {(int)left.TotalMinutes}m {left.Seconds}s left | Players in the Bowl: {bowlEventService.PlayersInBowl} "
+            + $"| Interval: {bowlEventService.IntervalSeconds}s | {rewards}";
+    }
 
     private async Task HandleKnightCashAsync(UserSession session, string arg)
     {

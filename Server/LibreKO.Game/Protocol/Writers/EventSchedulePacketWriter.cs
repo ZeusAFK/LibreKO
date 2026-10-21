@@ -10,6 +10,7 @@ public enum EventScheduleKind : byte
     Krowaz = 4,
     Bifrost = 5,
     CastleSiege = 6,
+    Bowl = 7,
 }
 
 public enum EventSchedulePhase : byte

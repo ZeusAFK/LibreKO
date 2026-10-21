@@ -1,17 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using FluentAssertions;
-using LibreKO.Common.Domain.Services;
-using LibreKO.Common.Enums;
+﻿using FluentAssertions;
 using LibreKO.Common.Infrastructure.Network;
 using LibreKO.Game.Configuration;
 using LibreKO.Game.Protocol;
+using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using Xunit;
 
@@ -20,207 +13,298 @@ namespace LibreKO.Game.Tests;
 public class BowlEventTests : GameTestBase
 {
     private const byte RonarkLandZone = 71;
+    private const float BowlCenterX = 1014f;
+    private const float BowlCenterZ = 1007f;
+    private const int ScheduledHour = 14;
+    private const int LaterHour = 19;
+
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now = new(2026, 10, 21, 12, 0, 0, TimeSpan.Zero);
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    private static ServiceProvider Provider(Clock clock, Action<GameServerSettings>? configureSettings = null) =>
+        CreateProvider(
+            seed: _ => { },
+            configureSettings: settings =>
+            {
+                settings.BowlEvent.StartHours = [];
+                configureSettings?.Invoke(settings);
+            },
+            configureServices: services => services.AddSingleton<TimeProvider>(clock));
+
+    private static void Scheduled(GameServerSettings settings) => settings.BowlEvent.StartHours = [ScheduledHour, LaterHour];
+
+    private static TimeSpan Interval(IBowlEventService bowl) => TimeSpan.FromSeconds(bowl.IntervalSeconds);
 
     [Fact]
-    public void IsInBowl_ReturnsExpected_ForVariousCoordinates()
+    public void IsInBowl_CoversTheCraterInRonarkLandOnly()
     {
-        using var provider = CreateProvider(seed: _ => { });
-        var bowlService = provider.GetRequiredService<IBowlEventService>();
+        using var provider = Provider(new Clock());
+        var bowl = provider.GetRequiredService<IBowlEventService>();
 
-        // Center of Bowl (1014, 1007) in zone 71
-        bowlService.IsInBowl(RonarkLandZone, 1014.0f, 1007.0f).Should().BeTrue();
-
-        // Edge of radius 131 in zone 71
-        bowlService.IsInBowl(RonarkLandZone, 1014.0f + 100.0f, 1007.0f).Should().BeTrue();
-
-        // Far outside Bowl (500, 500)
-        bowlService.IsInBowl(RonarkLandZone, 500.0f, 500.0f).Should().BeFalse();
-
-        // Inside coordinates but wrong zone (e.g. Moradon 21)
-        bowlService.IsInBowl(21, 1014.0f, 1007.0f).Should().BeFalse();
+        bowl.IsInBowl(RonarkLandZone, BowlCenterX, BowlCenterZ).Should().BeTrue();
+        bowl.IsInBowl(RonarkLandZone, BowlCenterX + 100f, BowlCenterZ).Should().BeTrue();
+        bowl.IsInBowl(RonarkLandZone, BowlCenterX + 140f, BowlCenterZ).Should().BeFalse();
+        bowl.IsInBowl(RonarkLandZone, 500f, 500f).Should().BeFalse();
+        bowl.IsInBowl(21, BowlCenterX, BowlCenterZ).Should().BeFalse();
     }
 
     [Fact]
-    public async Task TickAsync_PlayerInsideBowl_Level60Plus_ReceivesRewards_WhenActive()
+    public async Task TickAsync_NothingRunsUntilAGameMasterStartsIt()
     {
-        using var provider = CreateProvider(seed: _ => { });
-        var sessionManager = provider.GetRequiredService<SessionManager>();
-        var bowlService = provider.GetRequiredService<IBowlEventService>();
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var player = CreatePlayer(provider, characterId: 1001, accountId: 2001, out _);
+        player.KnightCash = 10;
 
-        // Setup player
-        var player = CreatePlayer(sessionManager, characterId: 1001, accountId: 2001, out var packets);
-        player.Name = "BowlWarrior";
-        player.ZoneId = RonarkLandZone;
-        player.Level = 60; // User explicitly requested min level 60
-        player.Hp = 1000;
-        player.X = 1014.0f;
-        player.Z = 1007.0f;
+        await bowl.TickAsync();
+        player.X += 10f;
+        clock.Now += Interval(bowl);
+        await bowl.TickAsync();
+
+        bowl.IsActive.Should().BeFalse();
+        bowl.PlayersInBowl.Should().Be(0);
+        player.KnightCash.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task TickAsync_PlayerWhoMovesIsPaidEachInterval()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var player = CreatePlayer(provider, characterId: 1001, accountId: 2001, out var packets);
+        player.Level = 60;
         player.KnightCash = 10;
         player.Money = 5000;
 
-        // First tick: player enters bowl
-        await bowlService.TickAsync();
-        bowlService.ActivePlayersInBowl.Should().Be(1);
+        await bowl.StartAsync();
+        await bowl.TickAsync();
+        bowl.PlayersInBowl.Should().Be(1);
 
-        // Player moves to satisfy Anti-AFK (more than 2 meters)
-        player.X = 1020.0f;
-        player.Z = 1020.0f;
+        player.X += 6f;
+        player.Z += 13f;
+        clock.Now += Interval(bowl);
+        await bowl.TickAsync();
 
-        // Force interval expiry
-        bowlService.IntervalSeconds = 0;
-
-        // Second tick: should distribute rewards
-        await bowlService.TickAsync();
-
-        // Verify rewards awarded
-        player.KnightCash.Should().Be(15); // +5 KC
-        player.Money.Should().Be(55000);   // +50,000 Noah
-
-        // Verify client received notice packets
-        packets.Any(p => p.GetOpcode() == (byte)GameOpcodes.GS_CHAT).Should().BeTrue();
+        player.KnightCash.Should().Be(15);
+        player.Money.Should().Be(55000);
+        packets.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_CHAT);
     }
 
     [Fact]
-    public async Task TickAsync_PlayerBelowLevel60_DoesNotReceiveRewards()
+    public async Task TickAsync_PlayerBelowTheMinimumLevelIsNotCounted()
     {
-        using var provider = CreateProvider(seed: _ => { });
-        var sessionManager = provider.GetRequiredService<SessionManager>();
-        var bowlService = provider.GetRequiredService<IBowlEventService>();
-
-        var player = CreatePlayer(sessionManager, characterId: 1002, accountId: 2002, out _);
-        player.Name = "NoobHero";
-        player.ZoneId = RonarkLandZone;
-        player.Level = 59; // Below level 60
-        player.Hp = 1000;
-        player.X = 1014.0f;
-        player.Z = 1007.0f;
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var player = CreatePlayer(provider, characterId: 1002, accountId: 2002, out _);
+        player.Level = 59;
         player.KnightCash = 0;
 
-        await bowlService.TickAsync();
-        bowlService.ActivePlayersInBowl.Should().Be(0);
+        await bowl.StartAsync();
+        await bowl.TickAsync();
+
+        bowl.PlayersInBowl.Should().Be(0);
         player.KnightCash.Should().Be(0);
     }
 
     [Fact]
-    public async Task TickAsync_PlayerAfkWithoutMoving_DoesNotReceiveRewards()
+    public async Task TickAsync_IdlePlayerIsPaidOnlyAfterMoving()
     {
-        using var provider = CreateProvider(seed: _ => { });
-        var sessionManager = provider.GetRequiredService<SessionManager>();
-        var bowlService = provider.GetRequiredService<IBowlEventService>();
-
-        var player = CreatePlayer(sessionManager, characterId: 1003, accountId: 2003, out _);
-        player.Name = "AfkMiner";
-        player.ZoneId = RonarkLandZone;
-        player.Level = 75;
-        player.Hp = 1000;
-        player.X = 1014.0f;
-        player.Z = 1007.0f;
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var player = CreatePlayer(provider, characterId: 1003, accountId: 2003, out _);
         player.KnightCash = 100;
 
-        // First tick: enters bowl
-        await bowlService.TickAsync();
-        bowlService.ActivePlayersInBowl.Should().Be(1);
-
-        // Interval expired, but player did NOT move at all
-        bowlService.IntervalSeconds = 0;
-
-        // Second tick
-        await bowlService.TickAsync();
-
-        // KC should remain unchanged because player was AFK
+        await bowl.StartAsync();
+        await bowl.TickAsync();
+        clock.Now += Interval(bowl);
+        await bowl.TickAsync();
         player.KnightCash.Should().Be(100);
 
-        // Player now moves
-        player.X = 1025.0f;
-        player.Z = 1025.0f;
-
-        // Third tick after moving
-        await bowlService.TickAsync();
-
-        // Now receives rewards!
+        player.X += 11f;
+        player.Z += 18f;
+        await bowl.TickAsync();
         player.KnightCash.Should().Be(105);
     }
 
     [Fact]
-    public async Task AdminCommand_BowlToggles_WorkCorrectly()
+    public async Task TickAsync_CoinsStopAtThePurseCap()
     {
-        using var provider = CreateProvider(seed: _ => { });
-        var sessionManager = provider.GetRequiredService<SessionManager>();
-        var adminCoordinator = provider.GetRequiredService<IAdminPacketCoordinator>();
-        var bowlService = provider.GetRequiredService<IBowlEventService>();
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var player = CreatePlayer(provider, characterId: 1004, accountId: 2004, out _);
+        player.Money = ExchangePacketConstants.CoinMax - 10;
 
-        var gm = CreatePlayer(sessionManager, characterId: 9999, accountId: 9999, out _);
+        await bowl.StartAsync();
+        await bowl.TickAsync();
+        player.X += 10f;
+        clock.Now += Interval(bowl);
+        await bowl.TickAsync();
+
+        player.Money.Should().Be(ExchangePacketConstants.CoinMax);
+    }
+
+    [Fact]
+    public async Task TickAsync_PlayerWhoLeftTheGameIsDropped()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var sessionManager = provider.GetRequiredService<SessionManager>();
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var player = CreatePlayer(provider, characterId: 1005, accountId: 2005, out _);
+
+        await bowl.StartAsync();
+        await bowl.TickAsync();
+        bowl.PlayersInBowl.Should().Be(1);
+
+        sessionManager.RemoveSession(player);
+        await bowl.TickAsync();
+
+        bowl.PlayersInBowl.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task TickAsync_EventEndsWhenItsTimeIsUp()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        CreatePlayer(provider, characterId: 1006, accountId: 2006, out var packets);
+
+        await bowl.StartAsync(durationMinutes: 1);
+        await bowl.TickAsync();
+        packets.Clear();
+        clock.Now += TimeSpan.FromSeconds(61);
+        await bowl.TickAsync();
+
+        bowl.IsActive.Should().BeFalse();
+        bowl.PlayersInBowl.Should().Be(0);
+        packets.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_NOTICE);
+    }
+
+    [Fact]
+    public async Task TickScheduleAsync_StartsOnceAtEachListedHour()
+    {
+        using var provider = Provider(new Clock(), Scheduled);
+        var bowl = (BowlEventService)provider.GetRequiredService<IBowlEventService>();
+        var opening = new DateTime(2026, 10, 21, ScheduledHour, 0, 0);
+
+        (await bowl.TickScheduleAsync(opening.AddMinutes(-1))).Should().BeFalse();
+        (await bowl.TickScheduleAsync(opening)).Should().BeTrue();
+        bowl.IsActive.Should().BeTrue();
+
+        await bowl.StopAsync();
+        (await bowl.TickScheduleAsync(opening.AddSeconds(30))).Should().BeFalse();
+        bowl.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TickScheduleAsync_LeavesTheEventOffWhenItIsTurnedOff()
+    {
+        using var provider = Provider(new Clock(), settings =>
+        {
+            Scheduled(settings);
+            settings.BowlEvent.Enabled = false;
+        });
+        var bowl = (BowlEventService)provider.GetRequiredService<IBowlEventService>();
+
+        await bowl.TickScheduleAsync(new DateTime(2026, 10, 21, ScheduledHour, 0, 0));
+
+        bowl.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task EventsWindow_ListsTheBowlTimesAndTheRunningEvent()
+    {
+        using var provider = Provider(new Clock(), Scheduled);
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var window = ActivatorUtilities.CreateInstance<EventSchedulePacketCoordinator>(provider);
+
+        window.Events(DateTime.UtcNow).Should()
+            .ContainSingle(e => e.Kind == EventScheduleKind.Bowl).Which.Slots.Should().HaveCount(2);
+        window.Now().Should().NotContain(e => e.Kind == EventScheduleKind.Bowl);
+
+        await bowl.StartAsync();
+
+        window.Now().Should().ContainSingle(e => e.Kind == EventScheduleKind.Bowl);
+    }
+
+    [Fact]
+    public async Task StartAsync_AnnouncesToEveryPlayer()
+    {
+        using var provider = Provider(new Clock());
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        CreatePlayer(provider, characterId: 1001, accountId: 2001, out var first);
+        CreatePlayer(provider, characterId: 1002, accountId: 2002, out var second);
+
+        await bowl.StartAsync();
+
+        first.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_NOTICE);
+        second.Should().Contain(p => p.GetOpcode() == (byte)GameOpcodes.GS_NOTICE);
+    }
+
+    [Fact]
+    public async Task GmCommand_StartsStopsAndSetsTheInterval()
+    {
+        var clock = new Clock();
+        using var provider = Provider(clock);
+        var admin = provider.GetRequiredService<IAdminPacketCoordinator>();
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var gm = CreatePlayer(provider, characterId: 9999, accountId: 9999, out _);
         gm.IsGM = true;
-        gm.Name = "AdminGM";
 
-        // Toggle off
-        await adminCoordinator.HandleGmCommandAsync(gm, "+bowl off");
-        bowlService.IsActive.Should().BeFalse();
+        await admin.HandleGmCommandAsync(gm, "+bowl on");
+        bowl.IsActive.Should().BeTrue();
+        bowl.Remaining.Should().Be(TimeSpan.FromMinutes(bowl.Settings.DefaultDurationMinutes));
 
-        // Toggle on (default 60 minutes)
-        await adminCoordinator.HandleGmCommandAsync(gm, "+bowl on");
-        bowlService.IsActive.Should().BeTrue();
-        bowlService.EndTimeServer.Should().NotBeNull();
-        bowlService.EndTimeServer!.Value.Should().BeAfter(DateTime.Now.AddMinutes(58));
+        await admin.HandleGmCommandAsync(gm, "+bowl on 30");
+        bowl.Remaining.Should().Be(TimeSpan.FromMinutes(30));
 
-        // Toggle on with custom minutes
-        await adminCoordinator.HandleGmCommandAsync(gm, "+bowl on 30");
-        bowlService.IsActive.Should().BeTrue();
-        bowlService.EndTimeServer!.Value.Should().BeBefore(DateTime.Now.AddMinutes(31));
+        await admin.HandleGmCommandAsync(gm, "+bowl interval 45");
+        bowl.IntervalSeconds.Should().Be(45);
 
-        // Set interval
-        await adminCoordinator.HandleGmCommandAsync(gm, "+bowl interval 45");
-        bowlService.IntervalSeconds.Should().Be(45);
+        await admin.HandleGmCommandAsync(gm, "+bowl off");
+        bowl.IsActive.Should().BeFalse();
     }
 
     [Fact]
-    public async Task TickAsync_EventAutoExpires_WhenEndTimeElapsed()
+    public async Task GmCommand_CannotStartTheEventWhenItIsTurnedOff()
     {
-        using var provider = CreateProvider(seed: _ => { });
-        var bowlService = provider.GetRequiredService<IBowlEventService>();
+        using var provider = Provider(new Clock(), settings => settings.BowlEvent.Enabled = false);
+        var admin = provider.GetRequiredService<IAdminPacketCoordinator>();
+        var bowl = provider.GetRequiredService<IBowlEventService>();
+        var gm = CreatePlayer(provider, characterId: 9999, accountId: 9999, out _);
+        gm.IsGM = true;
 
-        bowlService.IsActive = true;
-        bowlService.EndTimeServer = DateTime.Now.AddSeconds(-1); // Expired
+        await admin.HandleGmCommandAsync(gm, "+bowl on");
 
-        await bowlService.TickAsync();
-
-        bowlService.IsActive.Should().BeFalse();
-        bowlService.EndTimeServer.Should().BeNull();
+        bowl.IsActive.Should().BeFalse();
     }
 
-    [Fact]
-    public async Task BroadcastScreenNotice_SendsScreenNoticeToAllPlayers()
+    private static UserSession CreatePlayer(ServiceProvider provider, int characterId, int accountId, out List<Packet> sentPackets)
     {
-        using var provider = CreateProvider(seed: _ => { });
         var sessionManager = provider.GetRequiredService<SessionManager>();
-        var bowlService = provider.GetRequiredService<IBowlEventService>();
-
-        var player1 = CreatePlayer(sessionManager, characterId: 1001, accountId: 2001, out var packets1);
-        var player2 = CreatePlayer(sessionManager, characterId: 1002, accountId: 2002, out var packets2);
-
-        await bowlService.BroadcastScreenNoticeAsync("[Bowl Event] Test Announcement");
-
-        // Both players must receive GS_NOTICE (screen notice)
-        packets1.Any(p => p.GetOpcode() == (byte)GameOpcodes.GS_NOTICE).Should().BeTrue();
-        packets2.Any(p => p.GetOpcode() == (byte)GameOpcodes.GS_NOTICE).Should().BeTrue();
-    }
-
-    private static UserSession CreatePlayer(
-        SessionManager sessionManager, int characterId, int accountId, out List<Packet> sentPackets, int money = 0)
-    {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
         var captured = new List<Packet>();
-        client.SendPacket(Arg.Do<Packet>(captured.Add), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
+        client.SendPacket(Arg.Do<Packet>(captured.Add), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         sentPackets = captured;
 
         var session = sessionManager.CreateSession(client, characterId, accountId);
+        session.Name = $"Bowl{characterId}";
         session.ZoneId = RonarkLandZone;
         session.Level = 80;
         session.MaxHp = 5000;
         session.Hp = 5000;
-        session.Money = money;
+        session.X = BowlCenterX;
+        session.Z = BowlCenterZ;
         sessionManager.Regions.AddToRegion(session);
         return session;
     }

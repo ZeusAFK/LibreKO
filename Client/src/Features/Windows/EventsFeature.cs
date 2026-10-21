@@ -401,6 +401,7 @@ internal sealed class EventsFeature : IFeature, ITickFeature, IEscapable
         EventKind.Krowaz => "system/key",
         EventKind.Bifrost => "system/sparkle",
         EventKind.CastleSiege => "system/combat-defence",
+        EventKind.Bowl => "system/coins",
         _ => "system/clock",
     };
 

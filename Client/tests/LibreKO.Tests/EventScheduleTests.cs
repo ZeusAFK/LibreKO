@@ -146,4 +146,37 @@ public class EventScheduleTests
         Assert.Equal(("Chaos Dungeon", "Arena", 1, 83), (chaos.Name, chaos.Description, chaos.MinLevel, chaos.MaxLevel));
         Assert.Equal(new[] { new EventSlot(EventSchedule.EveryDay, 9, 0), new EventSlot((int)DayOfWeek.Friday, 16, 30) }, chaos.Slots);
     }
+
+    [Fact]
+    public void TheReaderNamesTheBowlEventKind()
+    {
+        const byte bowlKind = 7;
+        var p = new Packet(GameOpcodes.GS_EVENT_SCHEDULE);
+        p.WriteByte(1);
+        p.WriteInt(0);
+        p.WriteByte(1);
+        p.WriteByte(bowlKind);
+        p.WriteByte(0);
+        p.WriteString("Bowl Event");
+        p.WriteByte((byte)EventPhase.Running);
+        p.WriteInt(3600);
+        p.WriteByte(60);
+        p.WriteByte(0);
+        p.WriteUShort(1);
+        p.WriteByte(bowlKind);
+        p.WriteString("Bowl Event");
+        p.WriteString("Rewards");
+        p.WriteByte(60);
+        p.WriteByte(0);
+        p.WriteByte(1);
+        p.WriteByte(EventSchedule.EveryDay);
+        p.WriteByte(12);
+        p.WriteByte(0);
+        p.ResetOffset();
+
+        var schedule = EventScheduleWire.Read(p);
+
+        Assert.Equal(EventKind.Bowl, schedule!.Now.Single().Kind);
+        Assert.Equal(EventKind.Bowl, schedule.Events.Single().Kind);
+    }
 }

@@ -23,6 +23,7 @@ public sealed class EventSchedulePacketCoordinator(
     IKrowazService krowaz,
     IBifrostEventService bifrost,
     ICastleSiegeService castleSiege,
+    IBowlEventService bowl,
     ScheduleClock scheduleClock,
     IOptions<GameServerSettings> settings) : IEventSchedulePacketCoordinator
 {
@@ -38,6 +39,7 @@ public sealed class EventSchedulePacketCoordinator(
     public const string KrowazName = "Krowaz's Dominion";
     public const string BifrostName = "Bifrost";
     public const string CastleSiegeName = "Castle Siege War";
+    public const string BowlName = "Bowl Event";
     private const string BifrostDescription = "Bifrost in Ronark Land";
     private const string CastleSiegeDescription = "Clan war for Delos Castle";
 
@@ -77,6 +79,10 @@ public sealed class EventSchedulePacketCoordinator(
             now.Add(new EventNow(EventScheduleKind.Bifrost, NoCode, BifrostName, EventSchedulePhase.Running,
                 (int)Math.Min(bifrost.RemainingSecs, int.MaxValue), AnyLevel, AnyLevel));
 
+        if (bowl.IsActive)
+            now.Add(new EventNow(EventScheduleKind.Bowl, NoCode, BowlName, EventSchedulePhase.Running,
+                (int)bowl.Remaining.TotalSeconds, bowl.Settings.MinLevel, AnyLevel));
+
         if (castleSiege.Phase == CastleSiegePhase.War)
             now.Add(new EventNow(EventScheduleKind.CastleSiege, NoCode, CastleSiegeName, EventSchedulePhase.Running,
                 castleSiege.WarSecondsLeft, AnyLevel, AnyLevel));
@@ -108,6 +114,12 @@ public sealed class EventSchedulePacketCoordinator(
         if (events.BifrostStartHours.Length > 0)
             list.Add(new ScheduledEvent(EventScheduleKind.Bifrost, BifrostName, BifrostDescription, AnyLevel, AnyLevel,
                 Hourly(events.BifrostStartHours, offset)));
+
+        var bowlSettings = bowl.Settings;
+        if (bowlSettings.Enabled && bowlSettings.StartHours.Length > 0)
+            list.Add(new ScheduledEvent(EventScheduleKind.Bowl, BowlName,
+                $"Rewards for staying active in the Bowl of Ronark Land, {bowlSettings.DefaultDurationMinutes} minutes",
+                bowlSettings.MinLevel, AnyLevel, Hourly(bowlSettings.StartHours, offset)));
 
         if (gameDataService.SiegeWarfare is { } siege && SiegeRules.IsWeekday(siege.WarDay))
             list.Add(new ScheduledEvent(EventScheduleKind.CastleSiege, CastleSiegeName, CastleSiegeDescription,

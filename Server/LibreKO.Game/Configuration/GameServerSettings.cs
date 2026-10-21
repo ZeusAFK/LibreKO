@@ -199,16 +199,18 @@ public class BowlEventSettings
     [Range(1, int.MaxValue)]
     public int DefaultDurationMinutes { get; set; } = 60;
 
-    public byte ZoneId { get; set; } = 71;
+    public int[] StartHours { get; set; } = [14, 19];
+
+    [Range(0, int.MaxValue)]
+    public int AnnouncementMinutes { get; set; } = 5;
 
     [Range(1, 83)]
     public byte MinLevel { get; set; } = 60;
 
-    public float CenterX { get; set; } = 1014.0f;
-    public float CenterZ { get; set; } = 1007.0f;
-    public float Radius { get; set; } = 131.0f;
-
     public bool AntiAfkEnabled { get; set; } = true;
+
+    [Range(0.0, double.MaxValue)]
+    public float AntiAfkMoveDistance { get; set; } = 2f;
 
     [Range(0, int.MaxValue)]
     public int KnightCash { get; set; } = 5;
@@ -221,6 +223,4 @@ public class BowlEventSettings
 
     [Range(0, long.MaxValue)]
     public long Exp { get; set; } = 250000;
-
-    public ushort VisualEffectId { get; set; } = 1;
 }

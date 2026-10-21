@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace LibreKO.Domain;
 
-public enum EventKind : byte { Temple = 1, CollectionRace = 2, Lottery = 3, Krowaz = 4, Bifrost = 5, CastleSiege = 6 }
+public enum EventKind : byte { Temple = 1, CollectionRace = 2, Lottery = 3, Krowaz = 4, Bifrost = 5, CastleSiege = 6, Bowl = 7 }
 
 public enum EventPhase : byte { SignUp = 1, Running = 2 }
 

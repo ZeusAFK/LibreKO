@@ -36,6 +36,7 @@ public class TempleJoinTests
             Substitute.For<IForgottenTempleService>(),
             Substitute.For<IKrowazService>(),
             Substitute.For<INereidMonumentService>(),
+            Substitute.For<IBowlEventService>(),
             Substitute.For<IGameDataService>(),
             new ScheduleClock(),
             Substitute.For<ILogger<EventSchedulerService>>());

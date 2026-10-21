@@ -55,6 +55,7 @@ public class EventSchedulerTests
             forgottenTemple,
             Substitute.For<IKrowazService>(),
             Substitute.For<INereidMonumentService>(),
+            Substitute.For<IBowlEventService>(),
             gameData,
             new ScheduleClock(),
             logger);
