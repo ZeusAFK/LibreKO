@@ -92,6 +92,7 @@ internal sealed class GenieFeature : IFeature, ILateTickFeature, IClosableWindow
 
         genieSession.GenieStatusEvent += OnStatus;
         genieSession.GenieClaimEvent += OnClaim;
+        self.ClassChanged += OnClassChanged;
     }
 
     public void Dispose()
@@ -106,6 +107,7 @@ internal sealed class GenieFeature : IFeature, ILateTickFeature, IClosableWindow
         AdvancedDispose();
         genieSession.GenieStatusEvent -= OnStatus;
         genieSession.GenieClaimEvent -= OnClaim;
+        self.ClassChanged -= OnClassChanged;
     }
 
     public void LateTick(double delta, double nowSec) => AdvancedTick(nowSec);
@@ -906,10 +908,17 @@ internal sealed class GenieFeature : IFeature, ILateTickFeature, IClosableWindow
             || s.Moral is SkillTarget.Self or SkillTarget.FriendWithMe or SkillTarget.Party or SkillTarget.PartyAll;
     }
 
-    private static void ClearRefusedSkills(GenieSetup setup)
+    private void ClearRefusedSkills(GenieSetup setup)
     {
         foreach (var cells in new[] { setup.Attack, setup.Recovery, setup.Support })
-            HotbarAssign.ClearRefused(cells, id => HotbarFeature.Takes(id, dragged: true));
+            HotbarAssign.ClearRefused(cells, id => HotbarFeature.Takes(id, dragged: true) && !SkillData.IsOtherClassSkill(id, self.Class));
+    }
+
+    private void OnClassChanged()
+    {
+        ClearRefusedSkills(Genie);
+        RefreshSlots();
+        SetupEdited();
     }
 
     internal void RefuseSkill(SkillData.Skill s)

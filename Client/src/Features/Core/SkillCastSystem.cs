@@ -443,6 +443,11 @@ internal sealed class SkillCastSystem : IFeature
             return;
         }
 
+        if (SkillData.IsOtherClassSkill(s.Id, self.Class))
+        {
+            context.Log.Notice($"You cannot use {s.Name}.");
+            return;
+        }
         if (!self.SkillLearned(s))
         {
             context.Log.Notice($"You have not learned {s.Name}. {SkillText.Requirement(s)}.");

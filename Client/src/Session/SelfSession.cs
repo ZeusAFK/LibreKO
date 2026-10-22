@@ -164,10 +164,13 @@ public sealed class SelfSession
         LastEnter = info;
     }
 
+    public event Action? ClassChanged;
+
     internal void ApplyClassChange(int classCode)
     {
         if (classCode == 0 || classCode == LastEnter.Class) return;
         ChangeClass(classCode);
+        ClassChanged?.Invoke();
     }
 
     internal void ChangeLook(int face, int hair)
@@ -270,6 +273,8 @@ public sealed class SelfSession
 
     public SkillLearnInfo SkillLearnOf(SkillData.Skill s)
     {
+        if (SkillData.IsOtherClassSkill(s.Id, Class))
+            return new SkillLearnInfo(SkillLearnState.Locked, 0, 0, false);
         if (SiegeSkills.RequiredLook(s.Level) is var look and > 0)
             return new SkillLearnInfo(look == (SkillData.Get(TransformSkill)?.TransformModelId ?? 0) ? SkillLearnState.Learned : SkillLearnState.Locked, 0, 0, false);
         int mastery = SkillData.MasteryType(s.Tree);
