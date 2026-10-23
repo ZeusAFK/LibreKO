@@ -19,6 +19,9 @@ public static class CharacterClassCatalog
         };
     }
 
+    public static bool IsPlayerClass(int classCode) =>
+        Family(classCode) != FamilyUnknown && classCode / Nations.KarusClassBase is Nations.Karus or Nations.ElMorad;
+
     public static string DisplayName(int classCode) => Family(classCode) switch
     {
         FamilyWarrior => "Warrior",

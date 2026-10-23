@@ -192,6 +192,11 @@ public static class SkillData
 
     public static int ClassSkillId(int classCode, int index) => classCode * ClassSkillSpan + index;
 
+    public static bool IsOtherClassSkill(int skillId, int classCode) =>
+        CharacterClassCatalog.IsPlayerClass(classCode)
+        && CharacterClassCatalog.IsPlayerClass(ClassPrefix(skillId))
+        && ClassPrefix(skillId) != classCode;
+
     private static readonly string[][] PageNames =
     {
         new[]{ "Basic Skill", "", "", "", "", "Attack",  "Defence",     "Passion",  "Master" },
