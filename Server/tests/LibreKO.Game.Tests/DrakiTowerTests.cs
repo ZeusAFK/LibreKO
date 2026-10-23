@@ -21,6 +21,8 @@ namespace LibreKO.Game.Tests;
 
 public class DrakiTowerTests : GameTestBase
 {
+    private const int NpcInOutUniqueIdOffset = sizeof(byte);
+
     private readonly IGameDataService gameData = Substitute.For<IGameDataService>();
     private readonly IMagicItemUsageService itemUsage = Substitute.For<IMagicItemUsageService>();
     private readonly IItemGrantService itemGrant = Substitute.For<IItemGrantService>();
@@ -44,6 +46,7 @@ public class DrakiTowerTests : GameTestBase
             mailService,
             aggression,
             zoneTransition,
+            new NpcLifecycleService(sessionManager, NullLogger<NpcLifecycleService>.Instance),
             rooms,
             stageProvider,
             NullLogger<DrakiTowerService>.Instance,
@@ -53,9 +56,11 @@ public class DrakiTowerTests : GameTestBase
             .Returns(callInfo =>
             {
                 var s = callInfo.ArgAt<UserSession>(0);
+                sessionManager.Regions.RemoveFromRegion(s);
                 s.ZoneId = callInfo.ArgAt<byte>(1);
                 s.X = callInfo.ArgAt<float>(2);
                 s.Z = callInfo.ArgAt<float>(3);
+                sessionManager.Regions.AddToRegion(s);
                 return Task.CompletedTask;
             });
 
@@ -522,6 +527,38 @@ public class DrakiTowerTests : GameTestBase
     }
 
     [Fact]
+    public async Task WhatFollowsAClearedWaveIsShownTheMomentItsLastMonsterDies()
+    {
+        var session = CreatePlayer(zone: (byte)ZoneId.ElMoradCamp1);
+        var enterPacket = new Packet((byte)GameOpcodes.GS_EVENT);
+        enterPacket.WriteInt(0);
+        enterPacket.WriteByte(1);
+        AtTheRift(session);
+        await service.HandleEnterAsync(session, enterPacket);
+
+        var room = rooms.Get((ushort)session.Room)!;
+        var clearedWaves = 0;
+        while (!service.GetRoomState(room.Id)!.Completed)
+        {
+            if (service.GetRoomState(room.Id)!.IsBreak)
+            {
+                await service.AdvanceFromGateNpcAsync(session, room.Npcs.First(n => DrakiTowerRules.IsGateNpc(n.NpcId)));
+                continue;
+            }
+
+            sent[session].Clear();
+            foreach (var monster in room.Npcs.Where(n => n.IsMonster).ToList())
+                await service.OnNpcKilledAsync(monster);
+            clearedWaves++;
+
+            NpcsShownTo(session).Should().BeEquivalentTo(room.Npcs.Select(n => n.UniqueId),
+                "what follows wave {0} is shown to the player without moving", clearedWaves);
+        }
+
+        clearedWaves.Should().Be(stageProvider.Stages.Count(s => !s.IsNpcBreak));
+    }
+
+    [Fact]
     public async Task FullRun_WhenInventoryFull_SendsSupplyBoxViaSystemMail()
     {
         var session = CreatePlayer(zone: (byte)ZoneId.ElMoradCamp1);
@@ -771,6 +808,12 @@ public class DrakiTowerTests : GameTestBase
         session.Room.Should().Be(0, "a player in a trade is not taken into the tower");
         await itemUsage.DidNotReceiveWithAnyArgs().TryConsumeItemAsync(default!, default);
     }
+
+    private List<int> NpcsShownTo(UserSession session) =>
+        sent[session]
+            .Where(p => p.GetOpcode() == (byte)GameOpcodes.GS_NPC_INOUT && p.GetData()[0] == (byte)InOutType.In)
+            .Select(p => BitConverter.ToInt32(p.GetData(), NpcInOutUniqueIdOffset))
+            .ToList();
 
     private void AtTheRift(UserSession session) =>
         session.Quest.EventNpcUniqueId = sessionManager.Regions.SpawnNpc(new NpcInstance

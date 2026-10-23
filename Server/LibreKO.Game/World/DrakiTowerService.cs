@@ -50,6 +50,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
     private readonly IMailService mailService;
     private readonly IMonsterAggressionPolicy aggression;
     private readonly IZoneTransitionService zoneTransition;
+    private readonly INpcLifecycleService npcLifecycle;
     private readonly InstanceRoomRegistry rooms;
     private readonly IDrakiStageProvider stageProvider;
     private readonly ILogger<DrakiTowerService> logger;
@@ -65,6 +66,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
         IMailService mailService,
         IMonsterAggressionPolicy aggression,
         IZoneTransitionService zoneTransition,
+        INpcLifecycleService npcLifecycle,
         InstanceRoomRegistry rooms,
         IDrakiStageProvider stageProvider,
         ILogger<DrakiTowerService> logger,
@@ -77,6 +79,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
         this.mailService = mailService;
         this.aggression = aggression;
         this.zoneTransition = zoneTransition;
+        this.npcLifecycle = npcLifecycle;
         this.rooms = rooms;
         this.stageProvider = stageProvider;
         this.logger = logger;
@@ -255,7 +258,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
         await zoneTransition.ChangeZoneAsync(session, DrakiTowerRules.ZoneIdValue, coord.X, coord.Z);
         await session.Client.SendPacket(EventPacketWriter.DrakiTimer(requestedStage, 1, DrakiTowerRules.WaveSeconds, 0));
 
-        SpawnStageEntities(room, state, stages[stageIndex]);
+        await SpawnStageEntitiesAsync(room, state, stages[stageIndex]);
     }
 
     public async Task HandleTownAsync(UserSession session)
@@ -441,7 +444,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
         await session.Client.SendPacket(EventPacketWriter.DrakiTimer(
             nextStage.Stage, nextStage.SubStage, nextStage.IsNpcBreak ? DrakiTowerRules.BreakSeconds : DrakiTowerRules.WaveSeconds, 0));
 
-        SpawnStageEntities(room, state, nextStage);
+        await SpawnStageEntitiesAsync(room, state, nextStage);
     }
 
     private async Task AdvanceToNextStageAsync(UserSession session, DrakiRoomState state)
@@ -477,7 +480,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
         var duration = nextStage.IsNpcBreak ? DrakiTowerRules.BreakSeconds : DrakiTowerRules.WaveSeconds;
         await session.Client.SendPacket(EventPacketWriter.DrakiTimer(
             nextStage.Stage, nextStage.SubStage, duration, 0));
-        SpawnStageEntities(room, state, nextStage);
+        await SpawnStageEntitiesAsync(room, state, nextStage);
     }
 
     private async Task CompleteTowerAsync(UserSession session, DrakiRoomState state)
@@ -490,7 +493,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
         if (rooms.Get(state.RoomId) is { } room)
         {
             ClearRoomNpcs(room);
-            SpawnNpcAt(room, DrakiTowerRules.FinalExitNpcId, DrakiTowerRules.FinalExitCoordinates.X, DrakiTowerRules.FinalExitCoordinates.Z, isMonster: false);
+            await SpawnNpcAtAsync(room, DrakiTowerRules.FinalExitNpcId, DrakiTowerRules.FinalExitCoordinates.X, DrakiTowerRules.FinalExitCoordinates.Z, isMonster: false);
         }
 
         var boxItemId = DrakiTowerRules.SupplyBoxItem;
@@ -516,19 +519,19 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
             (byte)session.Nation, "Congratulations! You have conquered Draki's Tower!"));
     }
 
-    private void SpawnStageEntities(InstanceRoom room, DrakiRoomState state, DrakiStageInfo stageInfo)
+    private async Task SpawnStageEntitiesAsync(InstanceRoom room, DrakiRoomState state, DrakiStageInfo stageInfo)
     {
         var monsterCount = 0;
         foreach (var spawn in stageInfo.Spawns)
         {
-            var npc = SpawnNpcAt(room, spawn.MonsterId, spawn.PosX, spawn.PosZ, spawn.IsMonster, spawn.Direction);
+            var npc = await SpawnNpcAtAsync(room, spawn.MonsterId, spawn.PosX, spawn.PosZ, spawn.IsMonster, spawn.Direction);
             if (npc != null && spawn.IsMonster)
                 monsterCount++;
         }
         Volatile.Write(ref state.RemainingMonsters, monsterCount);
     }
 
-    private NpcInstance? SpawnNpcAt(InstanceRoom room, int npcId, float x, float z, bool isMonster, short direction = 0)
+    private async Task<NpcInstance?> SpawnNpcAtAsync(InstanceRoom room, int npcId, float x, float z, bool isMonster, short direction = 0)
     {
         var npcData = gameData.GetNpc(npcId, isMonster: isMonster);
         if (npcData == null)
@@ -560,7 +563,7 @@ public sealed class DrakiTowerService : IDrakiTowerService, IDisposable
         if (isMonster)
             aggression.Apply(npc);
 
-        sessionManager.Regions.SpawnNpc(npc);
+        await npcLifecycle.SpawnAsync(npc);
         room.Npcs.Add(npc);
         return npc;
     }
