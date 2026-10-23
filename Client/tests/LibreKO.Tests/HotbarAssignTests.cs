@@ -9,6 +9,10 @@ public class HotbarAssignTests
     private const int Scream = 106802;
     private const int Awakening = 115802;
     private const int HpPotion = 389010000;
+    private const int KarusPenetrator = 108;
+    private const int HunterEvade = 107710;
+    private const int PenetratorEvade = 108710;
+    private const int UnknownClass = 0;
 
     [Theory]
     [InlineData(MagicType.None, 0, false)]
@@ -39,6 +43,14 @@ public class HotbarAssignTests
     [InlineData(Awakening, MagicType.None, HotbarAssign.NoSecondType, true)]
     public void TheBarKeepsWhatEitherWayOfPlacingTakes(int skillId, int type1, int type2, bool expected) =>
         Assert.Equal(expected, HotbarAssign.Holds(skillId, type1, type2));
+
+    [Theory]
+    [InlineData(PenetratorEvade, KarusPenetrator, true)]
+    [InlineData(HunterEvade, KarusPenetrator, false)]
+    [InlineData(HotbarAssign.Shouting, KarusPenetrator, true)]
+    [InlineData(HunterEvade, UnknownClass, true)]
+    public void TheBarKeepsNoSkillOfAnotherClass(int skillId, int classCode, bool expected) =>
+        Assert.Equal(expected, HotbarAssign.Holds(skillId, MagicType.Buff, HotbarAssign.NoSecondType, classCode));
 
     [Fact]
     public void ClearingASavedBarRemovesOnlyTheRefusedEntries()

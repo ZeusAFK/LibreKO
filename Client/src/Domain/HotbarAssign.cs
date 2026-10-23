@@ -20,6 +20,9 @@ public static class HotbarAssign
 
     public static bool Holds(int skillId, int type1, int type2) => CanAdd(skillId, type1) || CanDrag(type1, type2);
 
+    public static bool Holds(int skillId, int type1, int type2, int classCode) =>
+        Holds(skillId, type1, type2) && !SkillData.IsOtherClassSkill(skillId, classCode);
+
     public static bool ClearRefused(int[] slots, System.Func<int, bool> keeps)
     {
         bool cleared = false;

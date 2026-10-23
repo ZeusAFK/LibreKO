@@ -402,7 +402,7 @@ internal sealed partial class HotbarFeature : IFeature, ILateTickFeature
     internal static bool Takes(int id, bool dragged) =>
         SkillData.Get(id) is not { } s || (dragged ? HotbarAssign.CanDrag(s.Type1, s.Type2) : HotbarAssign.CanAdd(s.Id, s.Type1));
 
-    private static bool Keeps(int id) => SkillData.Get(id) is not { } s || HotbarAssign.Holds(s.Id, s.Type1, s.Type2);
+    private bool Keeps(int id) => SkillData.Get(id) is not { } s || HotbarAssign.Holds(s.Id, s.Type1, s.Type2, self.Class);
 
     internal void SelectHotAbs(int abs)
     {
