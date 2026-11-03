@@ -28,7 +28,6 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
     private bool? shown;
     private bool done;
     private Vector3 localOrigin;
-    private static readonly Dictionary<ulong, bool> OpaqueTextures = new();
     private float age;
     private Vector3 initPos, initVel, accel, basePos, baseScale, spin, unitScale, scaleVel, scaleAccel;
     private Vector2 textureMove;
@@ -213,12 +212,12 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
         var (srcBlend, destBlend, blended, _) = LibreKO.Domain.FxBlendMath.Unpack(blendWord);
         int rf = FxShading.RenderFlags(part);
         bool writesDepth = !part.ContainsKey("renderFlags") || FxShading.WritesDepth(rf);
-        var frames = LoadTextures(sp);
+        var frames = FramePaths(sp);
         Texture2DArray? sequence = null;
         ulong sequenceId = 0;
         if (frames.Length > 0)
         {
-            var (array, id, _) = FxBoardBatch.SequenceFor(frames);
+            var (array, id, _) = FxBoardBatch.SequenceFor(frames, noteOpacity: blended);
             sequence = array;
             sequenceId = id;
         }
@@ -227,7 +226,7 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
         {
             opaque &= srcBlend == LibreKO.Domain.FxBlendMath.SrcAlpha && destBlend == LibreKO.Domain.FxBlendMath.InvSrcAlpha;
             foreach (var frame in frames)
-                opaque &= frame != null && IsOpaque(frame);
+                opaque &= frame != null && FxImages.FrameOpaque(frame);
         }
         var look = new FxMeshMaterial.Look(
             sequenceId, sequence != null ? frames.Length : 0, loop, blendWord,
@@ -247,19 +246,6 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
 
     internal bool SurfaceWritesDepth(int index) => index < surfaces.Count && surfaces[index].WritesDepth;
 
-    private static bool IsOpaque(Texture2D texture)
-    {
-        ulong id = texture.GetRid().Id;
-        if (OpaqueTextures.TryGetValue(id, out bool opaque)) return opaque;
-        using var scope = Perf.Measure(Perf.Section.SpawnOpacity);
-        using var image = FxImages.Read(texture);
-        if (image == null) return false;
-        if (image.IsCompressed()) image.Decompress();
-        opaque = image.DetectAlpha() == Image.AlphaMode.None;
-        OpaqueTextures[id] = opaque;
-        return opaque;
-    }
-
     private static Color ReadColor(Godot.Collections.Dictionary sp)
     {
         if (!sp.ContainsKey("color") || sp["color"].VariantType != Variant.Type.Array)
@@ -271,7 +257,7 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
             : Colors.White;
     }
 
-    private static Texture2D?[] LoadTextures(Godot.Collections.Dictionary sp)
+    private static string?[] FramePaths(Godot.Collections.Dictionary sp)
     {
         var stems = new List<string>();
         if (sp.ContainsKey("texs") && sp["texs"].VariantType == Variant.Type.Array)
@@ -284,16 +270,8 @@ public partial class FxMesh : MeshInstance3D, IFxPooledPart, IFxPart
             stems.Add(sp["tex"].AsString());
         }
 
-        var frames = new Texture2D?[stems.Count];
-        for (int i = 0; i < stems.Count; i++)
-        {
-            string path = $"res://assets/fx/tex/{stems[i]}.png";
-            if (ResourceLoader.Exists(path))
-            {
-                using var scope = Perf.Measure(Perf.Section.FxLoadTexture);
-                frames[i] = ResourceLoader.Load<Texture2D>(path);
-            }
-        }
+        var frames = new string?[stems.Count];
+        for (int i = 0; i < stems.Count; i++) frames[i] = Fx.TexturePath(stems[i]);
         return frames;
     }
 

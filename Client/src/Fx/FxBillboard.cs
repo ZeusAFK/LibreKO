@@ -91,9 +91,9 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
 
     private static FxBillboard? BuildFresh(Godot.Collections.Dictionary p, FxPartKey? partKey)
     {
-        var tex0 = Fx.FirstTexture(p);
-        if (tex0 == null) return null;
         bool flat = p.ContainsKey("flat") && p["flat"].AsBool();
+        var tex0 = flat ? Fx.FirstTexture(p) : null;
+        if (flat ? tex0 == null : Fx.FramePaths(p, 1) is not [not null]) return null;
         var rv = Fx.ReadSpinRate(p);
         float spin = flat ? rv.Y : rv.X;
         bool autoSpin = p.ContainsKey("autoSpin") && p["autoSpin"].AsBool();
@@ -137,7 +137,7 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
 
         if (flat)
         {
-            bb.mat = FxShading.SurfaceMaterial(rf, packedBlend, tex0);
+            bb.mat = FxShading.SurfaceMaterial(rf, packedBlend, tex0!);
             bb.MaterialOverride = bb.mat;
             bb.Layers = FxShading.LayerBit;
         }
@@ -153,11 +153,14 @@ public partial class FxBillboard : MeshInstance3D, IFxPooledPart, IFxPart
             if (flat) bb.mat.SetShaderParameter(FxShading.UvScaleParam, new Vector2(1f / bb.atlasCols, 1f / bb.atlasRows));
         }
 
-        bb.frames = new Texture2D?[bb.frameCount];
-        for (int i = 0; i < bb.frameCount; i++) bb.frames[i] = Fx.FrameTexture(p, i);
-        if (!flat)
+        if (flat)
         {
-            var (sequence, sequenceId, layers) = FxBoardBatch.SequenceFor(bb.frames);
+            bb.frames = new Texture2D?[bb.frameCount];
+            for (int i = 0; i < bb.frameCount; i++) bb.frames[i] = Fx.FrameTexture(p, i);
+        }
+        else
+        {
+            var (sequence, sequenceId, layers) = FxBoardBatch.SequenceFor(Fx.FramePaths(p, bb.frameCount));
             if (sequence == null) return null;
             bb.sequence = sequence;
             bb.layers = layers;

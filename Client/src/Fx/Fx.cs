@@ -463,10 +463,29 @@ public static class Fx
         string stem = arr[Mathf.Clamp(frame, 0, arr.Count - 1)].AsString();
         if (frameTextures.TryGetValue(stem, out var cached)) return cached;
         using var scope = Perf.Measure(Perf.Section.FxLoadTexture);
-        string path = $"res://assets/fx/tex/{stem}.png";
-        var texture = ResourceLoader.Exists(path) ? ResourceLoader.Load<Texture2D>(path) : null;
+        var texture = TexturePath(stem) is { } path ? ResourceLoader.Load<Texture2D>(path) : null;
         frameTextures[stem] = texture;
         return texture;
+    }
+
+    private static readonly Dictionary<string, string?> texturePaths = Shutdown.Track(new Dictionary<string, string?>());
+
+    internal static string? TexturePath(string stem)
+    {
+        if (texturePaths.TryGetValue(stem, out var cached)) return cached;
+        string path = $"res://assets/fx/tex/{stem}.png";
+        string? result = ResourceLoader.Exists(path) ? path : null;
+        texturePaths[stem] = result;
+        return result;
+    }
+
+    internal static string?[] FramePaths(Godot.Collections.Dictionary p, int count)
+    {
+        var arr = p["tex"].AsGodotArray();
+        var paths = new string?[arr.Count == 0 ? 0 : count];
+        for (int i = 0; i < paths.Length; i++)
+            paths[i] = TexturePath(arr[Mathf.Clamp(i, 0, arr.Count - 1)].AsString());
+        return paths;
     }
 
     private static GradientTexture1D? ColorRamp(Godot.Collections.Dictionary p)

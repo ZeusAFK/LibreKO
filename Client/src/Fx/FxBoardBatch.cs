@@ -55,38 +55,24 @@ public partial class FxBoardBatch : Node3D
         return batcher;
     }
 
-    internal static (Texture2DArray Array, ulong Id, int Layers) SequenceFor(Texture2D?[] frames)
+    internal static (Texture2DArray Array, ulong Id, int Layers) SequenceFor(string?[] framePaths, bool noteOpacity = false)
     {
-        Texture2D? first = null;
-        foreach (var f in frames) if (f != null) { first = f; break; }
+        string? first = null;
+        foreach (var f in framePaths) if (f != null) { first = f; break; }
         if (first == null) return (null!, 0, 0);
-        var keyBuilder = new System.Text.StringBuilder();
-        foreach (var f in frames) keyBuilder.Append((f ?? first).GetRid().Id).Append(',');
-        string key = keyBuilder.ToString();
-        if (sequences.TryGetValue(key, out var cached)) return (cached.Array, cached.Id, frames.Length);
+        string stand = first;
+        string key = string.Join(',', System.Array.ConvertAll(framePaths, f => f ?? stand));
+        if (sequences.TryGetValue(key, out var cached)) return (cached.Array, cached.Id, framePaths.Length);
         using var scope = Perf.Measure(Perf.Section.SpawnSequence);
 
-        var images = new Godot.Collections.Array<Image>();
-        var created = new List<Image>(frames.Length);
-        foreach (var f in frames)
-        {
-            var image = FxImages.Read(f ?? first) ?? Image.CreateEmpty(first.GetWidth(), first.GetHeight(), false, Image.Format.Rgba8);
-            if (image.IsCompressed()) image.Decompress();
-            image.ClearMipmaps();
-            image.Convert(Image.Format.Rgba8);
-            if (image.GetWidth() != first.GetWidth() || image.GetHeight() != first.GetHeight())
-                image.Resize(first.GetWidth(), first.GetHeight());
-            image.GenerateMipmaps();
-            images.Add(image);
-            created.Add(image);
-        }
+        var (images, created) = FxImages.SequenceLayers(framePaths, noteOpacity)!.Value;
         var array = new Texture2DArray();
         array.CreateFromImages(images);
         images.Clear();
         foreach (var image in created) image.Dispose();
         var entry = (array, nextSequenceId++);
         sequences[key] = entry;
-        return (entry.array, entry.Item2, frames.Length);
+        return (entry.array, entry.Item2, framePaths.Length);
     }
 
     internal Batch Resolve(Key key, Texture2DArray sequence)

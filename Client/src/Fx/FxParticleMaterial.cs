@@ -22,7 +22,7 @@ internal static class FxParticleMaterial
             variantShaders[key] = shader;
         }
         var mat = new ShaderMaterial { Shader = shader };
-        mat.SetShaderParameter("texture_albedo", layers ? Sequence(p, first) : first);
+        mat.SetShaderParameter("texture_albedo", layers ? Sequence(p) : first);
         mat.SetShaderParameter(FxShading.BlendParam, (float)FxShading.Packed(p));
         mat.SetShaderParameter("particle_lifetime", lifetime);
         mat.SetShaderParameter("fade_in", hasColorRamp ? 0f : Fx.ReadF(p, "fadeIn"));
@@ -61,27 +61,12 @@ internal static class FxParticleMaterial
         return material;
     }
 
-    private static Texture2DArray Sequence(Godot.Collections.Dictionary p, Texture2D first)
+    private static Texture2DArray Sequence(Godot.Collections.Dictionary p)
     {
         string key = p["tex"].ToString();
         if (Sequences.TryGetValue(key, out var cached)) return cached;
-        var images = new Godot.Collections.Array<Image>();
         int count = Mathf.Max(1, p["frameCount"].AsInt32());
-        for (int i = 0; i < count; i++)
-        {
-            var tex = Fx.FrameTexture(p, i) ?? first;
-            var image = FxImages.Read(tex) ?? Image.CreateEmpty(first.GetWidth(), first.GetHeight(), false, Image.Format.Rgba8);
-            if (image.IsCompressed()) image.Decompress();
-            image.ClearMipmaps();
-            image.Convert(Image.Format.Rgba8);
-            if (image.GetWidth() != first.GetWidth() || image.GetHeight() != first.GetHeight())
-                image.Resize(first.GetWidth(), first.GetHeight());
-            image.GenerateMipmaps();
-            images.Add(image);
-        }
-        var sequence = new Texture2DArray();
-        sequence.CreateFromImages(images);
-        foreach (var image in images) image.Dispose();
+        var sequence = FxBoardBatch.SequenceFor(Fx.FramePaths(p, count)).Array;
         Sequences[key] = sequence;
         return sequence;
     }
