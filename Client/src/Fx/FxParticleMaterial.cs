@@ -8,12 +8,14 @@ internal static class FxParticleMaterial
     private static readonly Dictionary<(bool NoDepth, bool DoubleSided, bool Layers), Shader> variantShaders = Shutdown.Track(new Dictionary<(bool NoDepth, bool DoubleSided, bool Layers), Shader>());
     private static readonly Dictionary<string, Texture2DArray> Sequences = Shutdown.Track(new Dictionary<string, Texture2DArray>());
 
-    internal static ShaderMaterial Build(Godot.Collections.Dictionary p, Texture2D first,
+    internal static bool Layered(Godot.Collections.Dictionary p) => p["frameCount"].AsInt32() > 1;
+
+    internal static ShaderMaterial Build(Godot.Collections.Dictionary p, Texture2D? first,
         float lifetime, bool hasColorRamp)
     {
         int flags = FxShading.RenderFlags(p);
         int count = Mathf.Max(1, p["frameCount"].AsInt32());
-        bool layers = count > 1;
+        bool layers = Layered(p);
         bool noDepthTest = FxShading.NoDepthTest(flags);
         var key = (noDepthTest, FxShading.DoubleSided(flags), layers);
         if (!variantShaders.TryGetValue(key, out var shader))
@@ -22,7 +24,7 @@ internal static class FxParticleMaterial
             variantShaders[key] = shader;
         }
         var mat = new ShaderMaterial { Shader = shader };
-        mat.SetShaderParameter("texture_albedo", layers ? Sequence(p) : first);
+        mat.SetShaderParameter("texture_albedo", layers ? Sequence(p) : first!);
         mat.SetShaderParameter(FxShading.BlendParam, (float)FxShading.Packed(p));
         mat.SetShaderParameter("particle_lifetime", lifetime);
         mat.SetShaderParameter("fade_in", hasColorRamp ? 0f : Fx.ReadF(p, "fadeIn"));

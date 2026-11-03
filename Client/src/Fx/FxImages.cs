@@ -10,6 +10,8 @@ internal static class FxImages
     private const int CtexImageHeaderBytes = 16;
     private const uint CtexPng = 1;
     private const uint CtexWebp = 2;
+    private const string RemapSection = "remap";
+    private const string PathKey = "path";
     private static readonly byte[] CtexMagic = { (byte)'G', (byte)'S', (byte)'T', (byte)'2' };
 
     private static readonly Dictionary<ulong, Image> derived = Shutdown.Track(new Dictionary<ulong, Image>());
@@ -30,9 +32,9 @@ internal static class FxImages
 
     private static string? ImportedPath(string resPath)
     {
-        var import = new ConfigFile();
+        using var import = new ConfigFile();
         if (import.Load(resPath + ".import") != Error.Ok) return null;
-        string path = import.GetValue("remap", "path", "").AsString();
+        string path = import.GetValue(RemapSection, PathKey, "").AsString();
         return path.Length > 0 ? path : null;
     }
 
@@ -68,7 +70,7 @@ internal static class FxImages
             }
             if (decoded[i] != null && noteOpacity) opaqueFrames.TryAdd(files[i], opaque[i]);
         }
-        var size = decoded[0]?.GetSize() ?? Vector2I.One;
+        var size = Array.Find(decoded, image => image != null)?.GetSize() ?? Vector2I.One;
         var layers = new Image[files.Count];
         ForEachFile(files.Count, i =>
         {

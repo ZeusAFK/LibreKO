@@ -301,8 +301,9 @@ public static class Fx
     private static Node3D? BuildParticles(Godot.Collections.Dictionary p, FxPartKey key)
     {
         if (TakePooledPart(key) is FxParticles pooled) return pooled;
-        var tex = FirstTexture(p);
-        if (tex == null) return null;
+        bool layered = FxParticleMaterial.Layered(p);
+        var tex = layered ? null : FirstTexture(p);
+        if (layered ? FramePaths(p, 1) is not [not null] : tex == null) return null;
         if (!particleTemplates.TryGetValue(key, out var template))
             particleTemplates[key] = template = BuildParticleTemplate(p, key, tex);
         var gp = new FxParticles { PoolKey = key, Template = template };
@@ -318,7 +319,7 @@ public static class Fx
     private const float OrbitRateEpsilon = 1e-4f;
     private const float EmitAxisEpsilon = 1e-6f;
 
-    private static FxParticleTemplate BuildParticleTemplate(Godot.Collections.Dictionary p, FxPartKey key, Texture2D tex)
+    private static FxParticleTemplate BuildParticleTemplate(Godot.Collections.Dictionary p, FxPartKey key, Texture2D? tex)
     {
         float lifeMin = ReadF(p, "lifeMin");
         float lifeMax = Mathf.Max(0.01f, ReadF(p, "lifeMax", 1f));
