@@ -104,8 +104,10 @@ public class GameSessionInitializer(
             }
         }
 
-        session.PremiumExpiry = account.PremiumDate;
+        foreach (var premium in account.Premiums.Where(premium => premium.Expiry > DateTime.UtcNow))
+            session.HeldPremiums[premium.Type] = premium.Expiry;
         session.PremiumService = account.PremiumType;
+        PremiumHoldings.ChooseOnLogin(session, DateTime.UtcNow);
         session.AccountStatus = session.PremiumTime > 0
             ? UserSession.AccountStatusPremium
             : UserSession.AccountStatusNone;

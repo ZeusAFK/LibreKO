@@ -67,6 +67,7 @@ public sealed class QuestScriptHost(
 
     private DateOnly Today => DateOnly.FromDateTime((clock ?? TimeProvider.System).GetUtcNow().UtcDateTime);
     public int Weekday => (int)Today.DayOfWeek;
+    public int NpcTrigger => context.Player.GetEventTrigger(0);
     public bool HasEffect(int skillId) => session.ActiveBuffs.ContainsKey(skillId);
     public int KillCount(int questId, int group) => context.Quest.CountMonsterQuestSub(0, questId, group);
 
@@ -330,6 +331,7 @@ public sealed class QuestScriptHost(
     public void OpenCombineRecipeBook() => context.Dialog.SendCombineRecipeBook();
     public void OpenDisassembleWindow() => context.Dialog.SendDisassemblePanel();
     public void OpenNationTransferPanel() => context.RequestNationTransfer();
+    public void OpenPostBoard(int eventId) => context.Dialog.SendPostBoard(eventId);
 
     public void Unsupported(string what)
     {

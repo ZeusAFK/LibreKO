@@ -6,6 +6,10 @@ namespace LibreKO;
 public partial class ItemShineLight : OmniLight3D
 {
     public const uint SceneryLayer = 1u << 18;
+    private const ulong DaylightStaleFrames = 2;
+    private const float HiddenBelowShare = 0.01f;
+    private static float daylight;
+    private static ulong daylightFrame;
     private readonly List<ItemShineDriver> sources = new();
     private Vector3 lastPosition = new(float.NaN, float.NaN, float.NaN);
     private float lastRange = float.NaN, lastEnergy = float.NaN;
@@ -15,6 +19,15 @@ public partial class ItemShineLight : OmniLight3D
     private static ulong rankFrame = ulong.MaxValue;
     private float camDist2;
     private int rank;
+
+    internal static void FollowDaylight(float sunShine)
+    {
+        daylight = sunShine;
+        daylightFrame = Engine.GetProcessFrames();
+    }
+
+    private static float Daylight =>
+        daylightFrame > 0 && Engine.GetProcessFrames() - daylightFrame <= DaylightStaleFrames ? daylight : 0f;
 
     public override void _EnterTree() => all.Add(this);
 
@@ -115,13 +128,14 @@ public partial class ItemShineLight : OmniLight3D
             }
         }
         int level = strongest?.Level ?? 0;
-        bool visible = level > 0 && body.IsVisibleInTree();
+        float share = ItemShine.LightShare(Daylight);
+        bool visible = level > 0 && share > HiddenBelowShare && body.IsVisibleInTree();
         if (Visible != visible) Visible = visible;
         if (!visible) return;
         float range = level switch { 1 => 3.5f, 2 => 5f, 3 => 6.5f, _ => 8f };
         if (lastRange != range) { OmniRange = range; lastRange = range; }
         float pulse = ItemShine.Envelope(level, seconds, strongest!.PartIndex) / ItemShine.PeakFor(level);
-        float energy = visibility * pulse * (level switch { 1 => 0.7f, 2 => 1.1f, 3 => 1.6f, _ => 2.2f });
+        float energy = visibility * pulse * share * (level switch { 1 => 0.7f, 2 => 1.1f, 3 => 1.6f, _ => 2.2f });
         if (lastEnergy != energy) { LightEnergy = energy; lastEnergy = energy; }
     }
 }

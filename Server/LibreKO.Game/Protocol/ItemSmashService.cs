@@ -60,7 +60,7 @@ public class ItemSmashService(
         }
 
         var rewards = gameDataService.ItemSmashRewardsByBand[smashClass.Band].Where(r => r.Rate > 0).ToList();
-        if (rewards.Count == 0 || FreeBagSlots(session) < smashClass.Rolls)
+        if (rewards.Count == 0 || session.FreeBagSlots < smashClass.Rolls)
         {
             await session.Client.SendPacket(ItemSmashPacketWriter.Refusal(ItemSmashPacketWriter.InventoryFull));
             return;
@@ -113,10 +113,10 @@ public class ItemSmashService(
     }
 
     public static int FeeFor(ItemData item) =>
-        item.ItemType is HighFeeTypeUnique or HighFeeTypeReverseUnique ? HighFee : LowFee;
+        item.Rarity is HighFeeTypeUnique or HighFeeTypeReverseUnique ? HighFee : LowFee;
 
     public ItemSmashClassData? ClassOf(ItemData item) =>
-        gameDataService.ItemSmashClassesByGrade.GetValueOrDefault(item.GradeClass(gameDataService.ItemGradeBonuses));
+        gameDataService.ItemSmashClassesByGrade.GetValueOrDefault(item.GradeClass);
 
     public static bool Smashable(ItemSlot slot, ItemData item) =>
         item.Countable == 0
@@ -135,14 +135,5 @@ public class ItemSmashService(
         var dx = session.X - npc.X;
         var dz = session.Z - npc.Z;
         return dx * dx + dz * dz <= GameConstants.MaxNpcInteractionRangeSq;
-    }
-
-    private static int FreeBagSlots(UserSession session)
-    {
-        var free = 0;
-        for (var index = 0; index < InventoryConstants.HaveMax; index++)
-            if (session.Inventory[InventoryConstants.SlotMax + index].IsEmpty)
-                free++;
-        return free;
     }
 }

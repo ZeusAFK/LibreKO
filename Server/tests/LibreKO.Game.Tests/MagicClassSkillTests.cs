@@ -110,14 +110,34 @@ public class MagicClassSkillTests : GameTestBase
         (worm.Hp < worm.MaxHp).Should().Be(cast);
     }
 
-    private static ServiceProvider Provider(short tree = 0, short hpCost = 0) => CreateProvider(_ => { }, gameData =>
+    [Theory]
+    [InlineData(true, 0, true, 0)]
+    [InlineData(false, 0, false, 0)]
+    [InlineData(true, 500, true, 500)]
+    [InlineData(false, 500, true, 200)]
+    public async Task AGameMasterInGmModeSpendsNoMp(bool gmMode, short mp, bool cast, short mpAfter)
+    {
+        using var provider = Provider(mpCost: Cost);
+        var (caster, client) = Caster(provider, Mage);
+        caster.IsGM = true;
+        caster.GmModeEnabled = gmMode;
+        caster.Mp = mp;
+        var worm = Worm(provider);
+
+        await Cast(provider, client, caster, FireBlast, worm.UniqueId);
+
+        (worm.Hp < worm.MaxHp).Should().Be(cast);
+        caster.Mp.Should().Be(mpAfter);
+    }
+
+    private static ServiceProvider Provider(short tree = 0, short hpCost = 0, short mpCost = 0) => CreateProvider(_ => { }, gameData =>
     {
         var blasts = new[] { FireBlast, MonsterBlast, EventBlast };
         foreach (var id in blasts)
             gameData.GetMagic(id).Returns(new MagicData
             {
                 Id = id, Type1 = (byte)MagicSkillType.OverTime, Moral = 7, Range = 20, Skill = id == EventBlast ? tree : (short)0,
-                Hp = hpCost,
+                Hp = hpCost, Msp = mpCost,
             });
         gameData.MagicType3Table.Returns(blasts.ToDictionary(id => id, id => new MagicType3Data
         {

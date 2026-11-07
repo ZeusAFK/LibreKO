@@ -1,4 +1,6 @@
-﻿using LibreKO.Session;
+﻿using LibreKO.Domain;
+using LibreKO.Network;
+using LibreKO.Session;
 using Xunit;
 
 namespace LibreKO.Tests;
@@ -11,15 +13,80 @@ public class SkillTimersTests
     private const double SlowPotionRecastSeconds = 2.5;
     private const double RecastSeconds = 10.0;
     private const double Now = 1000.0;
+    private const int PlayerAuthority = 1;
+    private const int CharId = 4242;
 
     private static SkillTiming Skill() => new(SkillId, RecastSeconds, IsPotion: false);
 
     private static SkillTiming Potion() => new(PotionSkillId, 0, IsPotion: true);
 
-    private static (SkillTimers Timers, SelfSession Self) NewTimers()
+    private static SelfSession Character(int authority)
     {
         var self = new SelfSession();
-        return (new SkillTimers(self), self);
+        self.ApplyMyInfo(new MyInfo { Authority = authority }, new ItemSlot[InventoryConstants.InventoryTotal]);
+        self.ApplyCharacterId(CharId);
+        return self;
+    }
+
+    private static (SkillTimers Timers, SelfSession Self) NewTimers()
+    {
+        var self = Character(PlayerAuthority);
+        return (new SkillTimers(self, new GmFxSession()), self);
+    }
+
+    private static (SkillTimers Timers, GmFxSession GmFx) NewGmTimers()
+    {
+        var gmFx = new GmFxSession();
+        return (new SkillTimers(Character(SelfSession.GameMasterAuthority), gmFx), gmFx);
+    }
+
+    [Fact]
+    public void InGmModeASkillHasNoCooldown()
+    {
+        var (timers, _) = NewGmTimers();
+        var skill = Skill();
+
+        timers.Start(skill, Now);
+
+        Assert.False(timers.OnCooldown(skill, Now + 1));
+        Assert.Equal(0f, timers.Fraction(skill, Now + 1));
+        Assert.Equal(0, timers.ReadyAt(SkillId));
+    }
+
+    [Fact]
+    public void AGameMasterWithGmModeOffCoolsDown()
+    {
+        var (timers, gmFx) = NewGmTimers();
+        var skill = Skill();
+        gmFx.Set(CharId, false);
+
+        timers.Start(skill, Now);
+
+        Assert.True(timers.OnCooldown(skill, Now + 1));
+    }
+
+    [Fact]
+    public void TurningGmModeOnEndsARunningCooldown()
+    {
+        var (timers, gmFx) = NewGmTimers();
+        var skill = Skill();
+        gmFx.Set(CharId, false);
+        timers.Start(skill, Now);
+
+        gmFx.Set(CharId, true);
+
+        Assert.False(timers.OnCooldown(skill, Now + 1));
+        Assert.Equal(0f, timers.Fraction(skill, Now + 1));
+    }
+
+    [Fact]
+    public void InGmModePotionsStillShareTheirTimer()
+    {
+        var (timers, _) = NewGmTimers();
+
+        timers.Start(Potion(), Now);
+
+        Assert.True(timers.OnCooldown(Potion(), Now + 1));
     }
 
     [Fact]

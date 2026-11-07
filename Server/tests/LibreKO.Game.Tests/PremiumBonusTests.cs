@@ -43,7 +43,8 @@ public class PremiumBonusTests
         var session = sessions.CreateSession(client, 1, 1);
         session.Level = level;
         session.PremiumService = premiumType;
-        session.PremiumExpiry = premiumType == 0 ? null : DateTime.UtcNow.AddDays(3);
+        if (premiumType != 0)
+            session.HeldPremiums[premiumType] = DateTime.UtcNow.AddDays(3);
         return session;
     }
 
@@ -88,7 +89,7 @@ public class PremiumBonusTests
     [Fact]
     public void ThePacketIsThe2619ListThenTheBonuses()
     {
-        var packet = MiscPacketWriter.Premium(GoldPremium, 72,
+        var packet = MiscPacketWriter.Premium([new HeldPremium(GoldPremium, 72)], GoldPremium,
             [new PremiumBonus(PremiumBonusKind.Coins, 5), new PremiumBonus(PremiumBonusKind.PriceHistory, 0)]);
         packet.ResetOffset();
 

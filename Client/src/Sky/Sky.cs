@@ -38,7 +38,15 @@ public partial class Sky : Node3D
     private const float BoltSeedRange = 100f;
     private const float PrecipNightLight = 0.38f;
     private const float StormSkyEnergy = 0.82f;
-    private const float StormAmbientLoss = 0.4f;
+    private const float StormAmbientLift = 0.75f;
+    private const float OvercastAmbientLift = 0.5f;
+    private const float OvercastNightLoss = 0.2f;
+    private const float OvercastFillShare = 0.8f;
+    private const float OvercastNightFill = 0.55f;
+    private const float OvercastExposureLift = 0.12f;
+    private const float OvercastSaturationLoss = 0.12f;
+    private static readonly Color DayFill = new(0.64f, 0.70f, 0.80f);
+    private static readonly Color OvercastFill = new(0.66f, 0.68f, 0.72f);
     private const float StormPrecipLight = 0.8f;
     private const float PrecipHeight = 16f;
     private const float RainFallSpeed = 75f;
@@ -71,9 +79,9 @@ public partial class Sky : Node3D
 
     public float WeatherShare { get; set; } = 1f;
 
-    public float NightAmbient = 0.08f;
-    public float NightSkyEnergy = 0.10f;
-    public float NightMoonEnergy = 1.1f;
+    public float NightAmbient = 0.85f;
+    public float NightSkyEnergy = 0.32f;
+    public float NightMoonEnergy = 0.6f;
     public float MoonCloudBlock = 0.35f;
     public float NightAltitude = -22f;
     public float VolFogDensity = 0.003f;
@@ -85,9 +93,16 @@ public partial class Sky : Node3D
     private const float GoldFallSpanDeg = 17f;
     private const float GoldStrength = 0.62f;
 
-    private static readonly Color NightTop = new(0.015f, 0.025f, 0.06f);
+    private const float NightExposure = 1.3f;
+    private const float NightSkyShare = 0.15f;
+    private const float DaySaturation = 1.18f;
+    private const float NightSaturation = 0.94f;
+    private const float NightContrast = 1.03f;
+    private static readonly Color NightFill = new(0.36f, 0.44f, 0.62f);
+
+    private static readonly Color NightTop = new(0.025f, 0.04f, 0.09f);
     private static readonly Color DayTop = new(0.24f, 0.42f, 0.72f);
-    private static readonly Color NightHorizon = new(0.04f, 0.05f, 0.10f);
+    private static readonly Color NightHorizon = new(0.06f, 0.08f, 0.15f);
     private static readonly Color DayHorizon = new(0.78f, 0.80f, 0.82f);
     private static readonly Color GoldHorizon = new(0.95f, 0.45f, 0.18f);
     private static readonly Color Overcast = new(0.46f, 0.48f, 0.52f);
@@ -95,18 +110,26 @@ public partial class Sky : Node3D
     private static readonly Color StormHorizon = new(0.20f, 0.21f, 0.24f);
     private static readonly Color SunDayColor = new(1.0f, 0.96f, 0.86f);
     private static readonly Color SunGoldColor = new(1.0f, 0.55f, 0.30f);
-    private static readonly Color MoonLightHigh = new(0.55f, 0.66f, 0.95f);
-    private static readonly Color MoonLightLow = new(1.00f, 0.72f, 0.46f);
+    private static readonly Color MoonLightHigh = new(0.68f, 0.77f, 1.00f);
+    private static readonly Color MoonLightLow = new(0.95f, 0.78f, 0.60f);
     private static readonly Color MoonDiscHigh = new(0.94f, 0.95f, 1.00f);
     private static readonly Color MoonDiscLow = new(1.00f, 0.84f, 0.66f);
 
     private const float SunPeakAltitudeDeg = 60f;
-    private const float SunAngularClear = 1.2f;
-    private const float SunAngularOvercast = 2.4f;
+    private const float SunAngularClear = 0f;
+    private const float SunAngularOvercast = 1.2f;
+    private const float SunShadowBlur = 0.6f;
+    private const float SunShadowBias = 0.03f;
+    private const float SunShadowNormalBias = 1.5f;
+    private const float SunShadowSplit1 = 0.12f;
+    private const float SunShadowSplit2 = 0.3f;
+    private const float SunShadowSplit3 = 0.6f;
     private const float MoonAngularRadius = 0.075f;
     private const float MoonDiscBrightness = 1.75f;
     private const float MoonHaloStrength = 0.30f;
     private const float MoonPeakElevationDeg = 22f;
+    private const float MoonLightLowDeg = 38f;
+    private const float MoonLightHighDeg = 58f;
     private const float MoonRiseCurve = 0.45f;
     private const float MoonRiseBandDeg = 8f;
     private const float MoonOvercastHaze = 0.6f;
@@ -174,7 +197,7 @@ public partial class Sky : Node3D
             AdjustmentEnabled = true,
             AdjustmentBrightness = BaseBrightness,
             AdjustmentContrast = BaseContrast,
-            AdjustmentSaturation = 1.18f,
+            AdjustmentSaturation = DaySaturation,
         };
         worldEnvironment = new WorldEnvironment { Environment = env };
         AddChild(worldEnvironment);
@@ -183,12 +206,14 @@ public partial class Sky : Node3D
         {
             LightColor = SunDayColor,
             LightEnergy = 1.35f,
-            LightAngularDistance = 1.0f,
-            ShadowBias = 0.04f,
-            ShadowNormalBias = 2.8f,
-            ShadowBlur = 1.5f,
+            LightAngularDistance = SunAngularClear,
+            ShadowBias = SunShadowBias,
+            ShadowNormalBias = SunShadowNormalBias,
+            ShadowBlur = SunShadowBlur,
             DirectionalShadowBlendSplits = true,
-            DirectionalShadowMode = DirectionalLight3D.ShadowMode.Parallel2Splits,
+            DirectionalShadowSplit1 = SunShadowSplit1,
+            DirectionalShadowSplit2 = SunShadowSplit2,
+            DirectionalShadowSplit3 = SunShadowSplit3,
             DirectionalShadowMaxDistance = 100f,
             DirectionalShadowFadeStart = 0.8f,
         };
@@ -321,11 +346,13 @@ public partial class Sky : Node3D
     private const float BaseFogDensity = 0.0003f;
     private float fogScale = 1f;
     private float nightScale = 1f;
+    private float contrastScale = 1f;
 
     public void ApplyGraphics()
     {
+        contrastScale = LightRange.Multiplier(Config.Contrast);
         env.AdjustmentBrightness = BaseBrightness * LightRange.Multiplier(Config.Brightness);
-        env.AdjustmentContrast = BaseContrast * LightRange.Multiplier(Config.Contrast);
+        env.AdjustmentContrast = BaseContrast * contrastScale;
         fogScale = LightRange.Multiplier(Config.Fog);
         nightScale = LightRange.Multiplier(Config.NightBrightness);
         if (env == null) return;
@@ -334,6 +361,9 @@ public partial class Sky : Node3D
         env.VolumetricFogEnabled = Config.VolumetricFog;
         CloudsEnabled = Config.Clouds;
         sun.ShadowEnabled = Config.Shadows;
+        sun.DirectionalShadowMode = Config.ShadowQuality == QualityLevel.Low
+            ? DirectionalLight3D.ShadowMode.Parallel2Splits
+            : DirectionalLight3D.ShadowMode.Parallel4Splits;
         moon.ShadowEnabled = false;
     }
 
@@ -368,13 +398,17 @@ public partial class Sky : Node3D
         float az = dayFrac * 360f + 20f;
         float moonAlt = MoonPeakElevationDeg * Mathf.Pow(
             Mathf.Clamp(-sunAlt / SunPeakAltitudeDeg, 0f, 1f), MoonRiseCurve);
+        float moonWarm = Mathf.Clamp(moonAlt / MoonPeakElevationDeg, 0f, 1f);
+        float day = Mathf.Clamp((sunAlt + 6f) / 12f, 0f, 1f);
+        float amb = AmbientFor(sunAlt);
+        float deepNight = (1f - amb) * (1f - amb);
+        float moonLightAlt = Mathf.Lerp(Mathf.Max(-sunAlt, 0f),
+            Mathf.Lerp(MoonLightLowDeg, MoonLightHighDeg, moonWarm), deepNight);
         sun.RotationDegrees = new Vector3(-sunAlt, az, 0f);
-        moon.RotationDegrees = new Vector3(sunAlt, az + 180f, 0f);
+        moon.RotationDegrees = new Vector3(-moonLightAlt, az + 180f, 0f);
         sunDir = sun.Transform.Basis.Z.Normalized();
         moonDir = SkyDir(az + 180f, moonAlt);
 
-        float day = Mathf.Clamp((sunAlt + 6f) / 12f, 0f, 1f);
-        float amb = AmbientFor(sunAlt);
         float gold = GoldFor(sunAlt);
         storm = weather == Weather.Rainy;
         float overcast = weather switch { Weather.Rainy => 0.95f, Weather.Snow => 0.7f, _ => 0f };
@@ -392,8 +426,13 @@ public partial class Sky : Node3D
             hor = hor.Lerp(cloudHor, tint);
         }
         float skyEnergy = Mathf.Lerp(NightSkyEnergy * nightScale, 1.0f, amb) * (storm ? StormSkyEnergy : 1f);
-        float ambient = Mathf.Lerp(NightAmbient * nightScale, 1.0f, amb) * (1f - (storm ? StormAmbientLoss : 0.3f) * overcast);
+        float ambient = Mathf.Lerp(NightAmbient * nightScale, 1.0f, amb)
+                        * (1f + (storm ? StormAmbientLift : OvercastAmbientLift) * overcast * amb)
+                        * (1f - OvercastNightLoss * overcast * (1f - amb));
         if (flash > 0.001f) { skyEnergy += flash * 1.3f; ambient += flash * 1.6f; }
+        Color fill = NightFill.Lerp(DayFill, amb)
+            .Lerp(OvercastFill * Mathf.Lerp(OvercastNightFill, 1f, amb), OvercastFillShare * overcast);
+        float skyShare = Mathf.Lerp(NightSkyShare, 1f, amb) * (1f - OvercastFillShare * overcast);
 
         var sunLight = SunGoldColor.Lerp(SunDayColor, day);
         float cloudSun = ApplyClouds(day, amb, overcast, sunLight, hor);
@@ -406,11 +445,10 @@ public partial class Sky : Node3D
         SunShine = day * (1f - 0.85f * overcast) * cloudSun;
 
         float moonRise = Mathf.Clamp(moonAlt / MoonRiseBandDeg, 0f, 1f);
-        float moonWarm = Mathf.Clamp(moonAlt / MoonPeakElevationDeg, 0f, 1f);
         moonLit = moonRise * (1f - day);
         moon.Visible = moonLit > 0.002f;
         moon.LightColor = MoonLightLow.Lerp(MoonLightHigh, moonWarm);
-        moon.LightEnergy = moonLit * NightMoonEnergy * nightScale * (1f - (storm ? 0.7f : 0.5f) * overcast)
+        moon.LightEnergy = moonLit * NightMoonEnergy * nightScale * (1f - (storm ? 0.6f : 0.45f) * overcast)
                           * (1f - MoonCloudBlock * moonBlock);
         skyMat.SetShaderParameter(Param.MoonDir, moonDir);
         skyMat.SetShaderParameter(Param.MoonDisc, moonLit * (1f - MoonOvercastHaze * overcast));
@@ -426,8 +464,13 @@ public partial class Sky : Node3D
             StarsFor(sunAlt) * (1f - 0.8f * overcast) * (1f - flash));
 
         env.AmbientLightEnergy = ambient;
-        env.VolumetricFogDensity = (VolFogDensity + overcast * (storm ? 0.02f : 0.012f)) * fogScale;
-        env.FogDensity = (BaseFogDensity + overcast * (storm ? 0.004f : 0.0025f)) * fogScale;
+        env.AmbientLightColor = fill;
+        env.AmbientLightSkyContribution = skyShare;
+        env.TonemapExposure = Mathf.Lerp(1f, NightExposure, deepNight) * (1f + OvercastExposureLift * overcast * amb);
+        env.AdjustmentSaturation = Mathf.Lerp(NightSaturation, DaySaturation, amb) * (1f - OvercastSaturationLoss * overcast);
+        env.AdjustmentContrast = Mathf.Lerp(NightContrast, BaseContrast, amb) * contrastScale;
+        env.VolumetricFogDensity = (VolFogDensity + overcast * (storm ? 0.016f : 0.01f)) * fogScale;
+        env.FogDensity = (BaseFogDensity + overcast * (storm ? 0.0032f : 0.0018f)) * fogScale;
         env.FogLightColor = hor;
         env.VolumetricFogAlbedo = new Color(0.16f, 0.18f, 0.24f).Lerp(new Color(0.92f, 0.90f, 0.86f), amb);
 

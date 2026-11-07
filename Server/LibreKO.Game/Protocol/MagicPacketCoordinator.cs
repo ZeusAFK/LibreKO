@@ -525,7 +525,8 @@ public class MagicPacketCoordinator(
                 return;
             }
 
-            if (session.Mp < magic.Msp)
+            var manaCost = GmMode.ManaCost(session, magic);
+            if (session.Mp < manaCost)
             {
                 await SendMagicFailAsync(session, magic.Id, MagicFailCode.NotEnoughMp);
                 return;
@@ -538,7 +539,7 @@ public class MagicPacketCoordinator(
                 return;
             }
 
-            session.Mp -= (short)magic.Msp;
+            session.Mp -= manaCost;
             await combatLifecycleService.SendMspChangeAsync(session);
             magicTimingService.OnVolleyAccepted(session, magic, requiredArrowCount);
         }
@@ -565,7 +566,8 @@ public class MagicPacketCoordinator(
             return false;
         }
 
-        if (session.Mp < magic.Msp)
+        var manaCost = GmMode.ManaCost(session, magic);
+        if (session.Mp < manaCost)
         {
             await SendMagicFailAsync(session, skillId, MagicFailCode.NotEnoughMp);
             return false;
@@ -577,9 +579,9 @@ public class MagicPacketCoordinator(
             return false;
         }
 
-        if (magic.Msp > 0)
+        if (manaCost > 0)
         {
-            session.Mp -= (short)magic.Msp;
+            session.Mp -= manaCost;
             await combatLifecycleService.SendMspChangeAsync(session);
         }
 

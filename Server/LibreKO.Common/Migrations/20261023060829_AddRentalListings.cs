@@ -51,7 +51,8 @@ namespace LibreKO.Common.Migrations
             migrationBuilder.Sql(
                 "INSERT INTO `NpcPositions` (`Index`, `ZoneId`, `NpcId`, `ActType`, `DotCnt`, `Path`, `LeftX`, `TopZ`, `NumNPC`, `RegTime`, `Direction`, `SpawnRange`, `RegenType`, `DungeonFamily`, `SpecialType`, `TrapNumber`, `Room`) " +
                 "SELECT 8322, 21, 14401, 100, 0, NULL, 790, 625, 1, 30, 90, 0, 0, 0, 0, 0, 0 FROM DUAL " +
-                "WHERE NOT EXISTS (SELECT 1 FROM `NpcPositions` WHERE `Index` = 8322 OR (`ZoneId` = 21 AND `NpcId` = 14401));");
+                "WHERE EXISTS (SELECT 1 FROM `NpcPositions`) " +
+                "AND NOT EXISTS (SELECT 1 FROM `NpcPositions` WHERE `Index` = 8322 OR (`ZoneId` = 21 AND `NpcId` = 14401));");
         }
 
         /// <inheritdoc />

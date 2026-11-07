@@ -120,14 +120,6 @@
     "SuccessRate": 3000
   },
   {
-    "Id": 16,
-    "NpcId": 32530,
-    "DisplayRow": 16,
-    "ResultItemId": 379400000,
-    "ResultCount": 1,
-    "SuccessRate": 3000
-  },
-  {
     "Id": 64,
     "NpcId": 31510,
     "DisplayRow": 64,
@@ -140,14 +132,6 @@
     "NpcId": 31510,
     "DisplayRow": 65,
     "ResultItemId": 910014000,
-    "ResultCount": 1,
-    "SuccessRate": 3000
-  },
-  {
-    "Id": 66,
-    "NpcId": 19073,
-    "DisplayRow": 66,
-    "ResultItemId": 191640779,
     "ResultCount": 1,
     "SuccessRate": 3000
   },
@@ -1100,46 +1084,6 @@
     "NpcId": 19073,
     "DisplayRow": 185,
     "ResultItemId": 128410901,
-    "ResultCount": 1,
-    "SuccessRate": 3000
-  },
-  {
-    "Id": 249,
-    "NpcId": 19073,
-    "DisplayRow": 249,
-    "ResultItemId": 900444000,
-    "ResultCount": 1,
-    "SuccessRate": 3000
-  },
-  {
-    "Id": 250,
-    "NpcId": 19073,
-    "DisplayRow": 250,
-    "ResultItemId": 900447000,
-    "ResultCount": 1,
-    "SuccessRate": 3000
-  },
-  {
-    "Id": 251,
-    "NpcId": 19073,
-    "DisplayRow": 251,
-    "ResultItemId": 900448000,
-    "ResultCount": 1,
-    "SuccessRate": 3000
-  },
-  {
-    "Id": 252,
-    "NpcId": 19073,
-    "DisplayRow": 252,
-    "ResultItemId": 900449000,
-    "ResultCount": 1,
-    "SuccessRate": 3000
-  },
-  {
-    "Id": 253,
-    "NpcId": 19073,
-    "DisplayRow": 253,
-    "ResultItemId": 191640000,
     "ResultCount": 1,
     "SuccessRate": 3000
   },

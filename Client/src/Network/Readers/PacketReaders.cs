@@ -86,6 +86,7 @@ internal static class PacketReaders
             new ReportReader(session.Report),
             new RoomMediaReader(session.NationChat, session.RoomMedia, session.Self, requests.RoomMedia),
             new RouletteReader(session.Roulette),
+            new EventPostReader(session.EventPost),
             new SeasonalReader(session.Seasonal),
             new ShoppingMallReader(session.Self, session.ShoppingMall),
             new ShoutReader(session.Shout),

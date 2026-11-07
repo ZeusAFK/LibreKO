@@ -29,8 +29,28 @@ public class EventBoardRoutingTests
         var roulette = Substitute.For<IRoulettePacketCoordinator>();
         var client = Substitute.For<IClient>();
         var board = new EventBoardPacketCoordinator(
-            attendance, roulette, NullLogger<EventBoardPacketCoordinator>.Instance);
+            attendance, roulette, eventPosts, NullLogger<EventBoardPacketCoordinator>.Instance);
         return (board, attendance, roulette, client);
+    }
+
+    private static readonly IEventPostPacketCoordinator eventPosts = Substitute.For<IEventPostPacketCoordinator>();
+
+    [Theory]
+    [InlineData((byte)EventBoardSubOpcode.PostBoard)]
+    [InlineData((byte)EventBoardSubOpcode.PostRegister)]
+    [InlineData((byte)EventBoardSubOpcode.PostHistory)]
+    public async Task EventBoard_RoutesThePostBoardSubOpcodesToEventPosts(byte sub)
+    {
+        var posts = Substitute.For<IEventPostPacketCoordinator>();
+        var attendance = Substitute.For<IAttendancePacketCoordinator>();
+        var roulette = Substitute.For<IRoulettePacketCoordinator>();
+        var client = Substitute.For<IClient>();
+        var board = new EventBoardPacketCoordinator(attendance, roulette, posts, NullLogger<EventBoardPacketCoordinator>.Instance);
+
+        await board.HandleAsync(client, Request(sub));
+
+        await posts.Received(1).HandleAsync(client, Arg.Any<Packet>());
+        await roulette.DidNotReceive().HandleAsync(Arg.Any<IClient>(), Arg.Any<Packet>());
     }
 
     [Theory]

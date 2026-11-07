@@ -631,12 +631,12 @@ internal sealed partial class CapeFeature : IFeature, IClosableWindow
     {
         if (clan.MyClan.InClan && clan.MyClan.ClanId == change.ClanId) current = change.CapeId;
         foreach (var e in context.Entities.PlayerCapes())
-            if (e.KnightsId == change.ClanId && e.KnightsId != 0)
+            if (e.KnightsId == change.ClanId && e.KnightsId != 0 && !KingCape.Is(e.CapeId))
             {
                 context.Entities.SetCape(e.Id, change.CapeId, change.R, change.G, change.B);
                 entityLooks.Dress(e.Body, change.CapeId, change.R, change.G, change.B, e.IsGm, e.Race);
             }
-        if (clan.MyClan.InClan && clan.MyClan.ClanId == change.ClanId && change.ClanId != 0)
+        if (clan.MyClan.InClan && clan.MyClan.ClanId == change.ClanId && change.ClanId != 0 && !self.IsKing)
         {
             var me = self.LastEnter;
             entityLooks.Dress(context.Self.Visual, change.CapeId, change.R, change.G, change.B, gmFx.Visible(context.Self.CharId, context.Self.IsGm), me.Race);

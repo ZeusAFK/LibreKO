@@ -22,13 +22,35 @@ public class DataSeeder(AppDbContext db, ILogger<DataSeeder> logger) : IDataSeed
             return false;
         }
 
-        if (!force && await dbSet.IgnoreQueryFilters().AnyAsync())
-            return false;
-
         var trackFingerprint = fileBackedSeed != null && saveChanges is true;
         var fingerprint = trackFingerprint
             ? await SeedFingerprint.ComputeAsync(entitySeed, fileBackedSeed!.SeedSources)
             : null;
+
+        if (!force && await dbSet.IgnoreQueryFilters().AnyAsync())
+        {
+            if (fingerprint == null)
+                return false;
+
+            var recorded = await db.Set<SeedState>().AsNoTracking()
+                .Where(state => state.Name == seedName)
+                .Select(state => state.Fingerprint)
+                .FirstOrDefaultAsync();
+            if (recorded == fingerprint)
+                return false;
+
+            if (entitySeed.EditedInGame)
+            {
+                if (recorded == null)
+                    await RecordStateAsync(seedName, fingerprint, await dbSet.IgnoreQueryFilters().LongCountAsync());
+                else
+                    logger.LogWarning(
+                        "Skipping seed {SeedName}: {SeedPath} changed since it was applied, but the table is edited in game; apply the change with a migration or +reseed",
+                        seedName,
+                        fileBackedSeed!.SeedPath);
+                return false;
+            }
+        }
 
         var entityType = db.Model.FindEntityType(typeof(T));
 

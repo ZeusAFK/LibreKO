@@ -108,7 +108,7 @@ public class ItemRepairTests : GameTestBase
                 Kind = kind,
                 BuyPrice = BuyPrice,
                 Duration = MaxDurability,
-                SellPrice = saleType,
+                SaleType = saleType,
             }));
 
         var sent = new List<Packet>();

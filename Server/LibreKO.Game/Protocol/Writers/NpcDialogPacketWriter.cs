@@ -19,6 +19,8 @@ public sealed class NpcDialogPacketWriter
     public const byte GenderChangePanelStyle = 53;
     public const byte FortunePanelStyle = 16;
     public const byte SpecialAuctionPanelStyle = 58;
+    public const byte LoveKnightOnlineBoardStyle = 69;
+    public const byte ContinuePlayingBoardStyle = 72;
     public const byte YutGameStyle = 22;
     public const byte DrakiRankBoardStyle = 54;
     public const byte FullMoonBoardStyle = 57;
@@ -124,6 +126,13 @@ public sealed class NpcDialogPacketWriter
 
     public static Packet SpecialAuctionPanel(int npcId, string scriptFile) =>
         SelectMessage(npcId, SpecialAuctionPanelStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);
+
+    public static Packet? PostBoard(int npcId, string scriptFile, int eventId) => eventId switch
+    {
+        EventPostRules.LoveKnightOnline => SelectMessage(npcId, LoveKnightOnlineBoardStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile),
+        EventPostRules.ContinuePlaying => SelectMessage(npcId, ContinuePlayingBoardStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile),
+        _ => null,
+    };
 
     public static Packet YutGame(int npcId, string scriptFile) =>
         SelectMessage(npcId, YutGameStyle, NoText, NoText, [], UserSession.SelectMessageEventCount, scriptFile);

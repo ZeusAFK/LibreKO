@@ -230,6 +230,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
     internal GlobalMapFeature GlobalMap { get; private set; } = null!;
     internal FishingHallFeature FishingHall { get; private set; } = null!;
     internal RouletteFeature Roulette { get; private set; } = null!;
+    internal EventPostFeature EventPost { get; private set; } = null!;
     internal ForcesFeature Forces { get; private set; } = null!;
     internal MessengerFeature Messenger { get; private set; } = null!;
     internal TournamentFeature Tournament { get; private set; } = null!;
@@ -304,6 +305,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         GlyphWarmer.Warm(this);
         if (!await LoadStep("Preparing…", 0.04f, "Lighting and sky")) return;
 
+        LeftoverResources.Release();
         ScenerySystem.BuildEnvironment();
         Config.ApplyGraphicsToViewport();
         Cape.Enabled = Config.Capes;
@@ -623,7 +625,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         MapInteractablesSystem = new MapInteractablesSystem(this, Avatar, Game.Requests.ObjectEvent, ScenerySystem);
         GateSystem = new GateSystem(this, Game.Session.ObjectEvent, Game.Requests.ObjectEvent, Avatar, ScenerySystem, CameraSystem, MapInteractablesSystem, Game.Session.Entities);
         SiegeTowerSystem = new SiegeTowerSystem(this, Game.Session.Clan, Game.Session.Self, Game.Session.Siege, Game.Requests.Siege, Avatar, ScenerySystem);
-        SkillCastSystem = new SkillCastSystem(this, AudioSystem, Avatar, BuffSystem, CombatFxSystem, EntityActionSystem, EntityLooksSystem, EntityStatesSystem, GateSystem, Game.Session.Party, Game.Session.Pvp, Game.Requests.Combat, ScenerySystem, Game.Session.Self, SiegeTowerSystem, Game.Session.SkillTimers, SoccerSystem, EntitySystem);
+        SkillCastSystem = new SkillCastSystem(this, AudioSystem, Avatar, BuffSystem, CombatFxSystem, EntityActionSystem, EntityLooksSystem, EntityStatesSystem, GateSystem, Game.Session.GmFx, Game.Session.Party, Game.Session.Pvp, Game.Requests.Combat, ScenerySystem, Game.Session.Self, SiegeTowerSystem, Game.Session.SkillTimers, SoccerSystem, EntitySystem);
         BasicAttackSystem = new BasicAttackSystem(this, AudioSystem, Avatar, BuffSystem, EntityActionSystem, EntityLooksSystem, EntityStatesSystem, Game.Requests.Combat, Game.Session.Self, SkillCastSystem, SoccerSystem);
         CombatSystem = new CombatSystem(this, Game.Session.Combat, Game.Session.Items, Game.Session.Self, Game.Session.Vendor, Game.Requests.Player, Avatar, AudioSystem, EntitySystem, EntityActionSystem, EntityStatesSystem, EntityPlatesSystem, BuffSystem, SkillCastSystem, BasicAttackSystem);
         SkillMovementSystem = new SkillMovementSystem(this, Avatar, ScenerySystem, EntityActionSystem, CombatFxSystem, SkillCastSystem);
@@ -777,7 +779,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Facet(GatherSystem.GatherInit, GatherSystem.GatherDispose);
         Features.Add(MerchantStalls = new MerchantStallsFeature(this, Game.Session.Merchant, Game.Requests.Merchant, EntitySystem, EntityPlatesSystem));
         Features.Add(MarketPrice = new MarketPriceFeature(this, Game.Session.MarketPrice, Game.Requests.MarketPrice, Game.Session.Premium));
-        Features.Add(Merchant = new MerchantFeature(this, Game.Session.Merchant, Game.Session.Premium, Game.Session.Progress, Game.Session.Self, Game.Requests.Merchant, EntityPlatesSystem, PlayerMenu, MerchantStalls, MarketPrice, Game.Session.SlaveMerchant, Game.Requests.SlaveMerchant));
+        Features.Add(Merchant = new MerchantFeature(this, Game.Session.Merchant, Game.Session.Premium, Game.Session.Progress, Game.Session.Self, Game.Requests.Merchant, EntityPlatesSystem, PlayerMenu, MerchantStalls, MarketPrice, Game.Session.SlaveMerchant, Game.Requests.SlaveMerchant, NpcInteraction));
         Features.Add(SlaveMerchantWindow = new SlaveMerchantFeature(this, Game.Session.Self, Game.Session.SlaveMerchant, Game.Requests.SlaveMerchant, Merchant));
         Features.Add(ItemRentalWindow = new ItemRentalFeature(this, Game.Session.ItemRental, Game.Session.Self, Game.Requests.ItemRental));
         Features.Add(MerchantSearch = new MerchantSearchFeature(this, MarketPrice, Game.Requests.Merchant, Game.Requests.MerchantSearch, Game.Session.MerchantSearch, MerchantStalls, Whispers, Hotbar));
@@ -860,6 +862,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
         Features.Add(DrakiPlate = new DrakiPlateFeature(this, Game.Session.Bifrost, EventPlates, Caption, TownRecall, DrakiBoard));
         Features.Add(ItemCombineWindow = new ItemCombineFeature(this, Game.Session.ItemCombine, Game.Session.Self, Game.Requests.ItemCombine, Game.Requests.KnightRoyale, Vendor, NpcInteraction, TopIcons));
         Features.Add(Roulette = new RouletteFeature(this, Game.Session.Roulette, Game.Requests.Roulette));
+        Features.Add(EventPost = new EventPostFeature(this, Game.Session.EventPost, Game.Requests.EventPost));
         Features.Add(FishingHall = new FishingHallFeature(this, Game.Session.FishingHall, Game.Session.Self, Game.Requests.FishingHall));
         Features.Add(PluginBridge);
         Facet(ConnectPlugins, PluginBridge.Disconnect);
@@ -953,7 +956,7 @@ public partial class WorldRoot : Node3D, IWorldContext, IHudLayout
     [
         Movie, SkillAreaSystem, Map, QuestNotifications, NpcDialogWindow, Vendor, Loot, Repair, Warehouse.AmountPromptPanel, Events,
         Warehouse, Upgrade, Seal, PieceChange, ClassChange, GenderChangeWindow, NationTransfer, NameChange, Exchange,
-        MarketPrice, Merchant, MerchantSearch, MerchantBuy, SlaveMerchantWindow, ItemRentalWindow, Merchant.SellStallAndMenu, ClanCreate, ClanPoints, Warp, Rank, PetHatch, Pet, ShoppingMall, Rebirth, AdminPanel.SpawnPanel, AdminPanel.GroupPickerPanel, AdminPanel.ItemGroupPanel, AdminPanel.LotteryPanel, AdminPanel.RacePanel, AdminPanel.PickerPanel, AdminPanel.MonsterPickerPanel, AdminPanel.StartPanel, AdminPanel.TipPanel, KingTreasury, KingElection, Siege,
+        MarketPrice, Premium.SwitchPanel, EventPost.HistoryPanel, EventPost.BoardPanel, Merchant, MerchantSearch, MerchantBuy, SlaveMerchantWindow, ItemRentalWindow, Merchant.SellStallAndMenu, ClanCreate, ClanPoints, Warp, Rank, PetHatch, Pet, ShoppingMall, Rebirth, AdminPanel.SpawnPanel, AdminPanel.GroupPickerPanel, AdminPanel.ItemGroupPanel, AdminPanel.LotteryPanel, AdminPanel.RacePanel, AdminPanel.PickerPanel, AdminPanel.MonsterPickerPanel, AdminPanel.StartPanel, AdminPanel.TipPanel, KingTreasury, KingElection, Siege,
         CapeWindow, ClanWarehouse.AmountPromptPanel, ClanWarehouse, VipWarehouse.AmountPromptPanel, VipWarehouse, Report, EquipView, ChangeHair, Achievement, MailCompose, Mail, Lottery,
         SpecialAuctionWindow, Attendance, Bounty, Tournament, DisguiseWindow, SkillPreset, TitlePicker, ChatHost,
         Messenger, Forces, ChatRoom, NationChannels, Fortune, DrakiBoard, ItemCombineWindow, Roulette, FishingHall, GlobalMap, Genie, AdminPanel,

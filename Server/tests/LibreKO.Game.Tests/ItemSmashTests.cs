@@ -18,7 +18,6 @@ public class ItemSmashTests : GameTestBase
     private const int EventSword = 120050000;
     private const int ScrapReward = 810369000;
     private const int GemReward = 900823000;
-    private const int UniqueSwordExtension = 3;
     private const int UniqueGrade = 33;
     private const int UniqueBand = 3;
     private const int UniqueRolls = 3;
@@ -42,15 +41,14 @@ public class ItemSmashTests : GameTestBase
         {
             gameData.ItemSmashClassesByGrade.Returns(classes);
             gameData.ItemSmashRewardsByBand.Returns(rewards.ToLookup(r => r.Band));
-            gameData.ItemGradeBonuses.Returns(new Dictionary<int, int>());
             gameData.GetItem(UniqueSword).Returns(new ItemData
             {
                 Num = UniqueSword, Name = "Unique Sword", Kind = 21, Slot = 1, Duration = 5000, ReqLevelMax = 100,
-                ItemClass = UniqueGrade, ItemType = UniqueType, Extension = UniqueSwordExtension,
+                ItemClass = UniqueGrade, GradeClass = UniqueGrade, Rarity = UniqueType,
             });
             gameData.GetItem(EventSword).Returns(new ItemData
             {
-                Num = EventSword, Name = "Event Sword", Kind = 21, Slot = 1, Duration = 5000, ReqLevelMax = 100, ItemClass = 7,
+                Num = EventSword, Name = "Event Sword", Kind = 21, Slot = 1, Duration = 5000, ReqLevelMax = 100, ItemClass = 7, GradeClass = 7,
             });
             foreach (var id in new[] { ScrapReward, GemReward })
                 gameData.GetItem(id).Returns(new ItemData { Num = id, Name = $"Reward {id}", Kind = 255, Countable = 1, Duration = 1, ReqLevelMax = 100 });
@@ -201,11 +199,5 @@ public class ItemSmashTests : GameTestBase
         ItemSmashService.Pick(rewards, 29).ItemId.Should().Be(10);
         ItemSmashService.Pick(rewards, 30).ItemId.Should().Be(20);
         ItemSmashService.Pick(rewards, 99).ItemId.Should().Be(20);
-    }
-
-    [Fact]
-    public void TheGradeBonusOfTheExtensionPicksTheClass()
-    {
-        ItemGradeBonusData.KeyOf(UniqueSwordExtension, 605).Should().Be(3605);
     }
 }

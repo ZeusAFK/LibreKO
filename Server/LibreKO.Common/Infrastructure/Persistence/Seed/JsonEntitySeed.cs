@@ -29,6 +29,7 @@ public abstract class JsonEntitySeed<T> : IEntitySeed<T>, IFileBackedSeed
     public virtual bool PerformInsert => true;
     public virtual bool PerformUpdate => true;
     public virtual bool PerformDelete => false;
+    public virtual bool EditedInGame => false;
     public virtual string[] PropertiesToExclude => [];
     public virtual string[] PropertiesToUpdate => [];
     public string SeedPath => SeedDataLocation.DataPath(JsonFileName);
@@ -37,7 +38,7 @@ public abstract class JsonEntitySeed<T> : IEntitySeed<T>, IFileBackedSeed
 
     protected abstract string JsonFileName { get; }
 
-    // A seed too large for one file lists its shards here, e.g. "Items.slot*.json".
+    // A seed too large for one file lists its shards here, e.g. "ItemVariants.set*.json".
     protected virtual string? ShardPattern => null;
 
     private string[] ShardPaths()

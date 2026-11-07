@@ -216,13 +216,25 @@ public class UserSessionCharacterMapper : IUserSessionCharacterMapper
     {
         // Account-scoped mutable state — propagated back on every persist tick.
         account.KnightCash = session.KnightCash;
-        account.PremiumDate = session.PremiumExpiry;
         account.PremiumType = session.PremiumService;
+        SyncPremiums(session, account);
         account.Language = session.Language;
         account.VipWarehouseItems = session.SerializeVipWarehouse();
         account.VipVaultExpiry = session.VipVaultExpiry;
         account.VipPassword = session.VipPassword;
         account.SealCode = session.SealCode;
+    }
+
+    private static void SyncPremiums(UserSession session, Account account)
+    {
+        account.Premiums.RemoveAll(premium => !session.HeldPremiums.ContainsKey(premium.Type));
+        foreach (var (type, expiry) in session.HeldPremiums)
+        {
+            if (account.Premiums.Find(premium => premium.Type == type) is { } stored)
+                stored.Expiry = expiry;
+            else
+                account.Premiums.Add(new AccountPremium { AccountId = account.Id, Type = type, Expiry = expiry });
+        }
     }
 
     private static short ResolveHydratedHp(int currentHp, short maxHp)

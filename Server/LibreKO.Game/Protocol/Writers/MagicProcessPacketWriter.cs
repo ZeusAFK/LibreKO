@@ -82,6 +82,11 @@ public static class MagicProcessPacketWriter
     public static Packet CreateEffecting(int skillId, int casterId, int targetId, ReadOnlySpan<int> data = default) =>
         Create(MagicProcessOpcode.Effecting, skillId, casterId, targetId, data);
 
+    public const int Succeeded = 1;
+
+    public static Packet CreateBuffLanded(int skillId, int casterId, int targetId, short duration, short speed) =>
+        CreateEffecting(skillId, casterId, targetId, [0, Succeeded, 0, duration, 0, speed, 0]);
+
     public static Packet CreateCancel(int skillId, int casterId, int targetId) =>
         Create(MagicProcessOpcode.Cancel, skillId, casterId, targetId);
 

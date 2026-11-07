@@ -12,6 +12,7 @@ public interface IEventBoardPacketCoordinator
 public class EventBoardPacketCoordinator(
     IAttendancePacketCoordinator attendance,
     IRoulettePacketCoordinator roulette,
+    IEventPostPacketCoordinator eventPosts,
     ILogger<EventBoardPacketCoordinator> logger) : IEventBoardPacketCoordinator
 {
     public async Task HandleAsync(IClient client, Packet packet)
@@ -34,6 +35,12 @@ public class EventBoardPacketCoordinator(
             case EventBoardSubOpcode.RouletteSpin:
             case EventBoardSubOpcode.RoulettePrizeList:
                 await roulette.HandleAsync(client, packet);
+                return;
+
+            case EventBoardSubOpcode.PostBoard:
+            case EventBoardSubOpcode.PostRegister:
+            case EventBoardSubOpcode.PostHistory:
+                await eventPosts.HandleAsync(client, packet);
                 return;
         }
 

@@ -3,28 +3,43 @@
 public enum PremiumSubOpcode : byte
 {
     List = 1,
+    Switch = 4,
 }
+
+public readonly record struct HeldPremium(int Type, int Hours);
+
+public sealed record PremiumList(IReadOnlyList<HeldPremium> Held, int InUse)
+{
+    public int InUseHours => Held.FirstOrDefault(held => held.Type == InUse).Hours;
+}
+
+public readonly record struct PremiumSwitchReply(int Type, int Result, int Seconds);
 
 public static class PremiumWire
 {
+    public const int SwitchDone = 1;
+    public const int SwitchTooSoon = -1;
     private const int EntryBytes = 3;
     private const int BonusBytes = 3;
-    private const int StatusNone = 0;
-    private const int StatusActive = 1;
+    private const int SwitchBytes = 3;
 
-    public static (int Status, int Type, int Hours)? ReadList(Packet p)
+    public static PremiumList ReadList(Packet p)
     {
-        if (p.RemainingBytes < 2 || (PremiumSubOpcode)p.ReadByte() != PremiumSubOpcode.List) return null;
-        int count = p.ReadByte();
-        var hoursByType = new Dictionary<int, int>();
+        int count = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
+        var held = new List<HeldPremium>(count);
         for (int i = 0; i < count && p.RemainingBytes >= EntryBytes; i++)
-        {
-            int type = p.ReadByte();
-            hoursByType[type] = p.ReadUShort();
-        }
+            held.Add(new HeldPremium(p.ReadByte(), p.ReadUShort()));
         int inUse = p.RemainingBytes >= 1 ? p.ReadByte() : 0;
-        int hours = count > 0 && hoursByType.TryGetValue(inUse, out int left) ? left : 0;
-        return hours > 0 ? (StatusActive, inUse, hours) : (StatusNone, 0, 0);
+        return new PremiumList(held, inUse);
+    }
+
+    public static PremiumSwitchReply? ReadSwitch(Packet p)
+    {
+        if (p.RemainingBytes < SwitchBytes) return null;
+        int type = p.ReadByte();
+        int result = p.ReadShort();
+        int seconds = result == SwitchTooSoon && p.RemainingBytes >= 2 ? p.ReadUShort() : 0;
+        return new PremiumSwitchReply(type, result, seconds);
     }
 
     public static IReadOnlyList<PremiumBonus> ReadBonuses(Packet p)

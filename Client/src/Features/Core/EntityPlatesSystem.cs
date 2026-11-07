@@ -107,10 +107,10 @@ internal sealed class EntityPlatesSystem : IFeature
         ent.ClanName = "";
         ent.ClanFlag = 0;
         ent.Plate?.SetMark(null);
-        ent.CapeId = 0;
+        ent.CapeId = KingCape.AfterClanChange(ent.CapeId, 0);
         ent.ClanFame = ClanRanks.None;
         RefreshClanLine(charId);
-        entityLooks.Dress(ent.Body, 0, 0, 0, 0, ent.IsGm, ent.Race);
+        entityLooks.Dress(ent.Body, ent.CapeId, 0, 0, 0, ent.IsGm, ent.Race);
         StateLooks.DressClanGauntlet(ent.Body, ent.Race, 0, 0);
     }
 

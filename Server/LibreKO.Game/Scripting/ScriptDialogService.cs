@@ -78,6 +78,12 @@ public class ScriptDialogService(
         queuedPackets.Add(NpcDialogPacketWriter.SpecialAuctionPanel(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));
     }
 
+    public void SendPostBoard(int eventId)
+    {
+        if (NpcDialogPacketWriter.PostBoard(session.Quest.EventNpcId, session.Quest.ActiveQuestScript, eventId) is { } board)
+            queuedPackets.Add(board);
+    }
+
     public void SendYutGame()
     {
         queuedPackets.Add(NpcDialogPacketWriter.YutGame(session.Quest.EventNpcId, session.Quest.ActiveQuestScript));

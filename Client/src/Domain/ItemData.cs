@@ -204,7 +204,7 @@ public static class ItemData
     public const string PlainUpgrade = "Upgrade";
     public const int MaxPlusJewel = 3;
     public const int MaxPlusGear = 10;
-    public const int MaxPlusReverse = 21;
+    public const int MaxPlusReverse = 30;
 
     public static class Rarity
     {
@@ -443,13 +443,16 @@ public static class ItemData
 
     public static Ext? ExtFor(int id)
     {
+        if (OwnExt(id) is { } own) return own;
+        return Get(id) is { } def && linkedExts.TryGetValue(id, out var byLinked) && byLinked.Cat == def.Cat ? byLinked : null;
+    }
+
+    public static Ext? OwnExt(int id)
+    {
         EnsureLoaded();
-        var def = Get(id);
-        if (def == null) return null;
+        if (Get(id) is not { } def) return null;
         int extId = ExtIdFor(id);
-        if (extId % 1000 != 0 && exts.TryGetValue(ExtKey(def.Cat, extId), out var byKey))
-            return byKey;
-        return linkedExts.TryGetValue(id, out var byLinked) && byLinked.Cat == def.Cat ? byLinked : null;
+        return extId % BaseIdSpan != 0 && exts.TryGetValue(ExtKey(def.Cat, extId), out var ext) ? ext : null;
     }
 
     public static Ext? ExtRow(int cat, int extId)

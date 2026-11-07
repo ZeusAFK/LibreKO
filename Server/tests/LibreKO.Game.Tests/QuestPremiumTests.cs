@@ -13,7 +13,8 @@ namespace LibreKO.Game.Tests;
 
 public class QuestPremiumTests
 {
-    private const int WarPremium = 12;
+    private const byte WarPremium = 12;
+    private const byte ExpPremium = 11;
 
     [Fact]
     public void APremiumGrantReachesTheHost()
@@ -39,7 +40,7 @@ public class QuestPremiumTests
     {
         var (context, session) = CreateContext();
         session.PremiumService = WarPremium;
-        session.PremiumExpiry = DateTime.UtcNow.AddDays(5);
+        session.HeldPremiums[WarPremium] = DateTime.UtcNow.AddDays(5);
 
         context.Character.GivePremium(0, WarPremium, 30).Should().BeTrue();
 
@@ -49,16 +50,28 @@ public class QuestPremiumTests
     }
 
     [Fact]
-    public void PremiumOfADifferentTypeStartsFromNow()
+    public void PremiumOfADifferentTypeIsHeldBesideTheOneInUse()
     {
         var (context, session) = CreateContext();
-        session.PremiumService = 11;
-        session.PremiumExpiry = DateTime.UtcNow.AddDays(5);
+        session.PremiumService = ExpPremium;
+        session.HeldPremiums[ExpPremium] = DateTime.UtcNow.AddDays(5);
 
         context.Character.GivePremium(0, WarPremium, 7).Should().BeTrue();
 
-        session.PremiumExpiry.Should().BeCloseTo(DateTime.UtcNow.AddDays(7), TimeSpan.FromMinutes(1));
-        session.PremiumType.Should().Be(WarPremium);
+        session.HeldPremiums[WarPremium].Should().BeCloseTo(DateTime.UtcNow.AddDays(7), TimeSpan.FromMinutes(1));
+        session.PremiumType.Should().Be(ExpPremium, "a new premium waits until the player switches to it");
+    }
+
+    [Fact]
+    public void TheSwitchingPremiumGrantsTheDcExpAndWarPremiums()
+    {
+        var (context, session) = CreateContext();
+
+        context.Character.GivePremium(0, PremiumHoldings.SwitchingPremium, 30).Should().BeTrue();
+
+        session.HeldPremiums.Keys.Should().BeEquivalentTo(
+            [PremiumHoldings.DcPremium, PremiumHoldings.ExpPremium, PremiumHoldings.WarPremium]);
+        session.PremiumType.Should().Be(PremiumHoldings.DcPremium);
     }
 
     [Fact]
@@ -82,7 +95,7 @@ public class QuestPremiumTests
         new UserSessionCharacterMapper().ApplyToAccount(session, account);
 
         account.PremiumType.Should().Be(WarPremium);
-        account.PremiumDate.Should().Be(session.PremiumExpiry);
+        account.Premiums.Should().ContainSingle(premium => premium.Type == WarPremium && premium.Expiry == session.PremiumExpiry);
     }
 
     private static (QuestScriptContext Context, UserSession Session) CreateContext()

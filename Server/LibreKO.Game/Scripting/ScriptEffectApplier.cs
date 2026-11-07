@@ -23,6 +23,8 @@ public sealed class ScriptEffectApplier(
         foreach (var packet in context.QueuedPackets)
             await session.Client.SendPacket(packet);
 
+        await AnnounceLandedBuffsAsync(session, context);
+
         if (context.PendingExperience != 0)
             await serviceProvider.GetRequiredService<IPlayerProgressionService>()
                 .ChangeExperienceAsync(session, context.PendingExperience);
@@ -68,6 +70,20 @@ public sealed class ScriptEffectApplier(
                 scriptName, session.Name, reason);
             await session.Client.SendPacket(ChatPacketWriter.SystemNotice((byte)session.Nation, reason));
         }
+    }
+
+    private async Task AnnounceLandedBuffsAsync(UserSession session, QuestScriptContext context)
+    {
+        if (context.LandedBuffs.Count == 0)
+            return;
+
+        await serviceProvider.GetRequiredService<Protocol.IUserNotificationService>().SendStatUpdateAsync(session);
+        var regions = serviceProvider.GetRequiredService<SessionManager>().Regions;
+        foreach (var buff in context.LandedBuffs)
+            await regions.SendToRegion(
+                session,
+                MagicProcessPacketWriter.CreateBuffLanded(buff.SkillId, buff.CasterId, session.CharacterId, buff.Duration, buff.Speed),
+                excludeSender: false);
     }
 
     private async Task ApplyPendingClanAsync(QuestScriptContext context)

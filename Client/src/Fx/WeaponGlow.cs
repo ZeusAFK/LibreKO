@@ -11,8 +11,8 @@ internal static class WeaponGlow
     internal static uint? Attach(Node3D weaponMesh, int itemId)
     {
         if (!WeaponCatalog.TryResolveGlow(itemId, out int baseItemId, out var fxName, out var tailFx)) return null;
-        var def = ItemData.Get(baseItemId);
-        var ext = def != null ? ItemData.ExtRow(def.Cat, itemId - baseItemId) : null;
+        var def = ItemData.Get(itemId);
+        var ext = ItemData.OwnExt(itemId);
         if (def != null && ext != null)
         {
             int variant = WeaponGlowRule.VariantFx(ext.GlowFx, def.Kind, def.Effect2, ext.Linked,

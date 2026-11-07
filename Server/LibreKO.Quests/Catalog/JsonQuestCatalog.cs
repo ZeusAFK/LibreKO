@@ -4,8 +4,18 @@ namespace LibreKO.Quests.Catalog;
 
 public sealed class JsonQuestCatalog : IQuestCatalog
 {
-    private readonly Dictionary<long, string> itemNames = [];
-    private readonly HashSet<long> stacking = [];
+    private const long ItemBaseSpan = 1000;
+    private const long ItemBlockSpan = 1_000_000_000;
+    private const long PlusSpan = 100;
+    private const long LevelSpan = 10;
+    private const long TopLevel = 10;
+    private const long RegularRarity = 0;
+    private const long ReverseRarity = 11;
+    private static readonly HashSet<long> NamingRarities = [3, 4, 6, 12];
+    private static readonly HashSet<long> UnlevelledRarities = [4, 6, 7, 8, 9, 12];
+
+    private readonly Dictionary<long, ItemBase> itemBases = [];
+    private readonly Dictionary<(long Set, long Id), ItemVariant> itemVariants = [];
     private readonly Dictionary<long, string> exchanges = [];
     private readonly Dictionary<long, string> quests = [];
     private readonly Dictionary<long, string> questTitles = [];
@@ -17,15 +27,15 @@ public sealed class JsonQuestCatalog : IQuestCatalog
     private readonly Dictionary<long, string> talk = [];
     private readonly Dictionary<long, string> menu = [];
 
-    public bool KnowsItems => itemNames.Count > 0;
+    public bool KnowsItems => itemBases.Count > 0;
     public bool KnowsExchanges => exchanges.Count > 0;
     public bool KnowsQuests => quests.Count > 0;
     public bool KnowsNpcs => npcNames.Count > 0;
     public bool KnowsZones => zones.Count > 0;
     public bool KnowsText => talk.Count > 0 || menu.Count > 0;
 
-    public string? ItemName(long itemId) => Lookup(itemNames, itemId);
-    public bool ItemStacks(long itemId) => stacking.Contains(itemId);
+    public string? ItemName(long itemId) => ResolveItem(itemId)?.Name;
+    public bool ItemStacks(long itemId) => ResolveItem(itemId)?.Stacks == true;
     public string? ExchangeSummary(long exchangeId) => Lookup(exchanges, exchangeId);
     public string? QuestSummary(long questId) => Lookup(quests, questId);
     public string? QuestTitle(long questId) => Lookup(questTitles, questId);
@@ -72,13 +82,10 @@ public sealed class JsonQuestCatalog : IQuestCatalog
     public static JsonQuestCatalog Load(string seedDirectory, string? questTextPath = null, string? retailQuestDataDirectory = null)
     {
         var catalog = new JsonQuestCatalog();
-        var items = Path.Combine(seedDirectory, "Items.json");
-        var itemFiles = File.Exists(items) ? [items]
-            : Directory.Exists(seedDirectory)
-                ? Directory.GetFiles(seedDirectory, "Items.slot*.json").Order(StringComparer.OrdinalIgnoreCase).ToArray()
-                : Array.Empty<string>();
-        foreach (var file in itemFiles)
-            catalog.LoadItems(file);
+        catalog.LoadItemBases(Path.Combine(seedDirectory, "ItemBases.json"));
+        if (Directory.Exists(seedDirectory))
+            foreach (var file in Directory.GetFiles(seedDirectory, "ItemVariants.set*.json").Order(StringComparer.OrdinalIgnoreCase))
+                catalog.LoadItemVariants(file);
         catalog.LoadExchanges(Path.Combine(seedDirectory, "ItemExchanges.json"));
         catalog.LoadNpcs(Path.Combine(seedDirectory, "Npcs.json"));
         if (retailQuestDataDirectory is { Length: > 0 })
@@ -91,18 +98,62 @@ public sealed class JsonQuestCatalog : IQuestCatalog
         return catalog;
     }
 
-    private void LoadItems(string path)
+    private sealed record ItemBase(string Name, long Set, bool Stacks);
+
+    private sealed record ItemVariant(long Id, string Name, long MadeFor, long Rarity, long Plus);
+
+    private void LoadItemBases(string path)
     {
         foreach (var row in ReadArray(path))
         {
-            if (!TryGetLong(row, "Num", out var id))
+            if (!TryGetLong(row, "Id", out var id))
                 continue;
-            itemNames[id] = row.TryGetProperty("Name", out var name) ? name.GetString() ?? "?" : "?";
-            if (row.TryGetProperty("Countable", out var countable) && countable.TryGetInt32(out var stacks)
-                && stacks != 0)
-                stacking.Add(id);
+            TryGetLong(row, "VariantSet", out var set);
+            TryGetLong(row, "Countable", out var countable);
+            itemBases[id] = new ItemBase(TextOf(row, "Name"), set, countable != 0);
         }
     }
+
+    private void LoadItemVariants(string path)
+    {
+        foreach (var row in ReadArray(path))
+        {
+            if (!TryGetLong(row, "VariantSet", out var set) || !TryGetLong(row, "Id", out var id))
+                continue;
+            TryGetLong(row, "MadeFor", out var madeFor);
+            TryGetLong(row, "Rarity", out var rarity);
+            TryGetLong(row, "Plus", out var plus);
+            itemVariants[(set, id)] = new ItemVariant(id, TextOf(row, "Name"), madeFor, rarity, plus);
+        }
+    }
+
+    private (string Name, bool Stacks)? ResolveItem(long itemId)
+    {
+        if (itemBases.TryGetValue(itemId, out var exact))
+            return (exact.Name, exact.Stacks);
+        var baseId = itemId / ItemBaseSpan * ItemBaseSpan;
+        if (!itemBases.TryGetValue(baseId, out var item)
+            || !itemVariants.TryGetValue((item.Set, itemId / ItemBlockSpan * ItemBaseSpan + itemId % ItemBaseSpan), out var variant)
+            || variant.MadeFor != 0 && variant.MadeFor != baseId)
+            return null;
+        if (NamingRarities.Contains(variant.Rarity) && variant.Name.Length > 0)
+            return (variant.Name, item.Stacks);
+        var level = LevelOf(variant);
+        return (level > 0 ? $"{item.Name}(+{level})" : item.Name, item.Stacks);
+    }
+
+    private static long LevelOf(ItemVariant variant)
+    {
+        if (UnlevelledRarities.Contains(variant.Rarity))
+            return 0;
+        if (variant.Rarity == ReverseRarity)
+            return variant.Plus % PlusSpan;
+        var tail = variant.Id % LevelSpan;
+        return tail != 0 ? tail : variant.Rarity != RegularRarity ? TopLevel : 0;
+    }
+
+    private static string TextOf(JsonElement row, string property) =>
+        row.TryGetProperty(property, out var value) ? value.GetString() ?? "" : "";
 
     private void LoadExchanges(string path)
     {
@@ -261,7 +312,7 @@ public sealed class JsonQuestCatalog : IQuestCatalog
     }
 
     private string Describe(long itemId) =>
-        itemNames.TryGetValue(itemId, out var name) ? name : itemId.ToString();
+        ItemName(itemId) ?? itemId.ToString();
 
     private static IEnumerable<JsonElement> ReadArray(string path)
     {

@@ -38,7 +38,7 @@ public class AccountPremiumTests
         session.ZoneId = (byte)ZoneId.RonarkLand;
         session.Nation = AccountNation.Karus;
         session.PremiumService = premiumType;
-        session.PremiumExpiry = DateTime.UtcNow.AddHours(hoursLeft);
+        session.HeldPremiums[premiumType] = DateTime.UtcNow.AddHours(hoursLeft);
         return session;
     }
 
@@ -48,7 +48,7 @@ public class AccountPremiumTests
         var account = new Account
         {
             PremiumType = PlatinumPremium,
-            PremiumDate = DateTime.UtcNow.AddDays(30),
+            Premiums = [new AccountPremium { Type = PlatinumPremium, Expiry = DateTime.UtcNow.AddDays(30) }],
         };
 
         account.RemainingPremiumHours.Should().BeGreaterThan(0);
@@ -58,14 +58,17 @@ public class AccountPremiumTests
     [Fact]
     public void AnExpiredOrAbsentDateLeavesNoPremiumType()
     {
-        new Account { PremiumType = PlatinumPremium, PremiumDate = DateTime.UtcNow.AddHours(-1) }
-            .ActivePremiumType.Should().Be(0, "the time ran out even though the type is still stored");
+        new Account
+        {
+            PremiumType = PlatinumPremium,
+            Premiums = [new AccountPremium { Type = PlatinumPremium, Expiry = DateTime.UtcNow.AddHours(-1) }],
+        }.ActivePremiumType.Should().Be(0, "the time ran out even though the type is still stored");
 
-        new Account { PremiumType = PlatinumPremium, PremiumDate = null }
+        new Account { PremiumType = PlatinumPremium }
             .ActivePremiumType.Should().Be(0);
 
-        new Account { PremiumDate = DateTime.UtcNow.AddDays(30) }
-            .ActivePremiumType.Should().Be(0, "premium time with no type buys nothing");
+        new Account { Premiums = [new AccountPremium { Type = PlatinumPremium, Expiry = DateTime.UtcNow.AddDays(30) }] }
+            .ActivePremiumType.Should().Be(0, "premium time with no type in use buys nothing");
     }
 
     [Fact]
@@ -100,7 +103,7 @@ public class AccountPremiumTests
         session.PremiumType.Should().Be(PlatinumPremium);
         CharacterDevelopmentPacketCoordinator.IsResetFree(session).Should().BeTrue();
 
-        session.PremiumExpiry = DateTime.UtcNow.AddSeconds(-1);
+        session.HeldPremiums[PlatinumPremium] = DateTime.UtcNow.AddSeconds(-1);
 
         session.PremiumTime.Should().Be(0);
         session.PremiumType.Should().Be(0, "every premium branch is gated on the time remaining");
@@ -121,7 +124,11 @@ public class AccountPremiumTests
     [Fact]
     public void AnAccountExpiryWithoutAPremiumTypeIsNoPremium()
     {
-        var account = new Account { PremiumType = 0, PremiumDate = DateTime.UtcNow.AddDays(30) };
+        var account = new Account
+        {
+            PremiumType = 0,
+            Premiums = [new AccountPremium { Type = PlatinumPremium, Expiry = DateTime.UtcNow.AddDays(30) }],
+        };
 
         account.RemainingPremiumHours.Should().Be(0);
         account.ActivePremiumType.Should().Be(0);

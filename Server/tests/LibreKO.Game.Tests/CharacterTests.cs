@@ -1359,7 +1359,7 @@ public class CharacterTests : GameTestBase
                     Nation = AccountNation.Karus,
                     Authority = AccountAuthority.Normal,
                     PremiumType = ExpPremium,
-                    PremiumDate = DateTime.UtcNow.AddHours(12)
+                    Premiums = [new AccountPremium { Type = ExpPremium, Expiry = DateTime.UtcNow.AddHours(12) }]
                 });
                 db.SaveChanges();
 

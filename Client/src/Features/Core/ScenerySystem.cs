@@ -261,6 +261,7 @@ internal sealed partial class ScenerySystem : IFeature, ITerrainQueries
         dayFrac -= Mathf.Floor(dayFrac);
         var weather = this.weather;
         Sky.Tick(dayFrac, weather, avatar.Body?.Position ?? Vector3.Zero);
+        ItemShineLight.FollowDaylight(Sky.SunShine);
         UpdateClock(dayFrac, weather);
         Audio.Ambience(weather switch
         {

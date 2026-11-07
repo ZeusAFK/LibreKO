@@ -125,6 +125,11 @@ internal sealed class NpcInteractionFeature : IFeature, ILateTickFeature, IInter
     {
         if (context.Self.Dead) return;
         if (!context.Entities.Views.TryGetValue(npcUniqueId, out var e) || !e.IsNpc || e.Dead || e.Attackable) return;
+        if (OwnShopOpen)
+        {
+            context.Log.Notice(OwnShopRefusal);
+            return;
+        }
         if (world.RankerMessageWindow.TryOpenStatue(EntityRig.EntityInfoOf(npcUniqueId, e))) return;
         if (gate.TryOperateKeyGate(e, npcUniqueId)) return;
 
@@ -148,6 +153,10 @@ internal sealed class NpcInteractionFeature : IFeature, ILateTickFeature, IInter
         questRequests.NpcEvent(npcUniqueId);
         warpRequests.ListRequest(e.NpcId);
     }
+
+    private const string OwnShopRefusal = "Close your shop before talking to anyone.";
+
+    private bool OwnShopOpen => world.Merchant.SelfStallOpen || world.MerchantBuy.WishShown;
 
     private static bool TurnsToTalker(EntityView e) =>
         e.Anim != null && !e.Statue && e.ObjectType == 0 && !EntityRig.EntityMoving(e);
@@ -287,6 +296,15 @@ internal sealed class NpcInteractionFeature : IFeature, ILateTickFeature, IInter
             return;
         }
 
+        if (dlg.Flag is NpcDialogStyle.LoveKnightOnlineBoard or NpcDialogStyle.ContinuePlayingBoard)
+        {
+            world.NpcDialogWindow.Close();
+            world.EventPost.Open(dlg.Flag == NpcDialogStyle.LoveKnightOnlineBoard
+                ? EventPostEvent.LoveKnightOnline
+                : EventPostEvent.ContinuePlaying);
+            return;
+        }
+
         if (dlg.Flag == NpcDialogStyle.ItemCombinePanel)
         {
             world.NpcDialogWindow.Close();
@@ -326,6 +344,8 @@ internal sealed class NpcInteractionFeature : IFeature, ILateTickFeature, IInter
     private readonly List<IClosableWindow> dialogs = new();
 
     void IInteractionDialogs.InteractionCloses(IClosableWindow dialog) => InteractionCloses(dialog);
+
+    void IInteractionDialogs.CloseDialogs() => CloseDialogs();
 
     internal void InteractionCloses(IClosableWindow dialog) => dialogs.Add(dialog);
 

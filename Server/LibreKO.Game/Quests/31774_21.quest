@@ -3,6 +3,9 @@ Bind Npc 31774 Zone 21
 On greeting
     Say "Which info do you wish to learn?"
     Topic "[Akara Altar]" goto welcome
+    Topic "I Love Knight online" goto love_knight_online
+    Topic "I will continue playing knight online" goto continue_playing
+    Topic "[Exchange] I love knight online Emblem Voucher" goto emblem_vouchers
 
 On welcome
     Say "Welcome! I'm a goddess \"Akara.\" Do you wish to earn my accessories? Check out \"Akara's Altar\" now. Do you wish to proceed?"
@@ -17,6 +20,43 @@ On how_to_use
 
 On altar
     Open special auction panel
+
+On love_knight_online
+    Open post board 0
+
+On continue_playing
+    Open post board 1
+
+On emblem_vouchers
+    Say "Every post on my boards earns an I love knight online Emblem Exchange Voucher. Bring me the voucher and I will give you the I love knight online Emblem for as many days as it says."
+    Topic "Emblem Exchange Voucher (1day)" goto emblem_1_day if player has 811084000
+    Topic "Emblem Exchange Voucher (3days)" goto emblem_3_days if player has 811085000
+    Topic "Emblem Exchange Voucher (7days)" goto emblem_7_days if player has 811086000
+    Topic "Emblem Exchange Voucher (15days)" goto emblem_15_days if player has 811087000
+    Topic "Emblem Exchange Voucher (30days)" goto emblem_30_days if player has 811088000
+    Topic "Decorative Emblem Exchange Voucher" goto decorative_emblem if player has 811089000
+    Topic "I'll just go." goto close
+    If no topic fits
+        Say "You don't have an I love knight online Emblem Exchange Voucher. Post on the I Love Knight online or the I will continue playing knight online board to earn one."
+        Topic "Confirm" goto close
+
+On emblem_1_day
+    Trade 1 of 811084000 for 1 of 1113329000 for 24 hours
+
+On emblem_3_days
+    Trade 1 of 811085000 for 1 of 1113329000 for 3 days
+
+On emblem_7_days
+    Trade 1 of 811086000 for 1 of 1113329000 for 7 days
+
+On emblem_15_days
+    Trade 1 of 811087000 for 1 of 1113329000 for 15 days
+
+On emblem_30_days
+    Trade 1 of 811088000 for 1 of 1113329000 for 30 days
+
+On decorative_emblem
+    Trade 1 of 811089000 for 1 of 1113330000
 
 On basic_info
     Say "Akara's Altar is an auction house where you can earn various of items and anyone can join. If you would like to join, I can tell you how and guide you though it. Once you place a bid, you cannot withdraw so please be careful when you place a bid. *Auction House is operated in each channel separately.*"

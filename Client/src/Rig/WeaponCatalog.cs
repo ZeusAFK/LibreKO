@@ -9,7 +9,6 @@ internal static class WeaponCatalog
     private const string IndexPath = "res://assets/items/weapon/index.json";
     private const string AliasesPath = "res://assets/items/weapon/visual_aliases.json";
     private const string GlowPath = "res://assets/items/weapon/glow.json";
-    private const int MaxExtOffset = 9999;
     private const uint DefaultTraceColor = 0xFFFFFFFF;
 
     internal sealed class Info
@@ -62,115 +61,38 @@ internal static class WeaponCatalog
     }
 
     private static Dictionary<int, Info>? index;
-    private static Dictionary<int, int>? weaponCat;
     private static Dictionary<int, Dictionary<int, string>>? glowCats;
     private static Dictionary<int, Dictionary<int, string>>? glowTails;
     private static bool glowLoaded;
 
     internal static IReadOnlyDictionary<int, Info> Index => index ??= LoadIndex();
 
-    internal static int ResolveBaseId(int itemId)
-    {
-        var byItem = Index;
-        if (byItem.ContainsKey(itemId)) return itemId;
-
-        int rounded = ItemData.BaseId(itemId);
-        if (byItem.ContainsKey(rounded)) return rounded;
-        if (weaponCat != null && weaponCat.ContainsKey(rounded)) return rounded;
-
-        int bestBase = 0, bestExt = int.MaxValue;
-        foreach (var baseId in byItem.Keys)
-        {
-            int ext = itemId - baseId;
-            if (ext < 0 || ext > MaxExtOffset || ext >= bestExt) continue;
-            bestBase = baseId;
-            bestExt = ext;
-        }
-        if (bestBase != 0) return bestBase;
-
-        if (weaponCat != null)
-        {
-            foreach (var baseId in weaponCat.Keys)
-            {
-                int ext = itemId - baseId;
-                if (ext < 0 || ext > MaxExtOffset || ext >= bestExt) continue;
-                bestBase = baseId;
-                bestExt = ext;
-            }
-        }
-        return bestBase != 0 ? bestBase : rounded;
-    }
+    internal static int ResolveBaseId(int itemId) =>
+        Index.ContainsKey(itemId) ? itemId : ItemData.BaseId(itemId);
 
     internal static bool TryResolveGlow(int itemId, out int baseItemId, out string fxName, out string tailFx)
     {
         if (!glowLoaded) { LoadGlow(); glowLoaded = true; }
-        tailFx = "";
         baseItemId = ResolveBaseId(itemId);
-        if (TryGlowFor(baseItemId, out fxName))
-        {
-            tailFx = TailFor(baseItemId);
-            return true;
-        }
-
-        int bestBase = 0, bestExt = int.MaxValue;
-        string? bestFx = null;
-        if (weaponCat != null)
-        {
-            foreach (var candidate in weaponCat.Keys)
-            {
-                int ext = itemId - candidate;
-                if (ext < 0 || ext > MaxExtOffset || ext >= bestExt) continue;
-                if (!TryGlowFor(candidate, out var candidateFx)) continue;
-                bestBase = candidate;
-                bestExt = ext;
-                bestFx = candidateFx;
-            }
-        }
-        if (bestFx == null) return false;
-        baseItemId = bestBase;
-        fxName = bestFx;
-        tailFx = TailFor(bestBase);
+        fxName = "";
+        tailFx = "";
+        if (ItemData.Get(itemId) is not { } def || glowCats == null
+            || !glowCats.TryGetValue(def.Cat, out var exts)) return false;
+        int ext = ItemData.ExtIdFor(itemId);
+        if (!exts.TryGetValue(ext, out var fx)) return false;
+        fxName = fx;
+        if (glowTails != null && glowTails.TryGetValue(def.Cat, out var tails) && tails.TryGetValue(ext, out var tail))
+            tailFx = tail;
         return true;
-
-        string TailFor(int candidateBase)
-        {
-            int ext = itemId - candidateBase;
-            if (weaponCat != null && glowTails != null
-                && weaponCat.TryGetValue(candidateBase, out int cat)
-                && glowTails.TryGetValue(cat, out var exts)
-                && exts.TryGetValue(ext, out var tail))
-                return tail;
-            return "";
-        }
-
-        bool TryGlowFor(int candidateBase, out string resolvedFx)
-        {
-            resolvedFx = "";
-            if (weaponCat == null || glowCats == null) return false;
-            int ext = itemId - candidateBase;
-            if (ext < 0 || ext > MaxExtOffset) return false;
-            if (weaponCat.TryGetValue(candidateBase, out int cat)
-                && glowCats.TryGetValue(cat, out var exts)
-                && exts.TryGetValue(ext, out var fx))
-            {
-                resolvedFx = fx;
-                return true;
-            }
-            return false;
-        }
     }
 
     private static void LoadGlow()
     {
-        weaponCat = new Dictionary<int, int>();
         glowCats = new Dictionary<int, Dictionary<int, string>>();
         glowTails = new Dictionary<int, Dictionary<int, string>>();
         using var f = Godot.FileAccess.Open(GlowPath, Godot.FileAccess.ModeFlags.Read);
         if (f == null) return;
         if (Json.ParseString(f.GetAsText()).AsGodotDictionary() is not { } root) return;
-        if (root.TryGetValue("weaponCat", out var wc) && wc.AsGodotDictionary() is { } wcd)
-            foreach (var k in wcd.Keys)
-                if (int.TryParse(k.AsString(), out int baseId)) weaponCat[baseId] = wcd[k].AsInt32();
         LoadGlowSection(root, "cats", glowCats);
         LoadGlowSection(root, "tails", glowTails);
     }

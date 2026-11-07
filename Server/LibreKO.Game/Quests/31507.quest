@@ -8,14 +8,8 @@ On greeting
         Topic "Receive all 4 buffs" goto event_800
     Else
         Topic "[Buff][Noah/Symbol of Victory]" goto event_200
-        Topic "[Spirit Alseids] Of mounting" do
-            If player lacks 900667000
-                Say "You don't have buff coupon."
-                Topic "Confirm" goto close
-        Topic "Settlement support free of charge buff" do
-            If player lacks 900667000
-                Say "You don't have buff coupon."
-                Topic "Confirm" goto close
+        Topic "[Spirit Alseids] Of mounting" goto mount_coupon
+        Topic "Settlement support free of charge buff" goto settlement_coupon
         Topic "Receive all 4 buffs" goto event_800
     Goto close
 
@@ -319,5 +313,44 @@ On event_806
         Cast 302329
         Cast 490223
         Take 200000 coins
+        Say "You are already completed. Have a good time."
+        Topic "Close" goto close
+
+On mount_coupon
+    If player lacks 900667000
+        Say "You don't have buff coupon."
+        Topic "Confirm" goto close
+    Else
+        Take 1 of 900667000
+        Cast 490223
+        Say "You are already completed. Have a good time."
+        Topic "Close" goto close
+
+On settlement_coupon
+    If player lacks 900667000
+        Say "You don't have buff coupon."
+        Topic "Confirm" goto close
+    Else if player level < 35
+        Take 1 of 900667000
+        Cast 302344
+        Cast 302331
+        Cast 302328
+        Cast 490223
+        Say "You are already completed. Have a good time."
+        Topic "Close" goto close
+    Else if player level < 61
+        Take 1 of 900667000
+        Cast 302344
+        Cast 302332
+        Cast 302329
+        Cast 490223
+        Say "You are already completed. Have a good time."
+        Topic "Close" goto close
+    Else
+        Take 1 of 900667000
+        Cast 302344
+        Cast 302333
+        Cast 302330
+        Cast 490223
         Say "You are already completed. Have a good time."
         Topic "Close" goto close

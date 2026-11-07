@@ -25,6 +25,10 @@ public class MagicDebuffTargetTests : GameTestBase
     private const int CryEchoId = 106782;
     private const int LightStaffId = 110772;
     private const int LightStaffStunId = 190772;
+    private const int SubsideId = 112770;
+    private const byte HalfSuccess = 50;
+    private const short SubsideAttackPercent = 80;
+    private const int SubsideVictims = 8;
     private const int EnoughTries = 300;
     private const int BattleCryBuffId = 106781;
     private const byte RonarkLand = BattleZoneManager.ZONE_RONARK_LAND;
@@ -51,6 +55,25 @@ public class MagicDebuffTargetTests : GameTestBase
         outside.ActiveBuffs.Should().NotContainKey(TormentId);
         ally.ActiveBuffs.Should().NotContainKey(TormentId);
         caster.ActiveBuffs.Should().NotContainKey(TormentId, "a curse is never turned on its own caster");
+    }
+
+    [Fact]
+    public async Task ACurseLandsOnEveryVictimWhateverItsSkillRowsSuccessColumnSays()
+    {
+        using var provider = CreateProvider(_ => { }, Configure);
+        var sessions = provider.GetRequiredService<SessionManager>();
+        var (caster, client) = Player(sessions, 700, AccountNation.Karus, 100, 100, new List<Packet>());
+        var victims = Enumerable.Range(0, SubsideVictims)
+            .Select(index => Player(sessions, 710 + index, AccountNation.ElMorad, 118 + index, 100).Session)
+            .ToList();
+        var monsters = Enumerable.Range(0, SubsideVictims)
+            .Select(index => SpawnMonster(sessions, 118 + index, 102))
+            .ToList();
+
+        await CastAtGround(provider, client, SubsideId, caster, 122, 100);
+
+        victims.Should().OnlyContain(victim => victim.ActiveBuffs.ContainsKey(SubsideId));
+        monsters.Should().OnlyContain(monster => monster.Debuffs.Has(BuffType.Damage, DateTime.UtcNow.Ticks));
     }
 
     [Fact]
@@ -355,6 +378,7 @@ public class MagicDebuffTargetTests : GameTestBase
             [CryEchoId] = new() { Id = CryEchoId, Type1 = 1, Moral = 7, SuccessRate = 100 },
             [LightStaffId] = new() { Id = LightStaffId, Type1 = 1, Type2 = 3, Moral = 7, Range = 5, SuccessRate = 100 },
             [LightStaffStunId] = new() { Id = LightStaffStunId, Type1 = 4, Moral = 7, Range = 5, SuccessRate = 100 },
+            [SubsideId] = new() { Id = SubsideId, Type1 = 4, Moral = 10, Range = 20, SuccessRate = HalfSuccess },
         };
         gameData.MagicType1Table.Returns(new Dictionary<int, MagicType1Data>
         {
@@ -385,6 +409,7 @@ public class MagicDebuffTargetTests : GameTestBase
             [LightShockId] = new() { Id = LightShockId, BuffType = (byte)BuffType.DisableTargeting, Radius = 10, Duration = 5, Speed = 100 },
             [FreezingDistanceId] = new() { Id = FreezingDistanceId, BuffType = (byte)BuffType.Freeze, Duration = 15, Speed = 1 },
             [LightStaffStunId] = new() { Id = LightStaffStunId, BuffType = (byte)BuffType.Stun, Duration = 3, Speed = 100 },
+            [SubsideId] = new() { Id = SubsideId, BuffType = (byte)BuffType.Damage, Radius = 10, Duration = 30, Attack = SubsideAttackPercent, Speed = 100 },
         });
     }
 

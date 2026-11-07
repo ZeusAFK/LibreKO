@@ -118,6 +118,7 @@ public partial class ItemSearchPanel : VBoxContainer
         var scroll = new ScrollContainer
         {
             CustomMinimumSize = resultsSize,
+            SizeFlagsVertical = SizeFlags.ExpandFill,
             HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled,
         };
         AddChild(scroll);

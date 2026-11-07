@@ -60,7 +60,7 @@ public static class GmPanelPages
         new(Commands, ServerGroup, "Commands", "system/scroll", FillsHeight: true),
         new(Tools, ServerGroup, "Tools", "system/hammer"),
         new(SelfCharacter, SelfGroup, "Character", "system/user", GameMasterOnly: false),
-        new(SelfItems, SelfGroup, "Items", "system/gift", GameMasterOnly: false),
+        new(SelfItems, SelfGroup, "Items", "system/gift", GameMasterOnly: false, FillsHeight: true),
         new(SelfClass, SelfGroup, "Class", "system/medal", GameMasterOnly: false),
         new(SelfSkills, SelfGroup, "Skills", "system/level", GameMasterOnly: false),
     ];

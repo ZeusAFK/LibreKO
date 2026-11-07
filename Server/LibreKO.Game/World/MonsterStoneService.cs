@@ -14,9 +14,6 @@ public readonly record struct MonsterStoneDungeon(byte ZoneId, short Family)
 public static class MonsterStoneRules
 {
     public const int UniversalStone = 900144023;
-    public const int FirstNestStone = 300144036;
-    public const int SecondNestStone = 300145037;
-    public const int ThirdNestStone = 300146038;
 
     public const short FamilySetBase = 100;
     public const int MinimumLevel = 20;
@@ -30,13 +27,6 @@ public static class MonsterStoneRules
         [(byte)ZoneId.MonsterStone1] = [1, 2, 3, 4],
         [(byte)ZoneId.MonsterStone2] = [5, 6, 7, 8, 9],
         [(byte)ZoneId.MonsterStone3] = [10, 11, 12, 13],
-    };
-
-    private static readonly Dictionary<int, byte> ZoneByStone = new()
-    {
-        [FirstNestStone] = (byte)ZoneId.MonsterStone1,
-        [SecondNestStone] = (byte)ZoneId.MonsterStone2,
-        [ThirdNestStone] = (byte)ZoneId.MonsterStone3,
     };
 
     private static readonly (int MaxLevel, short[] Families)[] UniversalBands =
@@ -55,7 +45,7 @@ public static class MonsterStoneRules
 
     public static long ExpFor(int level) => ExpFactor * ((long)level * level * level + ExpBase);
 
-    public static bool IsStone(int itemId) => itemId == UniversalStone || ZoneByStone.ContainsKey(itemId);
+    public static bool IsStone(int itemId) => itemId == UniversalStone;
 
     public static bool IsNestZone(byte zoneId) => FamiliesByZone.ContainsKey(zoneId);
 
@@ -67,9 +57,7 @@ public static class MonsterStoneRules
 
     public static MonsterStoneDungeon? Pick(int itemId, int level, Random random)
     {
-        var families = itemId == UniversalStone
-            ? UniversalFamilies(level)
-            : ZoneByStone.TryGetValue(itemId, out var zone) ? FamiliesByZone[zone] : null;
+        var families = itemId == UniversalStone ? UniversalFamilies(level) : null;
         if (families is not { Length: > 0 })
             return null;
 

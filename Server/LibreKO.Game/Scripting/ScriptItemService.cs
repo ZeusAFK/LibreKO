@@ -309,7 +309,7 @@ public class ScriptItemService(
 
         if (!ItemExchangeFlags.ExchangeGivesEveryReward(exchange.RandomFlag))
             context.PendingItemAnnouncements.AddRange(rewards
-                .Where(reward => gameData.GetItem(reward.itemId)?.ItemType == UniqueItemType)
+                .Where(reward => gameData.GetItem(reward.itemId)?.Rarity == UniqueItemType)
                 .Select(reward => reward.itemId));
         return true;
     }

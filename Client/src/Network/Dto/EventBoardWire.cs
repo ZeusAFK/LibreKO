@@ -2,11 +2,14 @@
 
 public enum EventBoardSubOpcode : byte
 {
+    PostBoard = 2,
+    PostRegister = 3,
     AttendanceBoard = 4,
     AttendanceClaim = 5,
     RouletteOpen = 6,
     RouletteSpin = 8,
     RoulettePrizeList = 9,
+    PostHistory = 15,
 }
 
 public enum EventBoardResult : uint

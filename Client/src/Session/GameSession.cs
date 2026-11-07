@@ -80,6 +80,7 @@ public sealed class GameSession
     public PlayerInspectSession PlayerInspect { get; } = new();
     public PreGameSession PreGame { get; } = new();
     public PremiumSession Premium { get; } = new();
+    public EventPostSession EventPost { get; } = new();
     public PresetSession Preset { get; } = new();
     public ProgressSession Progress { get; }
     public PvpSession Pvp { get; } = new();
@@ -116,7 +117,7 @@ public sealed class GameSession
         Progress = new ProgressSession(Self);
         ManesSurvival = new ManesSurvivalSession(Self, Progress);
         Party = new PartySession(Self);
-        SkillTimers = new SkillTimers(Self);
+        SkillTimers = new SkillTimers(Self, GmFx);
         UserOption = new UserOptionSession(Self);
         Hostility = new HostilityRules(Self, Siege, Clan, ClanBattleWar, ZoneAbility, Entities);
         Progress.StateChangeEvent += (charId, type, value) =>

@@ -27,4 +27,13 @@ public class ItemShineTests
     [InlineData(30, 4)]
     public void ReverseGlowFollowsTheReverseLadder(int plus, int level) =>
         Assert.Equal(level, ItemShine.LevelForReversePlus(plus));
+
+    [Theory]
+    [InlineData(0f, 1f)]
+    [InlineData(0.25f, 0.75f)]
+    [InlineData(1f, 0f)]
+    [InlineData(1.4f, 0f)]
+    [InlineData(-0.2f, 1f)]
+    public void TheShineLightFadesOutUnderTheSun(float daylight, float share) =>
+        Assert.Equal(share, ItemShine.LightShare(daylight), 3);
 }

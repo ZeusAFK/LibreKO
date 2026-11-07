@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+using LibreKO.Common.Domain.Entities;
 using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
@@ -87,6 +88,13 @@ public class KingSystemRuntimeService(
 
     public static ushort KingCapeOf(AccountNation nation) =>
         nation == AccountNation.ElMorad ? ElmoradKingCape : KarusKingCape;
+
+    public readonly record struct WornCape(short Id, byte R, byte G, byte B);
+
+    public static WornCape CapeOf(bool king, AccountNation nation, KnightsEntity? clan) =>
+        king
+            ? new WornCape((short)KingCapeOf(nation), 0, 0, 0)
+            : new WornCape(clan?.Cape ?? 0, clan?.CapeR ?? 0, clan?.CapeG ?? 0, clan?.CapeB ?? 0);
 
     // A request that finds a write for its value still waiting shares that write; a failed write is logged, and the next one stores the value as it stands.
     public Task PersistKingPropertyAsync<TProperty>(

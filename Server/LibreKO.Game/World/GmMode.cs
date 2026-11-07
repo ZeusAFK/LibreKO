@@ -1,4 +1,6 @@
-﻿namespace LibreKO.Game.World;
+﻿using LibreKO.Common.Domain.Entities.GameData;
+
+namespace LibreKO.Game.World;
 
 public static class GmMode
 {
@@ -11,4 +13,6 @@ public static class GmMode
 
     public static int Taken(UserSession victim, int damage) =>
         damage > 0 && IsActive(victim) ? Math.Min(damage, DamageTaken) : damage;
+
+    public static short ManaCost(UserSession caster, MagicData magic) => IsActive(caster) ? (short)0 : magic.Msp;
 }

@@ -3,4 +3,5 @@
 internal interface IInteractionDialogs
 {
     void InteractionCloses(IClosableWindow dialog);
+    void CloseDialogs();
 }

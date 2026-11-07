@@ -146,7 +146,7 @@ public class ChaoticGeneratorService(
         var artifact = MiscPacketWriter.ObjectEvent(ObjectArtifact, (byte)effect, npcUniqueId);
         await sessionManager.Regions.SendToRegion(session, artifact, excludeSender: false);
 
-        if (rewardData.ItemType == ItemData.TypeKrowaz || rewardItemId == RareNoticeItemId)
+        if (rewardData.Rarity == ItemData.TypeKrowaz || rewardItemId == RareNoticeItemId)
             await SendRareNoticeAsync(session, rewardItemId);
     }
 
@@ -196,7 +196,7 @@ public class ChaoticGeneratorService(
         => flag is ItemFlag.Rented or ItemFlag.CharacterSeal or ItemFlag.Duplicate
             or ItemFlag.Sealed or ItemFlag.Bound;
 
-    private static ItemUpgradePacketWriter.BifrostRarity RarityEffect(ItemData reward) => reward.ItemType switch
+    private static ItemUpgradePacketWriter.BifrostRarity RarityEffect(ItemData reward) => reward.Rarity switch
     {
         ItemData.TypeKrowaz => ItemUpgradePacketWriter.BifrostRarity.White,
         ItemData.TypeStandard => ItemUpgradePacketWriter.BifrostRarity.Green,

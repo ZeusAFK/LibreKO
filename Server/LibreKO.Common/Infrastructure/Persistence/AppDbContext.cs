@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Friendship> Friendships { get; set; }
     public DbSet<UserDailyOp> UserDailyOps { get; set; }
     public DbSet<RankerStatueNote> RankerStatueNotes { get; set; }
+    public DbSet<EventPost> EventPosts { get; set; }
     public DbSet<DailyRankCounter> DailyRankCounters { get; set; }
     public DbSet<DailyRankPlace> DailyRankPlaces { get; set; }
     public DbSet<Pet> Pets { get; set; }
@@ -49,11 +50,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ItemCombineMaterialData> ItemCombineMaterials { get; set; }
     public DbSet<ItemSmashClassData> ItemSmashClasses { get; set; }
     public DbSet<ItemSmashRewardData> ItemSmashRewards { get; set; }
-    public DbSet<ItemGradeBonusData> ItemGradeBonuses { get; set; }
     public DbSet<CoefficientData> Coefficients { get; set; }
     public DbSet<StartPositionData> StartPositions { get; set; }
     public DbSet<HomeData> Homes { get; set; }
-    public DbSet<ItemData> Items { get; set; }
+    public DbSet<ItemBaseData> ItemBases { get; set; }
+    public DbSet<ItemVariantData> ItemVariants { get; set; }
     public DbSet<WarpData> Warps { get; set; }
     public DbSet<NpcData> Npcs { get; set; }
     public DbSet<NpcPosData> NpcPositions { get; set; }

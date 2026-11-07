@@ -137,15 +137,15 @@ public class NpcTradeAtomicityTests : GameTestBase
         gameData.ItemSellsByGroup.Returns(ShopList(SellingGroup, ShopItems));
         gameData.GetItem(Potion).Returns(new ItemData
         {
-            Num = Potion, Countable = 1, BuyPrice = PotionPrice, SellPrice = 1, Weight = 1, Race = 1, SellingGroup = SellingGroup,
+            Num = Potion, Countable = 1, BuyPrice = PotionPrice, SaleType = 1, Weight = 1, Race = 1, SellingGroup = SellingGroup,
         });
         gameData.GetItem(Sword).Returns(new ItemData
         {
-            Num = Sword, Countable = 0, BuyPrice = 10, SellPrice = 1, Weight = 1, Race = 1, Duration = 100, SellingGroup = SellingGroup,
+            Num = Sword, Countable = 0, BuyPrice = 10, SaleType = 1, Weight = 1, Race = 1, Duration = 100, SellingGroup = SellingGroup,
         });
         gameData.GetItem(Arrow).Returns(new ItemData
         {
-            Num = Arrow, Countable = 1, BuyPrice = ArrowPrice, SellPrice = 1, Weight = 1, Race = 1, SellingGroup = SellingGroup,
+            Num = Arrow, Countable = 1, BuyPrice = ArrowPrice, SaleType = 1, Weight = 1, Race = 1, SellingGroup = SellingGroup,
         });
     }
 

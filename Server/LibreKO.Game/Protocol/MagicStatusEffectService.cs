@@ -34,7 +34,6 @@ public class MagicStatusEffectService(
     IFlashBonusService flashBonus,
     ILogger<MagicStatusEffectService> logger) : IMagicStatusEffectService
 {
-    private const int SkillSucceeded = 1;
     private const int PetEffectNoDuration = -1;
     private const byte DamageOverTimeCured = 200;
 
@@ -325,7 +324,7 @@ public class MagicStatusEffectService(
     private static bool TryDebuffNpc(
         UserSession caster, MagicData magic, NpcInstance npc, int skillId, MagicType4Data type4Data)
     {
-        if (!IsDebuffableNpc(npc, caster) || !LandsDebuff(magic))
+        if (!IsDebuffableNpc(npc, caster))
             return false;
 
         return npc.Debuffs.TryApply(skillId, type4Data, DateTime.UtcNow.Ticks);
@@ -386,38 +385,7 @@ public class MagicStatusEffectService(
         logger.LogDebug("Buff {SkillId} applied to {Name} type={BuffType} duration={Duration}s",
             skillId, target.Name, buffType, type4Data.Duration);
 
-        target.ReplaceBuff(existingKey, skillId, new ActiveBuff
-        {
-            MagicId = skillId,
-            CasterId = caster.CharacterId,
-            Duration = type4Data.Duration,
-            ExpireTicks = DateTime.UtcNow.AddSeconds(type4Data.Duration).Ticks,
-            BuffType = buffType,
-            SpecialAmount = type4Data.SpecialAmount > 0 ? type4Data.SpecialAmount : type4Data.ExpPct,
-            BonusAc = type4Data.Ac,
-            BonusAcPct = type4Data.AcPct,
-            BonusAttack = type4Data.Attack,
-            BonusMagicAttack = type4Data.MagicAttack,
-            BonusMaxHp = type4Data.MaxHP,
-            BonusMaxHpPct = type4Data.MaxHPPct,
-            BonusMaxMp = type4Data.MaxMP,
-            BonusMaxMpPct = type4Data.MaxMPPct,
-            BonusHitRate = type4Data.HitRate,
-            BonusAvoidRate = type4Data.AvoidRate,
-            BonusStr = type4Data.Str,
-            BonusSta = type4Data.Sta,
-            BonusDex = type4Data.Dex,
-            BonusIntel = type4Data.Intel,
-            BonusCha = type4Data.Cha,
-            BonusFireR = type4Data.FireR,
-            BonusColdR = type4Data.ColdR,
-            BonusLightningR = type4Data.LightningR,
-            BonusMagicR = type4Data.MagicR,
-            BonusPoisonR = type4Data.PoisonR,
-            BonusDiseaseR = type4Data.DiseaseR,
-            BonusSpeed = type4Data.Speed,
-            BonusAttackSpeed = type4Data.AttackSpeed
-        });
+        target.ReplaceBuff(existingKey, skillId, ActiveBuff.Of(skillId, caster.CharacterId, type4Data));
 
         target.RecalculateStatsWithBuffs(gameDataService);
         await userNotificationService.SendStatUpdateAsync(target);
@@ -452,14 +420,16 @@ public class MagicStatusEffectService(
             excludeSender: false);
     }
 
-    private static bool LandsDebuff(MagicData magic) =>
+    private static bool LandsMeleeSlow(MagicData magic) =>
         magic.SuccessRate is 0 or >= 100 || Random.Shared.Next(100) < magic.SuccessRate;
 
     private static bool LandsOnPlayer(
         UserSession caster, UserSession target, MagicData magic, BuffType buffType, bool isPrimary)
     {
-        if (!StatusEffectChance.LocksMovement(buffType) || magic.PrimaryType == MagicSkillType.Melee)
-            return LandsDebuff(magic);
+        if (!StatusEffectChance.LocksMovement(buffType))
+            return true;
+        if (magic.PrimaryType == MagicSkillType.Melee)
+            return LandsMeleeSlow(magic);
 
         return IsExtendedRow(magic, isPrimary)
             || StatusEffectChance.Lands(caster, target, buffType, StatusEffectChance.StatusChance);
@@ -477,7 +447,7 @@ public class MagicStatusEffectService(
                 skillId,
                 (short)caster.CharacterId,
                 targetId,
-                [data[0], SkillSucceeded, data[2], type4Data.Duration, data[4], type4Data.Speed, data[6]]),
+                [data[0], MagicProcessPacketWriter.Succeeded, data[2], type4Data.Duration, data[4], type4Data.Speed, data[6]]),
             excludeSender: false);
 
     private IEnumerable<UserSession> AreaPlayers(
@@ -565,7 +535,7 @@ public class MagicStatusEffectService(
                     caster,
                     MagicProcessPacketWriter.Create(
                         MagicProcessOpcode.Effecting, skillId, (short)caster.CharacterId,
-                        (short)member.CharacterId, [0, SkillSucceeded]),
+                        (short)member.CharacterId, [0, MagicProcessPacketWriter.Succeeded]),
                     excludeSender: false);
             }
             return true;
@@ -978,7 +948,7 @@ public class MagicStatusEffectService(
             skillId,
             (short)caster.CharacterId,
             (short)caster.CharacterId,
-            [data[0], SkillSucceeded, data[2], PetEffectNoDuration, pet.UniqueId, data[5], data[6]]));
+            [data[0], MagicProcessPacketWriter.Succeeded, data[2], PetEffectNoDuration, pet.UniqueId, data[5], data[6]]));
         return true;
     }
 
@@ -1034,7 +1004,7 @@ public class MagicStatusEffectService(
                 skillId,
                 (short)caster.CharacterId,
                 (short)target.CharacterId,
-                [data[0], SkillSucceeded, data[2], type9Data.Duration, data[4], data[5], data[6]]),
+                [data[0], MagicProcessPacketWriter.Succeeded, data[2], type9Data.Duration, data[4], data[5], data[6]]),
             excludeSender: false);
 
     private static Task SendMagicFailAsync(UserSession session, int skillId) =>

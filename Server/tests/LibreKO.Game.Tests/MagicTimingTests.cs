@@ -176,6 +176,41 @@ public class MagicTimingTests
         timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.Allowed);
     }
 
+    [Theory]
+    [InlineData(true, MagicTimingVerdict.Allowed)]
+    [InlineData(false, MagicTimingVerdict.OnCooldown)]
+    public void AGameMastersSkillsHaveNoCooldownInGmMode(bool gmMode, MagicTimingVerdict verdict)
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        session.IsGM = true;
+        session.GmModeEnabled = gmMode;
+        var inferno = Magic(Inferno, castTenths: CastTenths, recastTenths: 31);
+
+        timing.OnCastAccepted(session, inferno);
+        timing.OnReleaseAccepted(session, inferno);
+        clock.Advance(TimeSpan.FromSeconds(0.3));
+
+        timing.CheckCasting(session, inferno).Should().Be(verdict);
+    }
+
+    [Fact]
+    public void TurningGmModeOnEndsARunningCooldown()
+    {
+        var (timing, clock) = Subject();
+        var session = Session();
+        session.IsGM = true;
+        session.GmModeEnabled = false;
+        var inferno = Magic(Inferno, castTenths: CastTenths, recastTenths: 31);
+
+        timing.OnCastAccepted(session, inferno);
+        timing.OnReleaseAccepted(session, inferno);
+        clock.Advance(TimeSpan.FromSeconds(0.3));
+        session.GmModeEnabled = true;
+
+        timing.CheckCasting(session, inferno).Should().Be(MagicTimingVerdict.Allowed);
+    }
+
     [Fact]
     public void ACastingStageIsRefusedForARowWithoutACastTime()
     {

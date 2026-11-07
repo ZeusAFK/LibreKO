@@ -1366,7 +1366,7 @@ public class ItemTests : GameTestBase
                     Num = itemId,
                     SellingGroup = 1,
                     BuyPrice = 1200,
-                    SellPrice = 150,
+                    SaleType = 150,
                     Countable = 1
                 });
             });
@@ -1435,7 +1435,7 @@ public class ItemTests : GameTestBase
                     Num = baseItemId,
                     SellingGroup = 1,
                     BuyPrice = 10000,
-                    SellPrice = 1,
+                    SaleType = 1,
                     Countable = 1
                 });
                 gameData.GetItem(itemId).Returns(new ItemData
@@ -1443,7 +1443,7 @@ public class ItemTests : GameTestBase
                     Num = itemId,
                     SellingGroup = 1,
                     BuyPrice = 30000,
-                    SellPrice = 3,
+                    SaleType = 3,
                     Countable = 1
                 });
             });
@@ -1589,7 +1589,6 @@ public class ItemTests : GameTestBase
     private const int ReverseConvertScroll = 379256000;
     private const int PlusSixItem = 262005006;
     private const int PlusSevenItem = 262005007;
-    private const int UpgradeExtension = 17;
     private const int PlusSevenExtensionId = 7;
     private const int GradeStep = 1;
     private const short LowItemClass = 1;
@@ -1599,8 +1598,12 @@ public class ItemTests : GameTestBase
     private const short KrowazItemClass = 33;
     private const int CertainSuccessRate = 10_000;
 
-    private static ItemData UpgradeItem(int num, short itemType = 5, short itemClass = 3, short duration = 15, int extension = 0)
-        => new() { Num = num, Kind = 52, ItemType = (byte)itemType, ItemClass = itemClass, Duration = duration, Extension = extension };
+    private static ItemData UpgradeItem(int num, short itemType = 5, short itemClass = 3, short duration = 15, short gradeClass = -1)
+        => new()
+        {
+            Num = num, Kind = 52, Rarity = (byte)itemType, ItemClass = itemClass, Duration = duration,
+            GradeClass = gradeClass < 0 ? itemClass : gradeClass, Grade = (short)(num % 10), UpgradeLevel = num % 10,
+        };
 
     private static Packet UpgradeRequest(byte subOpcode, byte upgradeType, params (int ItemId, byte Position)[] slots)
     {
@@ -1879,12 +1882,9 @@ public class ItemTests : GameTestBase
             _ => { },
             gameData =>
             {
-                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId, itemClass: itemClass, extension: UpgradeExtension));
+                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId, itemClass: itemClass,
+                    gradeClass: (short)(itemClass + (originItemId % 1000 == PlusSevenExtensionId ? GradeStep : 0))));
                 gameData.GetItem(originItemId + 1).Returns(UpgradeItem(originItemId + 1, itemClass: itemClass));
-                gameData.ItemGradeBonuses.Returns(new Dictionary<int, int>
-                {
-                    [ItemGradeBonusData.KeyOf(UpgradeExtension, PlusSevenExtensionId)] = GradeStep
-                });
                 gameData.GetUpgradeRecipe(originItemId, scrollId).Returns(new ItemUpgradeRecipeData
                 {
                     OriginNumber = originItemId,
@@ -2109,6 +2109,57 @@ public class ItemTests : GameTestBase
     }
 
     [Fact]
+    public async Task HandleUpgradeAsync_AFailedUpgradeToPlusEightIsAnnouncedNamingTheItemAsItWas()
+    {
+        const int originItemId = 156210007;
+        const int upgradedItemId = 156210008;
+
+        using var provider = CreateProvider(
+            _ => { },
+            gameData =>
+            {
+                gameData.GetItem(originItemId).Returns(UpgradeItem(originItemId));
+                gameData.GetItem(upgradedItemId).Returns(UpgradeItem(upgradedItemId));
+                gameData.GetUpgradeRecipe(originItemId, HighClassScroll).Returns(new ItemUpgradeRecipeData
+                {
+                    OriginNumber = originItemId,
+                    NewNumber = upgradedItemId,
+                    RequiredItem = HighClassScroll
+                });
+                gameData.GetUpgradeSetting(5, 7, HighClassScroll, 0).Returns(new ItemUpgradeSettingsData
+                {
+                    ItemType = 5,
+                    ItemGrade = 7,
+                    ReqNoah = 150_000,
+                    SuccessRate = 10000
+                });
+            },
+            settings =>
+            {
+                settings.Global.Anvil.Enabled = true;
+                settings.Global.Anvil.MaxRateSwingPercent = 100;
+                settings.Global.Anvil.SuccessStepPercent = 100;
+                settings.Global.Anvil.FailureStepPercent = 100;
+            });
+        provider.GetRequiredService<IGlobalAnvilRateService>().ResolveRoll(10000, roll: 0);
+
+        var sentPackets = new List<Packet>();
+        var client = CreateRecordingClient(sentPackets);
+        CreateUpgradeSession(provider, client, "Rin", originItemId, HighClassScroll);
+
+        await provider.GetRequiredService<IItemPacketCoordinator>()
+            .HandleUpgradeAsync(client, UpgradeRequest(2, 1, (originItemId, 0), (HighClassScroll, 1)));
+
+        var notice = sentPackets.Single(packet => packet.GetOpcode() == (byte)GameOpcodes.GS_LOGOSSHOUT);
+        notice.ResetOffset();
+        notice.ReadByte().Should().Be((byte)LogosShoutSubOpcode.Broadcast);
+        notice.ReadByte().Should().Be(LogosShoutPacketWriter.AnnouncementUpgrade);
+        notice.ReadByte().Should().Be(0);
+        notice.ReadSByteString().Should().Be("Rin");
+        notice.ReadInt().Should().Be(originItemId);
+    }
+
+    [Fact]
     public async Task HandleUpgradeAsync_AccessoryCompoundNeedsThreeCopies()
     {
         const int originItemId = 310110005;
@@ -2119,7 +2170,7 @@ public class ItemTests : GameTestBase
         {
             Num = num,
             Kind = 91,
-            ItemType = 5,
+            Rarity = 5,
             ItemClass = 0,
             Duration = 15
         };
@@ -2164,7 +2215,7 @@ public class ItemTests : GameTestBase
         const int upgradedItemId = 310110006;
         const int accessoryScroll = 379159000;
 
-        static ItemData Earring(int num) => new() { Num = num, Kind = 91, ItemType = 5, ItemClass = 0, Duration = 15 };
+        static ItemData Earring(int num) => new() { Num = num, Kind = 91, Rarity = 5, ItemClass = 0, Duration = 15 };
 
         using var provider = CreateProvider(
             _ => { },

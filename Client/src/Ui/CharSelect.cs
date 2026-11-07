@@ -26,6 +26,7 @@ public partial class CharSelect : Node3D
 
     public override void _Ready()
     {
+        LeftoverResources.Release();
         Ui.MenuScale(true);
         BuildStage();
         BuildOverlay();

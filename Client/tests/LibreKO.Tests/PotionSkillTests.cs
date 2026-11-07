@@ -106,7 +106,7 @@ public class PotionSkillTests
     [Fact]
     public void AnHpPotionHoldsTheMpPotionUntilTheSharedCooldownEnds()
     {
-        var timers = new SkillTimers(new SelfSession());
+        var timers = new SkillTimers(new SelfSession(), new GmFxSession());
 
         timers.Start(HolyWater(), Now);
 
@@ -117,7 +117,7 @@ public class PotionSkillTests
     [Fact]
     public void ARiceCakeHoldsHolyWater()
     {
-        var timers = new SkillTimers(new SelfSession());
+        var timers = new SkillTimers(new SelfSession(), new GmFxSession());
 
         timers.Start(RiceCake(), Now);
 
@@ -127,7 +127,7 @@ public class PotionSkillTests
     [Fact]
     public void AMaestroHpPotionHoldsTheMpPotion()
     {
-        var timers = new SkillTimers(new SelfSession());
+        var timers = new SkillTimers(new SelfSession(), new GmFxSession());
 
         timers.Start(Restore(490076, 0, HealTarget.HpPurchase, 720, cast: 5, recast: 20), Now);
 
@@ -137,7 +137,7 @@ public class PotionSkillTests
     [Fact]
     public void APotionDoesNotHoldAHealOverTimeScroll()
     {
-        var timers = new SkillTimers(new SelfSession());
+        var timers = new SkillTimers(new SelfSession(), new GmFxSession());
 
         timers.Start(HolyWater(), Now);
 

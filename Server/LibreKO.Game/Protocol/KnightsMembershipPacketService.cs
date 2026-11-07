@@ -31,6 +31,7 @@ public class KnightsMembershipPacketService(
     IClanStandingService clanStanding,
     IMagicItemUsageService itemUsage,
     ICharacterStatePersister statePersister,
+    IGameDataService gameData,
     ILogger<KnightsMembershipPacketService> logger) : IKnightsMembershipPacketService
 {
     private const int InviteRequestBytes = 4;
@@ -256,9 +257,11 @@ public class KnightsMembershipPacketService(
         await knightsRuntimeService.RefreshClanBonusAsync(clan.Id);
 
         var allianceId = sessionManager.Knights.GetAllianceForClan(clan.Id)?.MainClanId ?? 0;
+        var cape = KingSystemRuntimeService.CapeOf(
+            KingSystemRuntimeService.IsKingOf(gameData, target.Nation, target.Name), target.Nation, clan);
         var joined = KnightsPacketWriter.JoinAccepted(new KnightsPacketWriter.JoinedState(
             target.CharacterId, clan.Id, clan.Name, target.KnightsFame, clan.Flag, allianceId,
-            clan.MarkVersion, clan.Cape, KnightsPacketWriter.PackColour(clan.CapeR, clan.CapeG, clan.CapeB),
+            clan.MarkVersion, cape.Id, KnightsPacketWriter.PackColour(cape.R, cape.G, cape.B),
             clan.Grade, clan.Ranking));
         await sessionManager.Regions.SendToRegion(target, joined, excludeSender: false);
         await knightsRuntimeService.SendClanChatAsync(clan.Id, $"{target.Name} has joined the clan.");

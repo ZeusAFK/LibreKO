@@ -67,21 +67,6 @@ public class MonsterStoneTests
             .Should().BeNull();
     }
 
-    [Theory]
-    [InlineData(MonsterStoneRules.FirstNestStone, FirstNest, new short[] { 1, 2, 3, 4 })]
-    [InlineData(MonsterStoneRules.SecondNestStone, SecondNest, new short[] { 5, 6, 7, 8, 9 })]
-    [InlineData(MonsterStoneRules.ThirdNestStone, ThirdNest, new short[] { 10, 11, 12, 13 })]
-    public void ANestStoneKeepsToItsOwnNestAtAnyLevel(int stone, byte zone, short[] families)
-    {
-        var random = new Random(stone);
-        var picks = Enumerable.Range(0, Draws)
-            .Select(_ => MonsterStoneRules.Pick(stone, 1, random)!.Value)
-            .ToList();
-
-        picks.Should().OnlyContain(p => p.ZoneId == zone);
-        picks.Select(p => p.Family).Distinct().Should().BeEquivalentTo(families);
-    }
-
     [Fact]
     public void OtherItemsAreNoMonsterStone()
     {

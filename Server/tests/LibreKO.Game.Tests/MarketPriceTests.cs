@@ -50,7 +50,7 @@ public class MarketPriceTests : GameTestBase
         if (premium)
         {
             session.PremiumService = 1;
-            session.PremiumExpiry = DateTime.UtcNow.AddDays(10);
+            session.HeldPremiums[1] = DateTime.UtcNow.AddDays(10);
         }
         sessions.Regions.AddToRegion(session);
         return (session, sent, client);

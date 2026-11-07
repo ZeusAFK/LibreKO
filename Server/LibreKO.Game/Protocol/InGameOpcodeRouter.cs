@@ -211,7 +211,7 @@ public class InGameOpcodeRouter : IInGameOpcodeRouter
             },
 
             // Misc
-            [GameOpcodes.GS_PREMIUM] = (c, _) => misc.HandlePremiumAsync(c),
+            [GameOpcodes.GS_PREMIUM] = misc.HandlePremiumAsync,
             [GameOpcodes.GS_AUTHORITY_CHANGE] = misc.HandleAuthorityChangeAsync,
             [GameOpcodes.GS_CORPSE] = misc.HandleCorpseAsync,
             [GameOpcodes.GS_NAME_CHANGE] = misc.HandleNameChangeAsync,

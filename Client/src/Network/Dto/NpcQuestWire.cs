@@ -21,6 +21,8 @@ public enum NpcDialogStyle : byte
     FullMoonBoard = 57,
     SpecialAuctionPanel = 58,
     JuraidWarning = 67,
+    LoveKnightOnlineBoard = 69,
+    ContinuePlayingBoard = 72,
 }
 
 public static class NpcQuestWire

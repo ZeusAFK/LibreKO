@@ -27,7 +27,7 @@ public class LoginTests : ServerTest
             Nation = AccountNation.None,
             Authority = AccountAuthority.Normal,
             PremiumType = ExpPremium,
-            PremiumDate = DateTime.UtcNow.AddHours(12)
+            Premiums = [new AccountPremium { Type = ExpPremium, Expiry = DateTime.UtcNow.AddHours(12) }]
         };
         db.Accounts.Add(testAccount);
         db.ServerGroups.Add(new ServerGroup { Id = 7, Name = "Beramus" });
@@ -270,9 +270,9 @@ public class LoginTests : ServerTest
         {
             Login = "premium-user",
             PremiumType = ExpPremium,
-            PremiumDate = premiumHoursFromNow is { } hours
-                ? DateTime.UtcNow.AddHours(hours).AddMinutes(1)
-                : null
+            Premiums = premiumHoursFromNow is { } hours
+                ? [new AccountPremium { Type = ExpPremium, Expiry = DateTime.UtcNow.AddHours(hours).AddMinutes(1) }]
+                : []
         };
 
         var packet = LoginPacketWriter.LoginSucceeded(
@@ -288,7 +288,11 @@ public class LoginTests : ServerTest
     [Fact]
     public void RemainingPremiumHours_ClampsAVeryLongPremiumInsteadOfOverflowing()
     {
-        var account = new Account { PremiumType = ExpPremium, PremiumDate = DateTime.UtcNow.AddYears(10) };
+        var account = new Account
+        {
+            PremiumType = ExpPremium,
+            Premiums = [new AccountPremium { Type = ExpPremium, Expiry = DateTime.UtcNow.AddYears(10) }],
+        };
 
         account.RemainingPremiumHours.Should().Be(short.MaxValue,
             "an overflowing cast would wrap to a negative value and read as no premium at all");

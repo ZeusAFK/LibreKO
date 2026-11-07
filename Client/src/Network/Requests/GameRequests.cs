@@ -66,6 +66,7 @@ public sealed class GameRequests
     public IPlayerInspectRequests PlayerInspect { get; }
     public IPreGameRequests PreGame { get; }
     public IPremiumRequests Premium { get; }
+    public IEventPostRequests EventPost { get; }
     public IPresetRequests Preset { get; }
     public IProgressRequests Progress { get; }
     public IRankRequests Rank { get; }
@@ -157,6 +158,7 @@ public sealed class GameRequests
         PlayerInspect = new PlayerInspectRequests(sink);
         PreGame = new PreGameRequests(sink, session.Self, login);
         Premium = new PremiumRequests(sink);
+        EventPost = new EventPostRequests(sink);
         Preset = new PresetRequests(sink);
         Progress = new ProgressRequests(sink);
         Rank = new RankRequests(sink);

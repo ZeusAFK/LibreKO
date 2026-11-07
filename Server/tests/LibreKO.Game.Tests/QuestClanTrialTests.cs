@@ -4,6 +4,7 @@ using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Scripting;
 using LibreKO.Game.World;
@@ -198,14 +199,12 @@ public class QuestClanTrialTests
     }
 
     [Theory]
-    [InlineData("Items.slot17.json", KeyOfHonor)]
-    [InlineData("Items.slot15.json", EmblemOfHonor)]
-    [InlineData("Items.slot15.json", RoyalEmblem)]
-    public void TheTrialItemsCannotChangeHands(string file, int item)
+    [InlineData(KeyOfHonor)]
+    [InlineData(EmblemOfHonor)]
+    [InlineData(RoyalEmblem)]
+    public void TheTrialItemsCannotChangeHands(int item)
     {
-        using var document = JsonDocument.Parse(File.ReadAllText(SeedPath(file)));
-        var row = document.RootElement.EnumerateArray().Single(r => r.GetProperty("Num").GetInt32() == item);
-        var data = new ItemData { Num = item, Race = row.GetProperty("Race").GetByte() };
+        var data = new ItemCatalog(new ItemBaseSeed().GetSeedData(), new ItemVariantSeed().GetSeedData())[item];
 
         data.IsUntradeable.Should().BeTrue("whoever picks the key up is the one who hands it in");
         ExchangeTransferService.IsTradableItem(data, item, 0).Should().BeFalse();

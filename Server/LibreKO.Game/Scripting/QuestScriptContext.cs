@@ -27,6 +27,7 @@ public class QuestScriptContext
     public bool PendingSoccerStart { get; set; }
     public bool PendingRankBoard { get; set; }
     public List<int> PendingItemAnnouncements { get; } = [];
+    public List<ScriptBuff> LandedBuffs { get; } = [];
 
     public int PendingLevel { get; set; }
 
@@ -102,3 +103,5 @@ public class QuestScriptContext
         EventNpc = npc;
     }
 }
+
+public readonly record struct ScriptBuff(int SkillId, int CasterId, short Duration, short Speed);

@@ -68,16 +68,9 @@ public class ScriptCharacterService(
         if (premiumType <= 0 || days <= 0)
             return false;
 
-        var now = DateTime.UtcNow;
-        var standing = session.PremiumService == premiumType && session.PremiumExpiry > now
-            ? session.PremiumExpiry!.Value
-            : now;
-
-        session.PremiumService = (byte)premiumType;
-        session.PremiumExpiry = standing.AddDays(days);
+        PremiumHoldings.Grant(session, (byte)premiumType, days, DateTime.UtcNow);
         session.AccountStatus = UserSession.AccountStatusPremium;
-        queuedPackets.Add(MiscPacketWriter.Premium(
-            session.PremiumType, session.PremiumTime, PremiumBonusList.For(session, gameData)));
+        queuedPackets.Add(PremiumHoldings.ListPacket(session, gameData));
         return true;
     }
 
@@ -255,43 +248,19 @@ public class ScriptCharacterService(
     public bool CastSkill(int _uid, int skillId)
     {
         var magic = gameData.GetMagic(skillId);
-        if (magic == null || !MagicTypeLookup.TryResolve(gameData.MagicType4Table, magic, skillId, out var type4Data))
+        if (magic == null)
+            return false;
+        if (!MagicTypeLookup.TryResolve(gameData.MagicType4Table, magic, skillId, out var type4Data))
+            return true;
+
+        var buffType = (BuffType)type4Data.BuffType;
+        if (buffType != BuffType.None && session.ActiveBuffs.Any(active =>
+                active.Key != skillId && active.Value.BuffType == buffType && !active.Value.IsExpired))
             return false;
 
-        var buff = new ActiveBuff
-        {
-            MagicId = skillId,
-            CasterId = npc?.UniqueId ?? 0,
-            Duration = type4Data.Duration,
-            ExpireTicks = DateTime.UtcNow.AddSeconds(type4Data.Duration).Ticks,
-            BonusAc = type4Data.Ac,
-            BonusAcPct = type4Data.AcPct,
-            BonusAttack = type4Data.Attack,
-            BonusMagicAttack = type4Data.MagicAttack,
-            BonusMaxHp = type4Data.MaxHP,
-            BonusMaxHpPct = type4Data.MaxHPPct,
-            BonusMaxMp = type4Data.MaxMP,
-            BonusMaxMpPct = type4Data.MaxMPPct,
-            BonusHitRate = type4Data.HitRate,
-            BonusAvoidRate = type4Data.AvoidRate,
-            BonusStr = type4Data.Str,
-            BonusSta = type4Data.Sta,
-            BonusDex = type4Data.Dex,
-            BonusIntel = type4Data.Intel,
-            BonusCha = type4Data.Cha,
-            BonusFireR = type4Data.FireR,
-            BonusColdR = type4Data.ColdR,
-            BonusLightningR = type4Data.LightningR,
-            BonusMagicR = type4Data.MagicR,
-            BonusPoisonR = type4Data.PoisonR,
-            BonusDiseaseR = type4Data.DiseaseR,
-            BonusSpeed = type4Data.Speed,
-            BonusAttackSpeed = type4Data.AttackSpeed
-        };
-
-        session.SetBuff(skillId, buff);
-        if (buff.HasStatModifiers)
-            session.RecalculateStatsWithBuffs(gameData);
+        session.SetBuff(skillId, ActiveBuff.Of(skillId, npc == null ? session.CharacterId : -npc.UniqueId, type4Data));
+        session.RecalculateStatsWithBuffs(gameData);
+        context.LandedBuffs.Add(new ScriptBuff(skillId, npc?.UniqueId ?? session.CharacterId, type4Data.Duration, type4Data.Speed));
         return true;
     }
 

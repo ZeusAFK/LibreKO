@@ -7,6 +7,8 @@ namespace LibreKO;
 public partial class Cape : MeshInstance3D
 {
     private const int CollarGridSize = 8;
+    private const int CollarTriangleLimit = 400;
+    private const float CollarClusterCell = 0.01f;
     private readonly int[] collarCellCounts = new int[CollarGridSize * CollarGridSize];
     private int[] collarCells = Array.Empty<int>();
     private Vector2[] collarU = Array.Empty<Vector2>(), collarV = Array.Empty<Vector2>();
@@ -46,8 +48,15 @@ public partial class Cape : MeshInstance3D
         }
         collarVertices = selected.ToArray();
         collarIndices = triangles.ToArray();
-        collarPos = new Vector3[selected.Count];
-        collarBounds = new Aabb[triangles.Count / 3];
+        if (triangles.Count / 3 > CollarTriangleLimit)
+        {
+            var (kept, reduced) = VertexClusters.Reduce(selected.ConvertAll(vertex => vertex.Point), triangles,
+                CollarTriangleLimit, CollarClusterCell * rigScale);
+            collarVertices = Array.ConvertAll(kept, original => selected[original]);
+            collarIndices = reduced;
+        }
+        collarPos = new Vector3[collarVertices.Length];
+        collarBounds = new Aabb[collarIndices.Length / 3];
         collarBones = new Transform3D[skel.GetBoneCount()];
         collarCells = new int[CollarGridSize * CollarGridSize * collarBounds.Length];
         collarU = new Vector2[collarBounds.Length];

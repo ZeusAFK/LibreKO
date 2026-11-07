@@ -10,9 +10,9 @@ public class Account : Entity
     public string Password { get; set; } = default!;
     public AccountNation Nation { get; set; } = AccountNation.None;
     public AccountAuthority Authority { get; set; } = AccountAuthority.Normal;
-    public DateTime? PremiumDate { get; set; }
-
     public byte PremiumType { get; set; }
+
+    public List<AccountPremium> Premiums { get; set; } = [];
     public DateTime? AccessDate { get; set; }
 
     public int KnightCash { get; set; }
@@ -33,7 +33,9 @@ public class Account : Entity
 
     public byte ActivePremiumType => RemainingPremiumHours > 0 ? PremiumType : (byte)0;
 
-    public short RemainingPremiumHours => PremiumType > 0 ? RemainingHoursUntil(PremiumDate) : (short)0;
+    public DateTime? PremiumExpiry => Premiums.Find(premium => premium.Type == PremiumType)?.Expiry;
+
+    public short RemainingPremiumHours => PremiumType > 0 ? RemainingHoursUntil(PremiumExpiry) : (short)0;
 
     public static short RemainingHoursUntil(DateTime? expiry)
     {
@@ -58,8 +60,8 @@ public class Account : Entity
             builder.Property(a => a.Authority).IsRequired().HasConversion<string>();
             builder.Property(a => a.Nation).IsRequired().HasConversion<string>();
             builder.Property(a => a.AccessDate);
-            builder.Property(a => a.PremiumDate);
             builder.Property(a => a.PremiumType);
+            builder.HasMany(a => a.Premiums).WithOne().HasForeignKey(p => p.AccountId).OnDelete(DeleteBehavior.Cascade);
             builder.Property(a => a.KnightCash);
             builder.Property(a => a.VipWarehouseItems);
             builder.Property(a => a.VipVaultExpiry);

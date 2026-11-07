@@ -9,6 +9,7 @@ public interface IEntitySeed<T>
     bool PerformInsert { get; }
     bool PerformUpdate { get; }
     bool PerformDelete { get; }
+    bool EditedInGame { get; }
 }
 
 public interface IFileBackedSeed

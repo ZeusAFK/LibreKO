@@ -75,7 +75,7 @@ public class ItemTradeService(
 
         // A charge item's durability is its uses left, so a repair would refill its charges.
         var itemData = gameDataService.GetItem(itemId);
-        if (itemData == null || itemData.Duration <= 1 || itemData.SellPrice == SaleTypeNoRepair || itemData.IsChargeItem)
+        if (itemData == null || itemData.Duration <= 1 || itemData.SaleType == SaleTypeNoRepair || itemData.IsChargeItem)
         {
             await SendRepairResponseAsync(session, ItemRepairResult.Failed);
             return;
@@ -474,7 +474,7 @@ public class ItemTradeService(
     private int SellUnitPrice(ItemData itemData, bool premium)
     {
         var baseItem = gameDataService.GetItem(itemData.Num / ItemBaseIdStep * ItemBaseIdStep);
-        var saleType = baseItem?.SellPrice ?? itemData.SellPrice;
+        var saleType = baseItem?.SaleType ?? itemData.SaleType;
         return NpcSellRules.Unit(itemData.BuyPrice, saleType == SaleTypeFull, premium);
     }
 

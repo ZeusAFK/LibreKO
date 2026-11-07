@@ -29,11 +29,11 @@ public class GameDataSeedRunner(IDataSeeder seeder, ILogger<GameDataSeedRunner> 
         await Seed(new ItemCombineMaterialSeed());
         await Seed(new ItemSmashClassSeed());
         await Seed(new ItemSmashRewardSeed());
-        await Seed(new ItemGradeBonusSeed());
         await Seed(new CoefficientSeed());
         await Seed(new StartPositionSeed());
         await Seed(new HomeSeed());
-        await Seed(new ItemSeed());
+        await Seed(new ItemBaseSeed());
+        await Seed(new ItemVariantSeed());
         await Seed(new PusItemSeed());
         await Seed(new PusCategorySeed());
         await Seed(new PusDiscountSeed());

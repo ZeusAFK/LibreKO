@@ -1,38 +1,5 @@
 [
   {
-    "Index": 1,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 4,
-    "ItemRate": 0,
-    "ItemGrade": 0,
-    "ReqNoah": 250000000,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
-    "Index": 2,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 4,
-    "ItemRate": 0,
-    "ItemGrade": 1,
-    "ReqNoah": 500000000,
-    "SuccessRate": 6000,
-    "Status": 1
-  },
-  {
-    "Index": 3,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 4,
-    "ItemRate": 0,
-    "ItemGrade": 2,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
     "Index": 4,
     "ReqItem1": 700002000,
     "ReqItem2": 379021000,
@@ -429,17 +396,6 @@
     "Status": 1
   },
   {
-    "Index": 40,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 4,
-    "ItemRate": 0,
-    "ItemGrade": 3,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
     "Index": 41,
     "ReqItem1": 379159000,
     "ReqItem2": 0,
@@ -448,28 +404,6 @@
     "ItemGrade": 4,
     "ReqNoah": 0,
     "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 42,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 5,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
-    "Index": 43,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 6,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
     "Status": 1
   },
   {
@@ -645,28 +579,6 @@
     "ItemRate": 3,
     "ItemGrade": 1,
     "ReqNoah": 10000,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
-    "Index": 60,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 7,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
-    "Index": 61,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 8,
-    "ReqNoah": 0,
     "SuccessRate": 10000,
     "Status": 1
   },
@@ -924,17 +836,6 @@
     "Status": 1
   },
   {
-    "Index": 85,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 9,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
     "Index": 86,
     "ReqItem1": 379257000,
     "ReqItem2": 0,
@@ -943,28 +844,6 @@
     "ItemGrade": 20,
     "ReqNoah": 240000,
     "SuccessRate": 5000,
-    "Status": 1
-  },
-  {
-    "Index": 87,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 4,
-    "ItemRate": 0,
-    "ItemGrade": 4,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 88,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 4,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
     "Status": 1
   },
   {
@@ -1031,50 +910,6 @@
     "ItemGrade": 3,
     "ReqNoah": 0,
     "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 95,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 1,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
-    "Index": 96,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 2,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
-    "Index": 97,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 3,
-    "ReqNoah": 0,
-    "SuccessRate": 10000,
-    "Status": 1
-  },
-  {
-    "Index": 98,
-    "ReqItem1": 379159000,
-    "ReqItem2": 354000000,
-    "ItemType": 5,
-    "ItemRate": 0,
-    "ItemGrade": 0,
-    "ReqNoah": 50000,
-    "SuccessRate": 1000,
     "Status": 1
   },
   {
@@ -2574,149 +2409,6 @@
     "Status": 1
   },
   {
-    "Index": 235,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 1,
-    "ReqNoah": 5000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 236,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 2,
-    "ReqNoah": 10000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 237,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 3,
-    "ReqNoah": 20000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 238,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 4,
-    "ReqNoah": 35000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 239,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 5,
-    "ReqNoah": 75000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 240,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 6,
-    "ReqNoah": 100000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 241,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 1,
-    "ReqNoah": 5000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 242,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 2,
-    "ReqNoah": 10000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 243,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 3,
-    "ReqNoah": 20000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 244,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 4,
-    "ReqNoah": 35000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 245,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 5,
-    "ReqNoah": 75000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 246,
-    "ReqItem1": 353000000,
-    "ReqItem2": 379221000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 6,
-    "ReqNoah": 100000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 247,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 1,
-    "ReqNoah": 12500,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
     "Index": 248,
     "ReqItem1": 811059000,
     "ReqItem2": 0,
@@ -3012,193 +2704,6 @@
     "ReqNoah": 10000000,
     "SuccessRate": 2500,
     "Status": 1
-  },
-  {
-    "Index": 275,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 2,
-    "ReqNoah": 25000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 276,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 3,
-    "ReqNoah": 35000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 277,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 4,
-    "ReqNoah": 50000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 278,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 5,
-    "ReqNoah": 100000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 279,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 6,
-    "ReqNoah": 210000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 280,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 7,
-    "ReqNoah": 400000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 281,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 8,
-    "ReqNoah": 700000,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 282,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 5,
-    "ItemRate": 3,
-    "ItemGrade": 9,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 0
-  },
-  {
-    "Index": 283,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 1,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 284,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 2,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 285,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 3,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 286,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 4,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 287,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 5,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 288,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 6,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 289,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 7,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 290,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 8,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 1
-  },
-  {
-    "Index": 291,
-    "ReqItem1": 352900000,
-    "ReqItem2": 379205000,
-    "ItemType": 4,
-    "ItemRate": 33,
-    "ItemGrade": 9,
-    "ReqNoah": 0,
-    "SuccessRate": 0,
-    "Status": 0
   },
   {
     "Index": 292,

@@ -727,6 +727,9 @@ public sealed class QuestInterpreter
             case QuestActionKind.OpenNationTransferPanel:
                 host.OpenNationTransferPanel();
                 break;
+            case QuestActionKind.OpenPostBoard:
+                host.OpenPostBoard(args.GetInt("event"));
+                break;
 
             case QuestActionKind.OpenStatSkillPanel:
                 host.OpenStatSkillPanel();
@@ -798,6 +801,7 @@ public sealed class QuestInterpreter
             QuestConditionKind.HasPremium => Compare(host.PremiumType, node.Operator, args.GetInt("value")),
             QuestConditionKind.LastStepFailed => host.ActionFailed,
             QuestConditionKind.PlayerZone => host.PlayerZone == args.GetInt("zone"),
+            QuestConditionKind.NpcTrigger => Compare(host.NpcTrigger, node.Operator, args.GetInt("value")),
             QuestConditionKind.MonumentNation => host.MonumentNation == args.GetInt("nation"),
             QuestConditionKind.Chance => host.RollChance(args.GetInt("percent")),
             QuestConditionKind.RollUnder => Compare(

@@ -8,12 +8,12 @@ public class AccountRepository(AppDbContext context) : IAccountRepository
 {
     public async Task<Account?> GetById(int id)
     {
-        return await context.Accounts.FindAsync(id);
+        return await context.Accounts.Include(a => a.Premiums).FirstOrDefaultAsync(a => a.Id == id);
     }
 
     public async Task<Account?> GetByLogin(string login)
     {
-        return await context.Accounts.OrderBy(a => a.Id).FirstOrDefaultAsync(a => a.Login == login);
+        return await context.Accounts.Include(a => a.Premiums).OrderBy(a => a.Id).FirstOrDefaultAsync(a => a.Login == login);
     }
 
     public async Task CreateAsync(Account account)

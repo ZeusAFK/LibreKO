@@ -10,8 +10,15 @@ public sealed class SkillTimers
     public const double PotionCooldownSeconds = 2.0;
 
     private readonly SelfSession self;
+    private readonly GmFxSession gmFx;
 
-    public SkillTimers(SelfSession self) => this.self = self;
+    public SkillTimers(SelfSession self, GmFxSession gmFx)
+    {
+        this.self = self;
+        this.gmFx = gmFx;
+    }
+
+    private bool Recasts => !gmFx.InGmMode(self);
 
     public void Start(SkillData.Skill s, double now) => Start(SkillTiming.Of(s), now);
 
@@ -26,7 +33,7 @@ public sealed class SkillTimers
     public void Start(SkillTiming s, double now)
     {
         if (s.IsPotion) self.HoldPotions(now + PotionCooldownSeconds);
-        if (s.RecastSeconds <= 0) return;
+        if (s.RecastSeconds <= 0 || !Recasts) return;
         self.StartCooldown(s.Id, now + s.RecastSeconds);
     }
 
@@ -40,13 +47,13 @@ public sealed class SkillTimers
 
     public bool OnCooldown(SkillTiming s, double now) =>
         (s.IsPotion && now < self.PotionReadyAt)
-        || (s.RecastSeconds > 0 && self.SkillCooldowns.TryGetValue(s.Id, out double until) && now < until);
+        || (s.RecastSeconds > 0 && Recasts && self.SkillCooldowns.TryGetValue(s.Id, out double until) && now < until);
 
     public double ReadyAt(int skillId) => self.SkillCooldowns.TryGetValue(skillId, out double until) ? until : 0;
 
     public SkillData.Skill? GroupBlocker(SkillData.Skill s, double now)
     {
-        if (!CooldownGroups.Shares(s.CooldownGroup)) return null;
+        if (!CooldownGroups.Shares(s.CooldownGroup) || !Recasts) return null;
         foreach (var (id, until) in self.SkillCooldowns)
         {
             if (id == s.Id || now >= until) continue;
@@ -66,7 +73,7 @@ public sealed class SkillTimers
 
     private float RecastFraction(SkillTiming s, double now)
     {
-        if (s.RecastSeconds <= 0 || !self.SkillCooldowns.TryGetValue(s.Id, out double until)) return 0f;
+        if (s.RecastSeconds <= 0 || !Recasts || !self.SkillCooldowns.TryGetValue(s.Id, out double until)) return 0f;
         double left = until - now;
         if (left <= 0) return 0f;
         return System.Math.Clamp((float)(left / s.RecastSeconds), 0f, 1f);

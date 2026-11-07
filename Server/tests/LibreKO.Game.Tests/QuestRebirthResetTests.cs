@@ -65,7 +65,7 @@ public class QuestRebirthResetTests
         var session = new World.UserSession(client, 1, 1)
         {
             PremiumService = premium,
-            PremiumExpiry = DateTime.UtcNow.AddHours(PremiumHoursLeft),
+            HeldPremiums = { [premium] = DateTime.UtcNow.AddHours(PremiumHoursLeft) },
         };
         CharacterDevelopmentPacketCoordinator.IsRebirthResetFree(session).Should().Be(free);
     }

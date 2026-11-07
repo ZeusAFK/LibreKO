@@ -13,7 +13,6 @@ public interface IGameDataService
     ILookup<int, ItemCombineMaterialData> ItemCombineMaterialsByRecipe { get; }
     IReadOnlyDictionary<int, ItemSmashClassData> ItemSmashClassesByGrade { get; }
     ILookup<int, ItemSmashRewardData> ItemSmashRewardsByBand { get; }
-    IReadOnlyDictionary<int, int> ItemGradeBonuses { get; }
     IReadOnlyDictionary<short, CoefficientData> CoefficientTable { get; }
     IReadOnlyDictionary<short, StartPositionData> StartPositionTable { get; }
     IReadOnlyDictionary<int, ItemData> ItemTable { get; }

@@ -13,6 +13,7 @@ internal sealed class SkillCastSystem : IFeature
     private readonly EntityLooksSystem entityLooks;
     private readonly EntityStatesSystem entityStates;
     private readonly GateSystem gate;
+    private readonly GmFxSession gmFx;
     private readonly PartySession party;
     private readonly PvpSession pvp;
     private readonly ICombatRequests requests;
@@ -23,7 +24,7 @@ internal sealed class SkillCastSystem : IFeature
     private readonly SoccerSystem soccer;
     private readonly EntitySystem entities;
 
-    public SkillCastSystem(IWorldContext context, AudioSystem audio, SelfAvatar avatar, BuffSystem buff, CombatFxSystem combatFx, EntityActionSystem entityAction, EntityLooksSystem entityLooks, EntityStatesSystem entityStates, GateSystem gate, PartySession party, PvpSession pvp, ICombatRequests requests, ScenerySystem scenery, SelfSession self, SiegeTowerSystem siegeTower, SkillTimers skillTimers, SoccerSystem soccer, EntitySystem entities)
+    public SkillCastSystem(IWorldContext context, AudioSystem audio, SelfAvatar avatar, BuffSystem buff, CombatFxSystem combatFx, EntityActionSystem entityAction, EntityLooksSystem entityLooks, EntityStatesSystem entityStates, GateSystem gate, GmFxSession gmFx, PartySession party, PvpSession pvp, ICombatRequests requests, ScenerySystem scenery, SelfSession self, SiegeTowerSystem siegeTower, SkillTimers skillTimers, SoccerSystem soccer, EntitySystem entities)
     {
         this.context = context;
         this.audio = audio;
@@ -34,6 +35,7 @@ internal sealed class SkillCastSystem : IFeature
         this.entityLooks = entityLooks;
         this.entityStates = entityStates;
         this.gate = gate;
+        this.gmFx = gmFx;
         this.party = party;
         this.pvp = pvp;
         this.requests = requests;
@@ -481,7 +483,7 @@ internal sealed class SkillCastSystem : IFeature
         if (!s.IsNonAction && SelfCasting(now)) return;
         if (HasPendingCast(id)) return;
         if (moveGates?.InputHeld == true) return;
-        if (!self.Vitals.HasMana(s.Msp))
+        if (!HasManaFor(s))
         {
             context.Log.Notice(SkillCost.ManaShortText(self.Class) == SkillCost.TextNotEnoughMp
                 ? GameText.System(SkillCost.TextNotEnoughMp, "Skill Failed - Not enough MP")
@@ -929,7 +931,9 @@ internal sealed class SkillCastSystem : IFeature
         !HasPendingCast(s.Id)
     && !skillTimers.OnCooldown(s, now)
     && skillTimers.GroupBlocker(s, now) == null
-    && self.Vitals.HasMana(s.Msp);
+    && HasManaFor(s);
+
+    private bool HasManaFor(SkillData.Skill s) => gmFx.InGmMode(self) || self.Vitals.HasMana(s.Msp);
 
     internal SkillData.Skill? BasicRangedAttackSkill()
     {

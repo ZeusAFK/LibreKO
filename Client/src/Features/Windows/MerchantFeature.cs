@@ -16,9 +16,11 @@ internal sealed class MerchantFeature : IFeature, IEscapable
     private readonly MarketPriceFeature marketPriceWindow;
     private readonly SlaveMerchantSession slaveMerchant;
     private readonly ISlaveMerchantRequests slaveRequests;
+    private readonly IInteractionDialogs interactionDialogs;
 
-    public MerchantFeature(IWorldContext context, MerchantSession merchant, PremiumSession premium, ProgressSession progress, SelfSession self, IMerchantRequests requests, EntityPlatesSystem entityPlates, PlayerMenuFeature playerMenu, MerchantStallsFeature stalls, MarketPriceFeature marketPriceWindow, SlaveMerchantSession slaveMerchant, ISlaveMerchantRequests slaveRequests)
+    public MerchantFeature(IWorldContext context, MerchantSession merchant, PremiumSession premium, ProgressSession progress, SelfSession self, IMerchantRequests requests, EntityPlatesSystem entityPlates, PlayerMenuFeature playerMenu, MerchantStallsFeature stalls, MarketPriceFeature marketPriceWindow, SlaveMerchantSession slaveMerchant, ISlaveMerchantRequests slaveRequests, IInteractionDialogs interactionDialogs)
     {
+        this.interactionDialogs = interactionDialogs;
         this.slaveMerchant = slaveMerchant;
         this.slaveRequests = slaveRequests;
         this.context = context;
@@ -137,7 +139,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         root.CustomMinimumSize = new Vector2(250, 0);
 
         root.AddChild(MenuButton("Selling Merchant", OpenSellStall));
-        root.AddChild(MenuButton("Buying Merchant", () => BuyingMerchantRequested?.Invoke()));
+        root.AddChild(MenuButton("Buying Merchant", OpenBuyingStall));
         root.AddChild(MenuButton("Slave Merchant", () => { CloseMenu(); SlaveMerchantRequested?.Invoke(); }));
         root.AddChild(MenuButton("Market Price", OpenMarketPriceFromMenu));
     }
@@ -273,6 +275,12 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         requests.Open();
     }
 
+    private void OpenBuyingStall()
+    {
+        interactionDialogs.CloseDialogs();
+        BuyingMerchantRequested?.Invoke();
+    }
+
     private void OpenMarketPriceFromMenu()
     {
         CloseMenu();
@@ -299,6 +307,7 @@ internal sealed class MerchantFeature : IFeature, IEscapable
         SetSellStatus("", false);
         toSlave.ButtonPressed = false;
         slaveRequests.Status();
+        interactionDialogs.CloseDialogs();
         RefreshSellStall();
         SellStallPanel.Visible = true;
         sellStallShown = true;

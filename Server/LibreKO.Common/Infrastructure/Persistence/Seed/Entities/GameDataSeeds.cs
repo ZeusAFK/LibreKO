@@ -75,11 +75,6 @@ public class ItemSmashRewardSeed : SnapshotJsonSeed<ItemSmashRewardData>
     protected override string JsonFileName => "ItemSmashRewards.json";
 }
 
-public class ItemGradeBonusSeed : SnapshotJsonSeed<ItemGradeBonusData>
-{
-    protected override string JsonFileName => "ItemGradeBonuses.json";
-}
-
 public class CoefficientSeed : SnapshotJsonSeed<CoefficientData>
 {
     protected override string JsonFileName => "Coefficients.json";
@@ -95,13 +90,16 @@ public class HomeSeed : SnapshotJsonSeed<HomeData>
     protected override string JsonFileName => "Homes.json";
 }
 
-public class ItemSeed : LegacyInsertOnlyJsonSeed<ItemData, int>
+public class ItemBaseSeed : SnapshotJsonSeed<ItemBaseData>
 {
-    protected override string JsonFileName => "Items.json";
+    protected override string JsonFileName => "ItemBases.json";
+}
 
-    protected override string ShardPattern => "Items.slot*.json";
+public class ItemVariantSeed : SnapshotJsonSeed<ItemVariantData>
+{
+    protected override string JsonFileName => "ItemVariants.json";
 
-    protected override int GetKey(ItemData entity) => entity.Num;
+    protected override string ShardPattern => "ItemVariants.set*.json";
 }
 
 public class PusItemSeed : SnapshotJsonSeed<PusItemData>
@@ -127,6 +125,7 @@ public class WarpSeed : JsonEntitySeed<WarpData>
 public class NpcSeed : JsonEntitySeed<NpcData>
 {
     protected override string JsonFileName => "Npcs.json";
+    public override bool EditedInGame => true;
 }
 
 public class NpcPosSeed : JsonEntitySeed<NpcPosData>
@@ -134,6 +133,7 @@ public class NpcPosSeed : JsonEntitySeed<NpcPosData>
     protected override string JsonFileName => "NpcPositions.json";
     protected override string? ShardPattern => "NpcPositions.zone*.json";
     public override bool PerformDelete => true;
+    public override bool EditedInGame => true;
 
     public override IEnumerable<NpcPosData> GetSeedData()
     {
@@ -151,6 +151,7 @@ public class NpcItemSeed : LegacyInsertOnlyJsonSeed<NpcItemData, (short Index, b
     protected override string JsonFileName => "NpcItems.json";
 
     public override bool PerformDelete => true;
+    public override bool EditedInGame => true;
 
     protected override (short Index, bool IsMonster) GetKey(NpcItemData entity) =>
         (entity.Index, entity.IsMonster);
@@ -159,6 +160,7 @@ public class NpcItemSeed : LegacyInsertOnlyJsonSeed<NpcItemData, (short Index, b
 public class MakeItemGroupSeed : SnapshotJsonSeed<MakeItemGroupData>
 {
     protected override string JsonFileName => "MakeItemGroups.json";
+    public override bool EditedInGame => true;
 }
 
 public class AttendanceRewardSeed : SnapshotJsonSeed<AttendanceRewardData>
@@ -376,6 +378,7 @@ public class KingSystemSeed : JsonEntitySeed<KingSystemData>
     // KingSystemData is entirely runtime-mutable (king name, treasury, tax, events).
     // Seed only inserts missing rows; never overwrites existing data.
     public override bool PerformUpdate => false;
+    public override bool EditedInGame => true;
 
     public override IEnumerable<KingSystemData> GetSeedData()
     {
@@ -421,6 +424,7 @@ public class GameEventSeed : SnapshotJsonSeed<GameEventData>
 public class SiegeWarfareSeed : JsonEntitySeed<SiegeWarfareData>
 {
     protected override string JsonFileName => "SiegeWarfare.json";
+    public override bool EditedInGame => true;
 
     public override string[] PropertiesToUpdate =>
         [nameof(SiegeWarfareData.WarDay), nameof(SiegeWarfareData.WarTime), nameof(SiegeWarfareData.WarMinute)];
@@ -429,40 +433,48 @@ public class SiegeWarfareSeed : JsonEntitySeed<SiegeWarfareData>
 public class CollectionRaceSeed : SnapshotJsonSeed<CollectionRaceData>
 {
     protected override string JsonFileName => "CollectionRaces.json";
+    public override bool EditedInGame => true;
 }
 
 public class CollectionRaceObjectiveSeed : SnapshotJsonSeed<CollectionRaceObjectiveData>
 {
     protected override string JsonFileName => "CollectionRaceObjectives.json";
+    public override bool EditedInGame => true;
 }
 
 public class CollectionRaceRewardSeed : SnapshotJsonSeed<CollectionRaceRewardData>
 {
     protected override string JsonFileName => "CollectionRaceRewards.json";
+    public override bool EditedInGame => true;
 }
 
 public class CollectionRaceScheduleSeed : SnapshotJsonSeed<CollectionRaceScheduleData>
 {
     protected override string JsonFileName => "CollectionRaceSchedules.json";
+    public override bool EditedInGame => true;
 }
 public class LotteryEventSeed : SnapshotJsonSeed<LotteryEventData>
 {
     protected override string JsonFileName => "LotteryEvents.json";
+    public override bool EditedInGame => true;
 }
 
 public class LotteryRewardSeed : SnapshotJsonSeed<LotteryRewardData>
 {
     protected override string JsonFileName => "LotteryRewards.json";
+    public override bool EditedInGame => true;
 }
 
 public class LotteryScheduleSeed : SnapshotJsonSeed<LotteryScheduleData>
 {
     protected override string JsonFileName => "LotterySchedules.json";
+    public override bool EditedInGame => true;
 }
 
 public class TempleEventScheduleSeed : SnapshotJsonSeed<TempleEventScheduleData>
 {
     protected override string JsonFileName => "TempleEventSchedules.json";
+    public override bool EditedInGame => true;
 }
 
 public class TempleEventRewardSeed : SnapshotJsonSeed<TempleEventRewardData>

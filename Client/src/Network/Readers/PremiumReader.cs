@@ -16,10 +16,16 @@ internal sealed class PremiumReader : IPacketReader
 
     private void HandlePremium(Packet p)
     {
-        if (PremiumWire.ReadList(p) is not { } list) return;
-        var (accountStatus, premiumType, premiumHours) = list;
-        premium.Apply(accountStatus, premiumType, premiumHours, PremiumWire.ReadBonuses(p));
-
-        premium.RaisePremium(accountStatus, premiumType, premiumHours);
+        if (p.RemainingBytes < 1) return;
+        switch ((PremiumSubOpcode)p.ReadByte())
+        {
+            case PremiumSubOpcode.List:
+                premium.Apply(PremiumWire.ReadList(p), PremiumWire.ReadBonuses(p));
+                premium.RaisePremium(premium.PremiumAccountStatus, premium.PremiumType, premium.PremiumHours);
+                break;
+            case PremiumSubOpcode.Switch:
+                if (PremiumWire.ReadSwitch(p) is { } reply) premium.RaiseSwitch(reply);
+                break;
+        }
     }
 }

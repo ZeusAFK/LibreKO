@@ -48,9 +48,6 @@ public class ItemUpgradeService(
     private const int ItemTrina = 700002000;
     private const int ItemKarivdis = 379258000;
     private const int BlessedUpgradeScroll = 379021000;
-    private const int ItemLowClassTrina = 353000000;
-    private const int ItemMiddleClassTrina = 352900000;
-    private const int ItemAccessoryTrina = 354000000;
     private const int ItemBlessingLogos = 890092000;
 
 
@@ -310,7 +307,7 @@ public class ItemUpgradeService(
         var protectionId = 0;
         var protectionCount = 0;
         var logosCount = CountMaterial(itemIds, positions, ItemBlessingLogos);
-        foreach (var candidate in (int[])[ItemTrina, ItemKarivdis, ItemLowClassTrina, ItemMiddleClassTrina, ItemAccessoryTrina])
+        foreach (var candidate in (int[])[ItemTrina, ItemKarivdis])
         {
             var count = CountMaterial(itemIds, positions, candidate);
             if (count == 0)
@@ -330,9 +327,9 @@ public class ItemUpgradeService(
         }
 
         var hasLogos = logosCount > 0;
-        var itemType = (short)originItemData.ItemType;
-        var grade = ResolveGrade(originItemData, originItemId);
-        var itemClass = originItemData.GradeClass(gameDataService.ItemGradeBonuses);
+        var itemType = (short)originItemData.Rarity;
+        var grade = originItemData.Grade;
+        var itemClass = originItemData.GradeClass;
 
         if (hasLogos && !IsUpgradeableItemType(itemType))
         {
@@ -478,17 +475,11 @@ public class ItemUpgradeService(
         var objectEvent = MiscPacketWriter.ObjectEvent(ObjectAnvil, upgradeResult, npcUniqueId);
         await sessionManager.Regions.SendToRegion(session, objectEvent, excludeSender: false);
 
-        if (session.IsGM)
-            return;
-
-        var noticeItemData = upgradeResult == UpgradeSucceeded ? upgradedItemData : originItemData;
-        var noticeItemId = upgradeResult == UpgradeSucceeded ? upgradedItemId : originItemId;
-        if (noticeItemData.UpgradeNotice == 0
-            && !(upgradeResult == UpgradeSucceeded && UpgradeAnnouncements.Announced(noticeItemData, ResolveGrade(noticeItemData, noticeItemId))))
+        if (session.IsGM || !UpgradeAnnouncements.Announced(upgradedItemData))
             return;
 
         var notice = LogosShoutPacketWriter.UpgradeAnnouncement(
-            upgradeResult, session.Name, noticeItemId, (byte)session.Nation);
+            upgradeResult, session.Name, rollOutcome.Succeeded ? upgradedItemId : originItemId, (byte)session.Nation);
         await sessionManager.BroadcastToAll(notice);
     }
 
@@ -532,9 +523,6 @@ public class ItemUpgradeService(
 
     private static bool IsUpgradeableItemType(short itemType)
         => itemType is ItemData.TypeKrowaz or ItemData.TypeStandard or ItemData.TypeRebirth or ItemData.TypeRebirthKrowaz;
-
-    private static short ResolveGrade(ItemData item, int itemId)
-        => item.Grade != 0 ? item.Grade : (short)(itemId % 10);
 
     private static ScrollClass ClassifyScroll(int itemId) => itemId switch
     {
@@ -673,7 +661,7 @@ public class ItemUpgradeService(
         if (session.Money < rule.Price)
             return ItemSealResult.NeedCoins;
 
-        var stones = rule.ChargesStones ? gameDataService.GetItem(itemId)?.Bound ?? 0 : 0;
+        var stones = rule.ChargesStones ? gameDataService.GetItem(itemId)?.UnbindStones ?? 0 : 0;
         if (stones > 0 && CountSealStones(session) < stones)
             return ItemSealResult.MissingMaterial;
 
@@ -686,7 +674,7 @@ public class ItemUpgradeService(
         if (stones > 0)
             await SpendSealStonesAsync(session, stones);
 
-        slot.Flag = (byte)(sealType == ItemSealType.Unseal && gameDataService.GetItem(itemId)?.Bound > 0
+        slot.Flag = (byte)(sealType == ItemSealType.Unseal && gameDataService.GetItem(itemId)?.UnbindStones > 0
             ? ItemFlag.Bound
             : rule.AppliedFlag);
         return ItemSealResult.Succeeded;
@@ -717,8 +705,8 @@ public class ItemUpgradeService(
         && !slot.Expires
         && slot.State is not (ItemFlag.CharacterSeal or ItemFlag.Duplicate)
         && (sealType == ItemSealType.Bind
-            ? item.Bound > 0
-            : slot.State != ItemFlag.NotBound && !(slot.State == ItemFlag.Unsealed && item.Bound > 0));
+            ? item.UnbindStones > 0
+            : slot.State != ItemFlag.NotBound && !(slot.State == ItemFlag.Unsealed && item.UnbindStones > 0));
 
     private static int CountSealStones(UserSession session)
     {

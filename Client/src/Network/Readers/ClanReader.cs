@@ -349,7 +349,7 @@ internal sealed class ClanReader : IPacketReader
                         mine.Flag = flag;
                         if (fund >= 0) mine.PointFund = fund;
                         clan.ApplyMyClan(mine);
-                        self.ChangeCape(capeId, r, g, b);
+                        if (!self.IsKing) self.ChangeCape(capeId, r, g, b);
                     }
                     clan.RaiseClanCapeUpdate(new ClanCapeChange(ClanId: clanId, CapeId: capeId, R: r, G: g, B: b));
                     break;

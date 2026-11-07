@@ -190,8 +190,8 @@ internal sealed class DebugInfoFeature : IFeature, IHudTickFeature, IDebugOverla
     private void BuildLightTab(VBoxContainer col)
     {
         AddHeader(col, "Night balance");
-        AddSlider(col, "Ambient", 0f, 0.40f, scenery.Sky.NightAmbient, 0.005f, v => scenery.Sky.NightAmbient = v);
-        AddSlider(col, "Sky glow", 0f, 0.40f, scenery.Sky.NightSkyEnergy, 0.005f, v => scenery.Sky.NightSkyEnergy = v);
+        AddSlider(col, "Ambient", 0f, 1.50f, scenery.Sky.NightAmbient, 0.01f, v => scenery.Sky.NightAmbient = v);
+        AddSlider(col, "Sky glow", 0f, 0.80f, scenery.Sky.NightSkyEnergy, 0.01f, v => scenery.Sky.NightSkyEnergy = v);
         AddSlider(col, "Moonlight", 0f, 2.0f, scenery.Sky.NightMoonEnergy, 0.05f, v => scenery.Sky.NightMoonEnergy = v);
         var moonClouds = AddSlider(col, "Cloud dimming", 0f, 1f, scenery.Sky.MoonCloudBlock, 0.05f,
             v => scenery.Sky.MoonCloudBlock = v);

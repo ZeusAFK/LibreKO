@@ -1,0 +1,536 @@
+Bind Npc 7001
+
+On greeting
+    If npc trigger < 41000
+        If player has 379111000
+            Say "You have the key of the Abyss of Hell. Would you like to transport?"
+            Topic "Use the Abyss of Hell" goto hell_key
+            Topic "Do not use the Abyss of Hell" goto despair_floor
+        Else
+            Goto despair_floor
+    Else if npc trigger < 43000
+        Goto hell_floor
+    Else
+        Say "Do you want to leave the Dragon Cave?"
+        Topic "Yes. I want to leave." do
+            Teleport 33 at 445 459
+        Topic "No. I don't want to leave." goto close
+    Goto close
+
+On despair_floor
+    If npc trigger = 40001
+        Say "This is the Abyss of Despair Underground Level 1. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 50 197
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40002
+        Say "This is the Abyss of Despair Underground Level 2. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 50 316
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 50 74
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40003
+        Say "This is the Abyss of Despair Underground Level 3. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 50 437
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 50 197
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40004
+        Say "This is the Abyss of Despair Underground Level 4. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 150 118
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 50 316
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40005
+        Say "This is the Abyss of Despair Underground Level 5. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 150 237
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 50 437
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40006
+        Say "This is the Abyss of Despair Underground Level 6. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 150 353
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 150 118
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40007
+        Say "This is the Abyss of Despair Underground Level 7. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 150 473
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 150 237
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40008
+        Say "This is the Abyss of Despair Underground Level 8. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 250 77
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 150 353
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40009
+        Say "This is the Abyss of Despair Underground Level 9. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 250 192
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 150 473
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40010
+        Say "This is the Abyss of Despair Underground Level 10. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 250 315
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 250 77
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40011
+        Say "This is the Abyss of Despair Underground Level 11. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 250 435
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 250 192
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40012
+        Say "This is the Abyss of Despair Underground Level 12. Please select your transport site. |You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 32 at 350 117
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 250 315
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40013
+        Say "This is the Abyss of Despair Underground Level 13. Please select your transport site. |You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 32 at 350 235
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 250 435
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40014
+        Say "This is the Abyss of Despair Underground Level 14. Please select your transport site. |You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 32 at 350 356
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 350 117
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40015
+        Say "This is the Abyss of Despair Underground Level 15. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 352 477
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 350 235
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40016
+        Say "This is the Abyss of Despair Underground Level 16. Please select your transport site. |You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 32 at 450 76
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 350 356
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40017
+        Say "This is the Abyss of Despair Underground Level 17. Please select your transport site. |You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 32 at 450 195
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 352 477
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40018
+        Say "This is the Abyss of Despair Underground Level 18. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 450 316
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 450 76
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40019
+        Say "This is the Abyss of Despair Underground Level 19. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 32 at 450 433
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 450 195
+            Topic "Leave the abyss" goto leave
+    Else if npc trigger = 40020
+        Say "This is the Abyss of Despair Underground Level 20. Please select your transport site."
+        Topic "Go downstairs" do
+            Say "To move to a lower level, you need the key of the Abyss of Hell."
+            Topic "Confirm" goto close
+        Topic "Use the teleport key" goto despair_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 32 at 450 316
+            Topic "Leave the abyss" goto leave
+
+On hell_floor
+    If npc trigger = 42001
+        Say "This is the Abyss of Hell Underground Level 1. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 62 226
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42002
+        Say "This is the Abyss of Hell Underground Level 2. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 62 351
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 62 91
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42003
+        Say "This is the Abyss of Hell Underground Level 3. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 62 477
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 62 226
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42004
+        Say "This is the Abyss of Hell Underground Level 4. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 189 94
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 62 351
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42005
+        Say "This is the Abyss of Hell Underground Level 5. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 189 225
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 62 477
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42006
+        Say "This is the Abyss of Hell Underground Level 6. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 189 348
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 189 94
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42007
+        Say "This is the Abyss of Hell Underground Level 7. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 189 458
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 189 225
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42008
+        Say "This is the Abyss of Hell Underground Level 8. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 315 90
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 189 348
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42009
+        Say "This is the Abyss of Hell Underground Level 9. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 315 225
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 189 458
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42010
+        Say "This is the Abyss of Hell Underground Level 10. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 316 354
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 315 90
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42011
+        Say "This is the Abyss of Hell Underground Level 11. Please select your transport site|You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 33 at 315 475
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 315 225
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42012
+        Say "This is the Abyss of Hell Underground Level 12. Please select your transport site."
+        Topic "Go downstairs" do
+            Teleport 33 at 444 102
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 316 354
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42013
+        Say "This is the Abyss of Hell Underground Level 13. Please select your transport site|You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 33 at 444 224
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 315 475
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42014
+        Say "This is the Abyss of Hell Underground Level 14. Please select your transport site|You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 33 at 444 353
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 444 102
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42015
+        Say "This is the Abyss of Hell Underground Level 15. Please select your transport site|You need the dungeon key to move to a lower level."
+        Topic "Go downstairs" do
+            If player has 379080000
+                Take 379080000
+                Teleport party to 33 at 444 458
+            Else
+                Say "You need the dungeon key to transport. The key can be obtained from the monsters captured in this chamber"
+                Topic "Confirm" goto close
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 444 224
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+    Else if npc trigger = 42016
+        Say "This is the Abyss of Hell Underground Level 16. Please select your transport site."
+        Topic "Use the teleport key" goto hell_keys
+        Topic "Go upstairs" do
+            Say "You can move to a lower level or outside the Abyss Dungeon"
+            Topic "Go upstairs" do
+                Teleport 33 at 444 353
+            Topic "Leave the abyss" goto leave
+        Topic "You will be transported to the Abyss of Despair." do
+            Teleport 32 at 50 74
+        Topic "go to the Dragon cave" goto dragon_cave
+
+On despair_keys
+    If player has 379081000 and player has 379082000
+        Say "You have the chosen key. You can move to the 10th or the 20th floor."
+        Topic "Transport to 10th floor of the Abyss of Despair" do
+            Take 379081000
+            Teleport party to 32 at 250 192
+        Topic "Transport to 20th floor of the Abyss of Despair" do
+            Take 379082000
+            Teleport party to 32 at 450 437
+        Topic "I will use it next time." goto close
+    Else if player has 379081000
+        Say "You have the first key of the Abyss of Despair. You can transport down to the dungeon Underground Level 10."
+        Topic "Transport to 10th floor of the Abyss of Despair" do
+            Take 379081000
+            Teleport party to 32 at 250 192
+        Topic "I will use it next time." goto close
+    Else if player has 379082000
+        Say "You have the second key of the Abyss of Despair. You can transport down to the dungeon Underground Level 20."
+        Topic "Transport to 20th floor of the Abyss of Despair" do
+            Take 379082000
+            Teleport party to 32 at 450 437
+        Topic "I will use it next time." goto close
+    Else
+        Say "You don't have the teleport key."
+        Topic "Confirm" goto close
+
+On hell_keys
+    If player has 379083000 and player has 379084000
+        Say "You have the chosen key. You can move to the 8th or the 16th floor."
+        Topic "Transport to 8th floor of the Abyss of Hell" do
+            Take 379083000
+            Teleport party to 33 at 189 458
+        Topic "Transport to 18th floor of the Abyss of Hell" do
+            Take 379084000
+            Teleport party to 33 at 444 458
+        Topic "I will use it next time." goto close
+    Else if player has 379083000
+        Say "You have the first key of the Abyss of Hell. You can transport down to the dungeon Underground Level 8."
+        Topic "Transport to 8th floor of the Abyss of Hell" do
+            Take 379083000
+            Teleport party to 33 at 189 458
+        Topic "I will use it next time." goto close
+    Else if player has 379084000
+        Say "You have the second key of the Abyss of Hell. You can transport down to the dungeon Underground Level 16."
+        Topic "Transport to 18th floor of the Abyss of Hell" do
+            Take 379084000
+            Teleport party to 33 at 444 458
+        Topic "I will use it next time." goto close
+    Else
+        Say "You don't have the teleport key."
+        Topic "Confirm" goto close
+
+On hell_key
+    Take 379111000
+    Teleport party to 33 at 62 91
+
+On dragon_cave
+    If player has 389200000
+        Say "As you possess the [Marble of the Dragon] you are permitted entry into the Nest of the Fire Dragon. | Nest of the Fire Dragon is the habitat of Red Dragon, a monster incomparably powerful to previous monsters. If you are not prepared to put your life on the line as the bravest warrior of Adonis, you should not enter.|Do you want to enter Nest of the Fire Dragon?"
+        Topic "go to the Dragon cave" do
+            Take 389200000
+            Teleport party to 34 at 112 15
+        Topic "I will use it next time." goto close
+    Else
+        Say "You don't have the [Marble of the Dragon] which grants entry into the Nest of the Fire Dragon. You can obtain the marble from the subordinates of Isiloon."
+        Topic "Confirm" goto close
+
+On leave
+    Teleport 30 at 500 250

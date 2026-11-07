@@ -56,17 +56,13 @@ public static class ItemSearch
         return family.Length == 0 || family == ItemData.PlainUpgrade ? TabBasic : TabProperty;
     }
 
-    public static IEnumerable<ItemData.Ext> VariantExts(ItemData.Item def)
+    public static IEnumerable<ItemData.Ext> VariantExts(ItemData.Item def) => VariantsOf(def, ItemData.ExtsForCat(def.Cat));
+
+    public static IEnumerable<ItemData.Ext> VariantsOf(ItemData.Item def, IEnumerable<ItemData.Ext> exts)
     {
-        var own = new List<ItemData.Ext>();
-        var generic = new List<ItemData.Ext>();
-        foreach (var ext in ItemData.ExtsForCat(def.Cat))
-        {
-            if (!ItemData.ExtAppliesTo(def, ext)) continue;
-            if (ext.Linked == def.Id) own.Add(ext);
-            else if (ext.Linked == 0) generic.Add(ext);
-        }
-        return own.Count > 0 ? own : generic;
+        foreach (var ext in exts)
+            if (ItemData.ExtAppliesTo(def, ext) && (ext.Linked == 0 || ext.Linked == def.Id))
+                yield return ext;
     }
 
     public static void Match(

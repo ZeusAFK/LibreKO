@@ -217,7 +217,7 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
 
     private void ArmCooldown(UserSession session, MagicData magic, long now)
     {
-        if (magic.ReCastTime <= 0)
+        if (magic.ReCastTime <= 0 || GmMode.IsActive(session))
             return;
 
         session.SkillCooldowns[magic.Id] =
@@ -257,7 +257,7 @@ public sealed class MagicTimingService(IGameDataService gameDataService, TimePro
 
     private static long RemainingCooldownMs(UserSession session, int skillId, long now)
     {
-        if (!session.SkillCooldowns.TryGetValue(skillId, out var readyAt))
+        if (GmMode.IsActive(session) || !session.SkillCooldowns.TryGetValue(skillId, out var readyAt))
             return 0;
 
         var remaining = (readyAt - now) / TimeSpan.TicksPerMillisecond - LatencyGraceMs;

@@ -6,6 +6,8 @@ public sealed class GmFxSession
 
     public bool Visible(int id, bool isGm) => isGm && states.GetValueOrDefault(id, true);
 
+    public bool InGmMode(SelfSession self) => Visible(self.MyCharId, self.IsGm);
+
     internal void Set(int id, bool enabled) => states[id] = enabled;
 
     internal void Forget(int id) => states.Remove(id);

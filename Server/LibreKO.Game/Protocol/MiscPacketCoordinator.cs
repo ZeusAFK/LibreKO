@@ -15,7 +15,7 @@ namespace LibreKO.Game.Protocol;
 
 public interface IMiscPacketCoordinator
 {
-    Task HandlePremiumAsync(IClient client);
+    Task HandlePremiumAsync(IClient client, Packet packet);
     Task SendPremiumInfoAsync(UserSession session);
     Task HandleAuthorityChangeAsync(IClient client, Packet packet);
     Task HandleCorpseAsync(IClient client, Packet packet);
@@ -57,20 +57,43 @@ public class MiscPacketCoordinator(
     private const int ScrollOfIdentity = 800032000;
     private const int ClanNameScroll = 800086000;
 
-    public async Task HandlePremiumAsync(IClient client)
+    public async Task HandlePremiumAsync(IClient client, Packet packet)
     {
         var session = sessionManager.GetByClientId(client.Id);
         if (session == null)
             return;
 
+        if (packet.RemainingBytes >= 2 && packet.ReadByte() == MiscPacketWriter.PremiumSwitch)
+        {
+            await SwitchPremiumAsync(session, packet.ReadByte());
+            return;
+        }
+
         await SendPremiumInfoAsync(session);
     }
 
-    public async Task SendPremiumInfoAsync(UserSession session)
+    public Task SendPremiumInfoAsync(UserSession session) =>
+        session.Client.SendPacket(PremiumHoldings.ListPacket(session, gameDataService));
+
+    private async Task SwitchPremiumAsync(UserSession session, byte type)
     {
-        var packet = MiscPacketWriter.Premium(
-            session.PremiumType, session.PremiumTime, PremiumBonusList.For(session, gameDataService));
-        await session.Client.SendPacket(packet);
+        var now = DateTime.UtcNow;
+        var result = session.Hp <= 0 ? PremiumSwitchResult.NotHeld : PremiumHoldings.Switch(session, type, now);
+        switch (result)
+        {
+            case PremiumSwitchResult.Switched:
+                await session.Client.SendPacket(MiscPacketWriter.PremiumSwitched(type, MiscPacketWriter.PremiumSwitchDone));
+                await SendPremiumInfoAsync(session);
+                _ = statePersister.SaveAsync(session);
+                break;
+            case PremiumSwitchResult.TooSoon:
+                await session.Client.SendPacket(MiscPacketWriter.PremiumSwitchWait(
+                    type, (int)Math.Ceiling(PremiumHoldings.SwitchWait(session, now).TotalSeconds)));
+                break;
+            default:
+                await session.Client.SendPacket(MiscPacketWriter.PremiumSwitched(type, MiscPacketWriter.PremiumSwitchFailed));
+                break;
+        }
     }
 
     public async Task HandleAuthorityChangeAsync(IClient client, Packet packet)

@@ -49,25 +49,44 @@ public sealed class MiscPacketWriter
     }
 
     public const byte PremiumList = 1;
+    public const byte PremiumSwitch = 4;
+    public const short PremiumSwitchFailed = 0;
+    public const short PremiumSwitchDone = 1;
+    public const short PremiumSwitchTooSoon = -1;
 
-    public static Packet Premium(byte premiumType, int premiumHours, IReadOnlyList<PremiumBonus> bonuses)
+    public static Packet Premium(IReadOnlyList<HeldPremium> held, byte inUse, IReadOnlyList<PremiumBonus> bonuses)
     {
         var packet = new Packet(GameOpcodes.GS_PREMIUM);
         packet.WriteByte(PremiumList);
-        bool active = premiumType != 0 && premiumHours > 0;
-        packet.WriteByte(active ? (byte)1 : (byte)0);
-        if (active)
+        packet.WriteByte((byte)held.Count);
+        foreach (var premium in held)
         {
-            packet.WriteByte(premiumType);
-            packet.WriteUShort((ushort)Math.Min(premiumHours, ushort.MaxValue));
+            packet.WriteByte(premium.Type);
+            packet.WriteUShort((ushort)premium.Hours);
         }
-        packet.WriteByte(active ? premiumType : (byte)0);
+        packet.WriteByte(inUse);
         packet.WriteByte((byte)bonuses.Count);
         foreach (var bonus in bonuses)
         {
             packet.WriteByte((byte)bonus.Kind);
             packet.WriteShort(bonus.Value);
         }
+        return packet;
+    }
+
+    public static Packet PremiumSwitched(byte type, short result)
+    {
+        var packet = new Packet(GameOpcodes.GS_PREMIUM);
+        packet.WriteByte(PremiumSwitch);
+        packet.WriteByte(type);
+        packet.WriteShort(result);
+        return packet;
+    }
+
+    public static Packet PremiumSwitchWait(byte type, int seconds)
+    {
+        var packet = PremiumSwitched(type, PremiumSwitchTooSoon);
+        packet.WriteUShort((ushort)Math.Clamp(seconds, 1, ushort.MaxValue));
         return packet;
     }
 

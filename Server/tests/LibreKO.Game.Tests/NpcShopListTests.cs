@@ -266,7 +266,7 @@ public class NpcShopListTests : GameTestBase
                  })
             gameData.GetItem(itemId).Returns(new ItemData
             {
-                Num = itemId, Countable = (byte)countable, BuyPrice = price, SellPrice = PotionSalePrice, Weight = 1,
+                Num = itemId, Countable = (byte)countable, BuyPrice = price, SaleType = PotionSalePrice, Weight = 1,
                 Race = 1, Duration = 100,
             });
 

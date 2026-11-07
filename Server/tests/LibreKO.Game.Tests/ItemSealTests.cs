@@ -334,7 +334,7 @@ public class ItemSealTests : GameTestBase
                     Num = KrowazBoots,
                     Kind = 11,
                     Duration = 100,
-                    Bound = bound,
+                    UnbindStones = bound,
                 });
                 gameData.GetItem(SealStone).Returns(new ItemData { Num = SealStone, Countable = 1 });
             });

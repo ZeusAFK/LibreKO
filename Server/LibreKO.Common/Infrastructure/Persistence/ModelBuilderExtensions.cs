@@ -41,10 +41,10 @@ internal static class ModelBuilderExtensions
         Configure<ItemCombineMaterialData>(modelBuilder, "ItemCombineMaterials");
         Configure<ItemSmashClassData>(modelBuilder, "ItemSmashClasses");
         Configure<ItemSmashRewardData>(modelBuilder, "ItemSmashRewards");
-        Configure<ItemGradeBonusData>(modelBuilder, "ItemGradeBonuses");
         Configure<HomeData>(modelBuilder, "Homes");
 
-        Configure<ItemData>(modelBuilder, "Items");
+        Configure<ItemBaseData>(modelBuilder, "ItemBases");
+        Configure<ItemVariantData>(modelBuilder, "ItemVariants");
         Configure<ItemExchangeData>(modelBuilder, "ItemExchanges");
         Configure<ItemOpData>(modelBuilder, "ItemOps");
         Configure<ItemUpgradeData>(modelBuilder, "ItemUpgrades");

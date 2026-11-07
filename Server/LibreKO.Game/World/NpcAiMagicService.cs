@@ -436,38 +436,7 @@ public class NpcAiMagicService(
         var buffType = (BuffType)type4Data.BuffType;
         var existingKey = target.ActiveBuffs
             .FirstOrDefault(entry => entry.Value.BuffType == buffType && buffType != BuffType.None).Key;
-        target.ReplaceBuff(existingKey, magic.Id, new ActiveBuff
-        {
-            MagicId = magic.Id,
-            CasterId = -npc.UniqueId,
-            Duration = type4Data.Duration,
-            ExpireTicks = DateTime.UtcNow.AddSeconds(type4Data.Duration).Ticks,
-            BuffType = buffType,
-            SpecialAmount = type4Data.SpecialAmount > 0 ? type4Data.SpecialAmount : type4Data.ExpPct,
-            BonusAc = type4Data.Ac,
-            BonusAcPct = type4Data.AcPct,
-            BonusAttack = type4Data.Attack,
-            BonusMagicAttack = type4Data.MagicAttack,
-            BonusMaxHp = type4Data.MaxHP,
-            BonusMaxHpPct = type4Data.MaxHPPct,
-            BonusMaxMp = type4Data.MaxMP,
-            BonusMaxMpPct = type4Data.MaxMPPct,
-            BonusHitRate = type4Data.HitRate,
-            BonusAvoidRate = type4Data.AvoidRate,
-            BonusStr = type4Data.Str,
-            BonusSta = type4Data.Sta,
-            BonusDex = type4Data.Dex,
-            BonusIntel = type4Data.Intel,
-            BonusCha = type4Data.Cha,
-            BonusFireR = type4Data.FireR,
-            BonusColdR = type4Data.ColdR,
-            BonusLightningR = type4Data.LightningR,
-            BonusMagicR = type4Data.MagicR,
-            BonusPoisonR = type4Data.PoisonR,
-            BonusDiseaseR = type4Data.DiseaseR,
-            BonusSpeed = type4Data.Speed,
-            BonusAttackSpeed = type4Data.AttackSpeed
-        });
+        target.ReplaceBuff(existingKey, magic.Id, ActiveBuff.Of(magic.Id, -npc.UniqueId, type4Data));
 
         target.RecalculateStatsWithBuffs(gameData);
         await userNotificationService.SendStatUpdateAsync(target);

@@ -3,7 +3,6 @@
 internal static class WeaponMounts
 {
     internal const string WeaponNodePrefix = "weapon_";
-    private const int ExtRowSpan = 1000;
     private const float SizePercent = 100f;
 
     internal static float SizeScale(int size) => size > 0 ? size / SizePercent : 1f;
@@ -16,9 +15,7 @@ internal static class WeaponMounts
 
     internal static int TrailElement(int itemId)
     {
-        if (itemId <= 0 || ItemData.Get(itemId) is not { } def) return WeaponTrailRule.Normal;
-        int extId = ItemData.ExtIdFor(itemId);
-        return extId % ExtRowSpan != 0 && ItemData.ExtRow(def.Cat, extId) is { } ext
+        return itemId > 0 && ItemData.OwnExt(itemId) is { } ext
             ? WeaponTrailRule.Element(ext.FireDamage, ext.IceDamage, ext.LightningDamage, ext.PoisonDamage)
             : WeaponTrailRule.Normal;
     }

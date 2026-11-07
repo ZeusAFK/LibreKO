@@ -20,7 +20,6 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
     public ILookup<int, ItemCombineMaterialData> ItemCombineMaterialsByRecipe { get; private set; } = Enumerable.Empty<ItemCombineMaterialData>().ToLookup(x => x.RecipeId);
     public IReadOnlyDictionary<int, ItemSmashClassData> ItemSmashClassesByGrade { get; private set; } = new Dictionary<int, ItemSmashClassData>();
     public ILookup<int, ItemSmashRewardData> ItemSmashRewardsByBand { get; private set; } = Enumerable.Empty<ItemSmashRewardData>().ToLookup(x => x.Band);
-    public IReadOnlyDictionary<int, int> ItemGradeBonuses { get; private set; } = new Dictionary<int, int>();
     public IReadOnlyDictionary<short, CoefficientData> CoefficientTable { get; private set; } = new Dictionary<short, CoefficientData>();
     public IReadOnlyDictionary<short, StartPositionData> StartPositionTable { get; private set; } = new Dictionary<short, StartPositionData>();
     public IReadOnlyDictionary<int, ItemData> ItemTable { get; private set; } = new Dictionary<int, ItemData>();
@@ -290,10 +289,12 @@ public class GameDataService(IServiceScopeFactory scopeFactory, ILogger<GameData
             ItemSmashClassesByGrade = (await LoadListAsync(db.ItemSmashClasses, "item smash classes", cancellationToken))
                 .GroupBy(x => x.GradeClass).ToDictionary(x => x.Key, x => x.First());
             ItemSmashRewardsByBand = (await LoadListAsync(db.ItemSmashRewards, "item smash rewards", cancellationToken)).ToLookup(x => x.Band);
-            ItemGradeBonuses = await LoadDictionaryAsync(db.ItemGradeBonuses, x => x.Id, x => x.Bonus, "item grade bonuses", cancellationToken);
             CoefficientTable = await LoadDictionaryAsync(db.Coefficients, x => x.ClassId, "coefficient entries", cancellationToken);
             StartPositionTable = await LoadDictionaryAsync(db.StartPositions, x => x.ZoneId, "start position entries", cancellationToken);
-            ItemTable = await LoadDictionaryAsync(db.Items, x => x.Num, "item entries", cancellationToken);
+            ItemTable = new ItemCatalog(
+                await LoadListAsync(db.ItemBases, "item bases", cancellationToken),
+                await LoadListAsync(db.ItemVariants, "item variants", cancellationToken));
+            logger.LogInformation("Built {Count} item ids from the item bases and variants", ItemTable.Count);
             // Warps loaded from SMD map files, not DB. See MapManager.GetWarpList().
             NpcTable = await LoadDictionaryAsync(
                 db.Npcs.Where(x => !x.IsMonster), x => x.Id, "NPC entries", cancellationToken);

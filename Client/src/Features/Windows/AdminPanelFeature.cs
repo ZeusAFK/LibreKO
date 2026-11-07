@@ -583,6 +583,7 @@ internal sealed class AdminPanelFeature : IFeature, IEscapable
             onAction: (hit, count) => OnGiveItem(hit.Id, count),
             showTooltip: itemId => context.Tooltips.Show(-1, UiKit.TooltipItem(itemId)),
             hideTooltip: context.Tooltips.Hide);
+        ItemSearch.SizeFlagsVertical = Control.SizeFlags.ExpandFill;
         return ItemSearch;
     }
 

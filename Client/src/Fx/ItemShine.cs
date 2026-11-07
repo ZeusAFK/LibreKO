@@ -92,6 +92,8 @@ public static class ItemShine
 
     internal static float PeakFor(int level) => PeakByLevel[Mathf.Clamp(level, 1, MaxLevel) - 1];
 
+    public static float LightShare(float daylight) => Mathf.Clamp(1f - daylight, 0f, 1f);
+
     public static void Apply(Node? root, int itemId, int partIndex)
     {
         if (root == null)

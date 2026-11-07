@@ -22,6 +22,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
         services.AddScoped<IUserDailyOpRepository, UserDailyOpRepository>();
         services.AddScoped<IRankerStatueNoteRepository, RankerStatueNoteRepository>();
+        services.AddScoped<IEventPostRepository, EventPostRepository>();
         services.AddScoped<IDailyRankRepository, DailyRankRepository>();
         services.AddScoped<IPetRepository, PetRepository>();
         services.AddScoped<IKnightsRepository, KnightsRepository>();
@@ -93,6 +94,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<INationTaxPacketCoordinator, NationTaxPacketCoordinator>();
         services.AddSingleton<IFishingHallPacketCoordinator, FishingHallPacketCoordinator>();
         services.AddSingleton<IRoulettePacketCoordinator, RoulettePacketCoordinator>();
+        services.AddSingleton<IEventPostPacketCoordinator, EventPostPacketCoordinator>();
         services.AddSingleton<IEventBoardPacketCoordinator, EventBoardPacketCoordinator>();
         services.AddSingleton<IClientSettingsPacketCoordinator, ClientSettingsPacketCoordinator>();
         services.AddSingleton<IGuardPetPacketCoordinator, GuardPetPacketCoordinator>();

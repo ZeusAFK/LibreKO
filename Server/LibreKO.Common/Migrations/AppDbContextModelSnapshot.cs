@@ -68,9 +68,6 @@ namespace LibreKO.Common.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
-                    b.Property<DateTime?>("PremiumDate")
-                        .HasColumnType("datetime(6)");
-
                     b.Property<byte>("PremiumType")
                         .HasColumnType("tinyint unsigned");
 
@@ -97,6 +94,31 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Accounts", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.AccountPremium", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AccountId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Expiry")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<byte>("Type")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId", "Type")
+                        .IsUnique();
+
+                    b.ToTable("AccountPremiums", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.AuctionBid", b =>
@@ -624,6 +646,47 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("Board", "SubjectId");
 
                     b.ToTable("DailyRankPlaces");
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.EventPost", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("CharacterId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CharacterName")
+                        .IsRequired()
+                        .HasMaxLength(21)
+                        .HasColumnType("varchar(21)");
+
+                    b.Property<byte>("EventId")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<DateTime>("PostedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ServerName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CharacterId", "PostedAt");
+
+                    b.HasIndex("EventId", "PostedAt");
+
+                    b.ToTable("EventPosts");
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Friendship", b =>
@@ -1358,6 +1421,104 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("Homes", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemBaseData", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<short>("Ac")
+                        .HasColumnType("smallint");
+
+                    b.Property<int>("BuyPrice")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("Class")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Countable")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("Damage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Delay")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Duration")
+                        .HasColumnType("smallint");
+
+                    b.Property<int>("Effect1")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Effect2")
+                        .HasColumnType("int");
+
+                    b.Property<short>("ItemClass")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte>("Kind")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<byte>("Race")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("Range")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqCha")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqDex")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqIntel")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte>("ReqLevel")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("ReqLevelMax")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("ReqRank")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("ReqSta")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqStr")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte>("ReqTitle")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<int>("SaleType")
+                        .HasColumnType("int");
+
+                    b.Property<byte>("SellingGroup")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<byte>("Slot")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("UnbindStones")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte>("VariantSet")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("Weight")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ItemBases", (string)null);
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemCombineMaterialData", b =>
                 {
                     b.Property<int>("RecipeId")
@@ -1400,234 +1561,6 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ItemCombineRecipes", (string)null);
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemData", b =>
-                {
-                    b.Property<int>("Num")
-                        .HasColumnType("int");
-
-                    b.Property<short>("Ac")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("AxeAc")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Bound")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("BowAc")
-                        .HasColumnType("smallint");
-
-                    b.Property<int>("BuyPrice")
-                        .HasColumnType("int");
-
-                    b.Property<short>("ChaB")
-                        .HasColumnType("smallint");
-
-                    b.Property<byte>("Class")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("ColdR")
-                        .HasColumnType("smallint");
-
-                    b.Property<byte>("Countable")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("CurseR")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("DaggerAc")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Damage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Delay")
-                        .HasColumnType("smallint");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<short>("DexB")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("DropNotice")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Droprate")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Duration")
-                        .HasColumnType("smallint");
-
-                    b.Property<int>("Effect1")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Effect2")
-                        .HasColumnType("int");
-
-                    b.Property<short>("Evasionrate")
-                        .HasColumnType("smallint");
-
-                    b.Property<int>("Extension")
-                        .HasColumnType("int");
-
-                    b.Property<short>("FireDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("FireR")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Grade")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Hitrate")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("HpDrain")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("IceDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("IntelB")
-                        .HasColumnType("smallint");
-
-                    b.Property<int>("ItemAlteration")
-                        .HasColumnType("int");
-
-                    b.Property<short>("ItemClass")
-                        .HasColumnType("smallint");
-
-                    b.Property<int>("ItemPlusId")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("ItemType")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("JamadarAc")
-                        .HasColumnType("smallint");
-
-                    b.Property<byte>("Kind")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("LightningDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("LightningR")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MaceAc")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MagicR")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MaxDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MaxHpB")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MaxMpB")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MinDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MirrorDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MpDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("MpDrain")
-                        .HasColumnType("smallint");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("NpBuyPrice")
-                        .HasColumnType("int");
-
-                    b.Property<short>("PoisonDamage")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("PoisonR")
-                        .HasColumnType("smallint");
-
-                    b.Property<byte>("Race")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("Range")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("ReqCha")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("ReqDex")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("ReqIntel")
-                        .HasColumnType("smallint");
-
-                    b.Property<byte>("ReqLevel")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<byte>("ReqLevelMax")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<byte>("ReqRank")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("ReqSta")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("ReqStr")
-                        .HasColumnType("smallint");
-
-                    b.Property<byte>("ReqTitle")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<int>("SellNpcPrice")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("SellNpcType")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<int>("SellPrice")
-                        .HasColumnType("int");
-
-                    b.Property<byte>("SellingGroup")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<byte>("Slot")
-                        .HasColumnType("tinyint unsigned");
-
-                    b.Property<short>("SpearAc")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("StaB")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("StrB")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("SwordAc")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("UpgradeNotice")
-                        .HasColumnType("smallint");
-
-                    b.Property<short>("Weight")
-                        .HasColumnType("smallint");
-
-                    b.HasKey("Num");
-
-                    b.ToTable("Items", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemExchangeData", b =>
@@ -1740,25 +1673,6 @@ namespace LibreKO.Common.Migrations
                     b.HasKey("Index");
 
                     b.ToTable("ItemExchanges", (string)null);
-                });
-
-            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemGradeBonusData", b =>
-                {
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Bonus")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ExtFile")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ExtensionId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ItemGradeBonuses", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemOpData", b =>
@@ -1937,6 +1851,161 @@ namespace LibreKO.Common.Migrations
                     b.HasIndex("ItemType", "ItemGrade");
 
                     b.ToTable("ItemUpgradeSettings", (string)null);
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.ItemVariantData", b =>
+                {
+                    b.Property<byte>("VariantSet")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<short>("Ac")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("AxeAc")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("BowAc")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Cha")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ColdR")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("CurseR")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("DaggerAc")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Damage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Dex")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Duration")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Evasionrate")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("FireDamage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("FireR")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("GradeClass")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Hitrate")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("HpDrain")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("IceDamage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Intel")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("JamadarAc")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("LightningDamage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("LightningR")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("MaceAc")
+                        .HasColumnType("smallint");
+
+                    b.Property<int>("MadeFor")
+                        .HasColumnType("int");
+
+                    b.Property<short>("MagicR")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("MaxHp")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("MaxMp")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("MirrorDamage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("MpDamage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("MpDrain")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Plus")
+                        .HasColumnType("int");
+
+                    b.Property<short>("PoisonDamage")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("PoisonR")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("PriceMultiplier")
+                        .HasColumnType("smallint");
+
+                    b.Property<byte>("Rarity")
+                        .HasColumnType("tinyint unsigned");
+
+                    b.Property<short>("ReqCha")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqDex")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqIntel")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqLevel")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqSta")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqStr")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("ReqTitle")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("SpearAc")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Sta")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("Str")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("SwordAc")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("UnbindStones")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("VariantSet", "Id");
+
+                    b.ToTable("ItemVariants", (string)null);
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.GameData.KingSystemData", b =>
@@ -4674,6 +4743,15 @@ namespace LibreKO.Common.Migrations
                     b.ToTable("SeedStates", (string)null);
                 });
 
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.AccountPremium", b =>
+                {
+                    b.HasOne("LibreKO.Common.Domain.Entities.Account", null)
+                        .WithMany("Premiums")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Character", b =>
                 {
                     b.HasOne("LibreKO.Common.Domain.Entities.Account", null)
@@ -4782,6 +4860,11 @@ namespace LibreKO.Common.Migrations
                         .HasForeignKey("LibreKO.Common.Domain.Entities.Warehouse", "AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LibreKO.Common.Domain.Entities.Account", b =>
+                {
+                    b.Navigation("Premiums");
                 });
 
             modelBuilder.Entity("LibreKO.Common.Domain.Entities.Mail", b =>

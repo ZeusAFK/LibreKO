@@ -390,18 +390,6 @@
     "Count": 1
   },
   {
-    "RecipeId": 16,
-    "Position": 0,
-    "ItemId": 389300000,
-    "Count": 10
-  },
-  {
-    "RecipeId": 16,
-    "Position": 1,
-    "ItemId": 389301000,
-    "Count": 10
-  },
-  {
     "RecipeId": 64,
     "Position": 0,
     "ItemId": 399120000,
@@ -412,54 +400,6 @@
     "Position": 0,
     "ItemId": 399130000,
     "Count": 1
-  },
-  {
-    "RecipeId": 66,
-    "Position": 0,
-    "ItemId": 900417000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 66,
-    "Position": 1,
-    "ItemId": 900418000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 66,
-    "Position": 2,
-    "ItemId": 900419000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 66,
-    "Position": 3,
-    "ItemId": 900420000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 66,
-    "Position": 4,
-    "ItemId": 900421000,
-    "Count": 3
-  },
-  {
-    "RecipeId": 66,
-    "Position": 5,
-    "ItemId": 900422000,
-    "Count": 3
-  },
-  {
-    "RecipeId": 66,
-    "Position": 6,
-    "ItemId": 900423000,
-    "Count": 3
-  },
-  {
-    "RecipeId": 66,
-    "Position": 7,
-    "ItemId": 900424000,
-    "Count": 3
   },
   {
     "RecipeId": 67,
@@ -4396,78 +4336,6 @@
     "Position": 0,
     "ItemId": 379278000,
     "Count": 5
-  },
-  {
-    "RecipeId": 249,
-    "Position": 0,
-    "ItemId": 508260000,
-    "Count": 5
-  },
-  {
-    "RecipeId": 250,
-    "Position": 0,
-    "ItemId": 508261000,
-    "Count": 5
-  },
-  {
-    "RecipeId": 251,
-    "Position": 0,
-    "ItemId": 508262000,
-    "Count": 5
-  },
-  {
-    "RecipeId": 252,
-    "Position": 0,
-    "ItemId": 508263000,
-    "Count": 5
-  },
-  {
-    "RecipeId": 253,
-    "Position": 0,
-    "ItemId": 900417000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 253,
-    "Position": 1,
-    "ItemId": 900418000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 253,
-    "Position": 2,
-    "ItemId": 900419000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 253,
-    "Position": 3,
-    "ItemId": 900420000,
-    "Count": 25
-  },
-  {
-    "RecipeId": 253,
-    "Position": 4,
-    "ItemId": 900421000,
-    "Count": 3
-  },
-  {
-    "RecipeId": 253,
-    "Position": 5,
-    "ItemId": 900422000,
-    "Count": 3
-  },
-  {
-    "RecipeId": 253,
-    "Position": 6,
-    "ItemId": 900423000,
-    "Count": 3
-  },
-  {
-    "RecipeId": 253,
-    "Position": 7,
-    "ItemId": 900424000,
-    "Count": 3
   },
   {
     "RecipeId": 254,

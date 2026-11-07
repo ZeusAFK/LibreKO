@@ -63,7 +63,7 @@ public class PkLadderTests : GameTestBase
             Substitute.For<IAchievementProgressService>());
         var session = Player(sessions, 1, "Rikka", AccountNation.Karus, RonarkLand, 0, null);
         session.PremiumService = PremiumWithLoyalty;
-        session.PremiumExpiry = DateTime.UtcNow.AddDays(1);
+        session.HeldPremiums[PremiumWithLoyalty] = DateTime.UtcNow.AddDays(1);
 
         await loyalty.AwardKillAsync(session, 20);
         await loyalty.ChangeAsync(session, 10);

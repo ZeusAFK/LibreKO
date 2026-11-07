@@ -5,6 +5,7 @@ using LibreKO.Common.Domain.Entities.GameData;
 using LibreKO.Common.Domain.Services;
 using LibreKO.Common.Enums;
 using LibreKO.Common.Infrastructure.Network;
+using LibreKO.Common.Infrastructure.Persistence.Seed.Entities;
 using LibreKO.Game.Protocol;
 using LibreKO.Game.Protocol.Writers;
 using LibreKO.Game.World;
@@ -41,24 +42,15 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         throw new DirectoryNotFoundException("LibreKO.Game/Seed/Data not found above " + here);
     }
 
-    private static readonly Lazy<Dictionary<int, ItemData>> Items = new(() => LoadRows("Items.json", (ItemData i) => i.Num));
+    private static readonly Lazy<ItemCatalog> Items = new(() =>
+        new ItemCatalog(new ItemBaseSeed().GetSeedData(), new ItemVariantSeed().GetSeedData()));
 
-    private static Dictionary<int, T> Load<T>(string file, Func<T, int> key) =>
-        typeof(T) == typeof(ItemData) && file == "Items.json"
-            ? (Dictionary<int, T>)(object)Items.Value : LoadRows(file, key);
-
-    private static Dictionary<int, T> LoadRows<T>(string file, Func<T, int> key)
+    private static Dictionary<int, T> Load<T>(string file, Func<T, int> key)
     {
-        var path = Path.GetFullPath(Path.Combine(SeedDirectory, file));
-        var sources = File.Exists(path) || file != "Items.json" ? new[] { path }
-            : Directory.GetFiles(SeedDirectory, "Items.slot*.json").Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        using var stream = File.OpenRead(Path.GetFullPath(Path.Combine(SeedDirectory, file)));
         var result = new Dictionary<int, T>();
-        foreach (var source in sources)
-        {
-            using var stream = File.OpenRead(source);
-            foreach (var row in JsonSerializer.Deserialize<List<T>>(stream)!)
-                result[key(row)] = row;
-        }
+        foreach (var row in JsonSerializer.Deserialize<List<T>>(stream)!)
+            result[key(row)] = row;
         return result;
     }
 
@@ -71,7 +63,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task ReportedAttackSkillsDamageAMonsterTwiceInARow(int skillId, string name)
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[skillId];
 
         using var provider = CreateProvider(_ => { }, gameData =>
@@ -118,7 +110,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task ResistColdRaisesColdResistance()
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[ResistCold];
 
         using var provider = CreateProvider(_ => { }, gameData =>
@@ -144,7 +136,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task IceOrbSlowsTheMonsterAndNotTheCaster()
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[IceOrb];
 
         using var provider = CreateProvider(_ => { }, gameData =>
@@ -181,7 +173,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         const int DisguiseScroll = 472001;
 
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[DisguiseScroll];
 
         row.Type1.Should().Be(0, "a list-opening scroll has no primary type");
@@ -231,7 +223,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         const int Menissiah = 500506;
 
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[Menissiah];
 
         using var provider = CreateProvider(_ => { }, gameData =>
@@ -302,7 +294,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         const ushort DisguiseScrolls = 10;
 
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[RavenHarpy];
 
         row.UseItem.Should().Be(379091000, "the skill asks for a Transformation Gem");
@@ -369,7 +361,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         const int Menissiah = 500506;
 
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
 
         using var provider = CreateProvider(_ => { }, gameData =>
         {
@@ -475,7 +467,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         return packet;
     }
 
-    private ServiceProvider CreateMasterSkillProvider(Dictionary<int, MagicData> magic, Dictionary<int, ItemData> items) =>
+    private ServiceProvider CreateMasterSkillProvider(Dictionary<int, MagicData> magic, IReadOnlyDictionary<int, ItemData> items) =>
         CreateProvider(_ => { }, gameData =>
         {
             gameData.GetMagic(Arg.Any<int>()).Returns(c => magic.GetValueOrDefault(c.Arg<int>()));
@@ -489,7 +481,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task AMasterSkillKeepsItsScrollAndSpendsOneClassStone()
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         magic[MagicShield].ConsumedItem.Should().Be(StoneOfRogue);
 
         using var provider = CreateMasterSkillProvider(magic, items);
@@ -512,7 +504,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task AMasterSkillIsRefusedWithoutItsStone()
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
 
         using var provider = CreateMasterSkillProvider(magic, items);
         var sessionManager = provider.GetRequiredService<SessionManager>();
@@ -531,7 +523,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task JudgmentSpendsAStoneOfPriestOnTheStrike()
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         magic[Judgment].ConsumedItem.Should().Be(StoneOfPriest);
 
         using var provider = CreateMasterSkillProvider(magic, items);
@@ -558,7 +550,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
 
     private static UserSession CreateCaster(
         ServiceProvider provider, SessionManager sessionManager, MagicData row,
-        Dictionary<int, ItemData> items)
+        IReadOnlyDictionary<int, ItemData> items)
     {
         var client = Substitute.For<IClient>();
         client.Id.Returns(Guid.NewGuid());
@@ -600,7 +592,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task ResistColdRaisesColdResistanceThroughTheCastPipeline()
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[ResistCold];
 
         using var provider = CreateProvider(_ => { }, gameData =>
@@ -641,7 +633,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task ReportedAttackSkillsDamageAMonsterThroughTheCastPipeline(int skillId, string name)
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[skillId];
 
         using var provider = CreateProvider(_ => { }, gameData =>
@@ -692,7 +684,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
         const int ResistFire = 109506;
 
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
 
         using var provider = CreateProvider(_ => { }, gameData =>
         {
@@ -724,7 +716,7 @@ public class SkillReagentAndBuffTests(ITestOutputHelper output) : GameTestBase
     public async Task FiringAnArrowSkillTakesOneArrowNotTheWholeStack()
     {
         var magic = Load<MagicData>("Magic.json", m => m.Id);
-        var items = Load<ItemData>("Items.json", i => i.Num);
+        var items = Items.Value;
         var row = magic[Viper];
 
         using var provider = CreateProvider(_ => { }, gameData =>

@@ -487,16 +487,17 @@ public class WorldVisibilityService(
         {
             var clan = sessionManager.Knights.GetClan(session.KnightsId);
             var alliance = sessionManager.Knights.GetAllianceForClan(session.KnightsId);
+            var cape = KingSystemRuntimeService.CapeOf(king, session.Nation, clan);
             clanState = new UserInfoPacketWriter.ClanState(
                 (short)(alliance?.MainClanId ?? 0),
                 session.KnightsName,
                 clan?.Grade ?? 0,
                 clan?.Ranking ?? 0,
                 clan?.MarkVersion ?? 0,
-                king ? (short)KingSystemRuntimeService.KingCapeOf(session.Nation) : clan?.Cape ?? 0,
-                king ? (byte)0 : clan?.CapeR ?? 0,
-                king ? (byte)0 : clan?.CapeG ?? 0,
-                king ? (byte)0 : clan?.CapeB ?? 0,
+                cape.Id,
+                cape.R,
+                cape.G,
+                cape.B,
                 clan?.Flag ?? 0);
         }
 

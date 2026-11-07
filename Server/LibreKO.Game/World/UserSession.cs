@@ -240,8 +240,10 @@ public class UserSession
     public const byte AccountStatusPremium = 1;
 
     public byte AccountStatus { get; set; } // 0=none, 1=premium, 2=PC room
-    public DateTime? PremiumExpiry { get; set; }
+    public Dictionary<byte, DateTime> HeldPremiums { get; } = [];
     public byte PremiumService { get; set; }
+    public DateTime? PremiumExpiry => HeldPremiums.TryGetValue(PremiumService, out var expiry) ? expiry : null;
+    public DateTime LastPremiumSwitch { get; set; }
 
     public short PremiumTime => PremiumService > 0 ? Account.RemainingHoursUntil(PremiumExpiry) : (short)0;
     public byte PremiumType => PremiumTime > 0 ? PremiumService : (byte)0;
@@ -509,6 +511,18 @@ public class UserSession
 
     // Inventory: 73 slots (14 equipped + 28 inventory + 5 cospre + 2 bag slots + 24 bag items)
     public ItemSlot[] Inventory { get; } = new ItemSlot[InventoryConstants.InventoryTotal];
+
+    public int FreeBagSlots
+    {
+        get
+        {
+            var free = 0;
+            for (var index = InventoryConstants.SlotMax; index < InventoryConstants.SlotMax + InventoryConstants.HaveMax; index++)
+                if (Inventory[index].IsEmpty)
+                    free++;
+            return free;
+        }
+    }
 
     // Warehouse: 192 slots
     public const int WarehouseMax = 192;

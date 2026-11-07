@@ -37,6 +37,7 @@ public interface IQuestHost
     bool HasActiveKillQuest();
     bool DailyRewardAvailable(int slot);
     int Weekday => (int)DateTime.UtcNow.DayOfWeek;
+    int NpcTrigger => 0;
     bool HasEffect(int skillId) => false;
     bool RollChance(int percent);
     bool ReachedLevel(int level, int expPercent);
@@ -110,6 +111,7 @@ public interface IQuestHost
     void OpenCombineRecipeBook();
     void OpenDisassembleWindow();
     void OpenNationTransferPanel();
+    void OpenPostBoard(int eventId);
 
     void Unsupported(string what);
 }
